@@ -1,9 +1,26 @@
 .DS_Store
 .env
 .env.*
+!.env.example
 *.pem
+*.exe
+*.test
+*.out
+coverage.out
+bin/
+/m365
+vendor/
+build/
+.tools/
+acceptance/generated/
+*.key
+*.crt
 
 # Grok agent local state; keep committed Spec Kit skills.
 .grok/*
 !.grok/skills/
 !.grok/skills/**
+
+.opencode/node_modules/
+.opencode/package.json
+.opencode/package-lock.json

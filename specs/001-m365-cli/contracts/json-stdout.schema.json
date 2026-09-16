@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/masonhuemmer/m365/contracts/json-stdout.schema.json",
+  "title": "m365 JSON stdout (non-watch)",
+  "description": "Exactly one JSON value on stdout. No log lines. Attachment objects never include bytes. next_page is opaque, never a service URL.",
+  "$defs": {
+    "person": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "address": { "type": "string" }
+      }
+    },
+    "attachment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "size"],
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "size": { "type": "integer", "minimum": 0 },
+        "content_type": { "type": "string" }
+      }
+    },
+    "limitBlock": {
+      "type": "object",
+      "required": ["limit", "count", "items"],
+      "properties": {
+        "limit": { "type": "integer", "minimum": 1, "maximum": 50 },
+        "count": { "type": "integer", "minimum": 0 },
+        "next_page": { "type": ["string", "null"] },
+        "items": { "type": "array" }
+      }
+    }
+  },
+  "oneOf": [
+    {
+      "title": "auth status or login",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["signed_in", "session_usable", "namespaces"],
+      "properties": {
+        "signed_in": { "type": "boolean" },
+        "session_usable": { "type": "boolean" },
+        "account": { "type": "string" },
+        "namespaces": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["mail", "teams"],
+          "properties": {
+            "mail": { "type": "boolean" },
+            "teams": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    {
+      "title": "list page",
+      "allOf": [{ "$ref": "#/$defs/limitBlock" }]
+    },
+    {
+      "title": "save attachment",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 }
+      }
+    },
+    {
+      "title": "dry-run send",
+      "type": "object",
+      "required": ["dry_run"],
+      "properties": {
+        "dry_run": { "const": true },
+        "to": { "type": "array", "items": { "type": "string" } },
+        "chat_id": { "type": "string" },
+        "subject": { "type": "string" },
+        "body": { "type": "string" },
+        "text": { "type": "string" },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "size"],
+            "properties": {
+              "name": { "type": "string" },
+              "size": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    {
+      "title": "send result",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sent": { "type": "boolean" }
+      },
+      "required": ["id"]
+    }
+  ]
+}

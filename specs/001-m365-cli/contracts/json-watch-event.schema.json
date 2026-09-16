@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/masonhuemmer/m365/contracts/json-watch-event.schema.json",
+  "title": "m365 teams watch JSON line",
+  "description": "Each non-empty stdout line is one object. Empty watch: no lines. No secrets or file bytes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["chat_id", "message_id", "reason", "created"],
+  "properties": {
+    "chat_id": { "type": "string" },
+    "message_id": { "type": "string" },
+    "from": { "type": "string" },
+    "text": { "type": "string" },
+    "created": { "type": "string" },
+    "reason": {
+      "type": "string",
+      "enum": ["one_to_one", "mention", "watched_chat"]
+    },
+    "topic": { "type": "string" },
+    "chat_type": { "type": "string" },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "size"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "size": { "type": "integer", "minimum": 0 },
+          "content_type": { "type": "string" }
+        }
+      }
+    }
+  }
+}

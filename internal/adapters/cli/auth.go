@@ -1,0 +1,57 @@
+package cli
+
+import (
+	"github.com/masonhuemmer/m365/internal/app/auth"
+	"github.com/masonhuemmer/m365/internal/domain"
+)
+
+func runAuth(args []string, d Deps, format string, verbose bool) int {
+	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
+		return writeHelp(d.Stdout, rootHelp)
+	}
+	verb := args[0]
+	switch verb {
+	case "status":
+		st, err := auth.Status(d.Store)
+		if err != nil {
+			return fail(d, err)
+		}
+		out := map[string]any{
+			"signed_in":      st.SignedIn,
+			"session_usable": st.SessionUsable,
+			"account":        st.Account,
+			"namespaces":     map[string]bool{"mail": st.MailConsented, "teams": st.TeamsConsented},
+		}
+		if verbose {
+			fmtVerbose(d, "status ok")
+		}
+		return success(d, format, out)
+	case "logout":
+		if err := auth.Logout(d.Store); err != nil {
+			return fail(d, err)
+		}
+		st := domain.SignedOut()
+		return success(d, format, map[string]any{
+			"signed_in": st.SignedIn, "session_usable": st.SessionUsable,
+			"namespaces": map[string]bool{"mail": false, "teams": false},
+		})
+	case "login":
+		if err := d.Config.RequireApp(); err != nil {
+			return fail(d, err)
+		}
+		st, err := auth.Login(ctx(), d.Store, d.Login)
+		if err != nil {
+			return fail(d, err)
+		}
+		return success(d, format, map[string]any{
+			"signed_in": st.SignedIn, "session_usable": st.SessionUsable, "account": st.Account,
+			"namespaces": map[string]bool{"mail": st.MailConsented, "teams": st.TeamsConsented},
+		})
+	default:
+		return fail(d, domain.Usagef("unknown auth verb %q", verb))
+	}
+}
+
+func fmtVerbose(d Deps, s string) {
+	_, _ = d.Stderr.Write([]byte(redact(s) + "\n"))
+}

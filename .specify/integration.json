@@ -2,14 +2,14 @@
   "version": "1.0.7",
   "integration_state_schema": 1,
   "installed_integrations": [
-    "grok"
+    "opencode"
   ],
   "integration_settings": {
-    "grok": {
+    "opencode": {
       "script": "sh",
-      "invoke_separator": "-"
+      "invoke_separator": "."
     }
   },
-  "integration": "grok",
-  "default_integration": "grok"
+  "integration": "opencode",
+  "default_integration": "opencode"
 }
