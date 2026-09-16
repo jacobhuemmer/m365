@@ -1,0 +1,9 @@
+.DS_Store
+.env
+.env.*
+*.pem
+
+# Grok agent local state; keep committed Spec Kit skills.
+.grok/*
+!.grok/skills/
+!.grok/skills/**
