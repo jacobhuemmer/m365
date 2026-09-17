@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/masonhuemmer/m365/internal/app/calendar"
 	"github.com/masonhuemmer/m365/internal/domain"
@@ -25,7 +26,8 @@ func (c *HTTPCalendar) ListCalendars(ctx context.Context, top int, _ string) (do
 	var raw struct {
 		Value []struct {
 			ID, Name          string
-			IsDefaultCalendar bool `json:"isDefaultCalendar"`
+			IsDefaultCalendar bool   `json:"isDefaultCalendar"`
+			TimeZone          string `json:"timeZone"`
 		} `json:"value"`
 		Next string `json:"@odata.nextLink"`
 	}
@@ -34,7 +36,7 @@ func (c *HTTPCalendar) ListCalendars(ctx context.Context, top int, _ string) (do
 	}
 	items := make([]domain.Calendar, 0, len(raw.Value))
 	for _, g := range raw.Value {
-		items = append(items, domain.Calendar{ID: g.ID, Name: g.Name, IsDefault: g.IsDefaultCalendar})
+		items = append(items, domain.Calendar{ID: g.ID, Name: g.Name, IsDefault: g.IsDefaultCalendar, Timezone: mapTZ(g.TimeZone)})
 	}
 	p := domain.CalendarPage{Limit: top, Count: len(items), Items: items}
 	if tok := encodeNext(raw.Next); tok != "" {
@@ -198,4 +200,23 @@ func (c *HTTPClient) doBody(ctx context.Context, method, path string, body []byt
 		return nil, MapGraphError(res.StatusCode, b)
 	}
 	return res, nil
+}
+
+func mapTZ(s string) string {
+	if s == "" {
+		return "America/Chicago"
+	}
+	if loc, err := time.LoadLocation(s); err == nil {
+		return loc.String()
+	}
+	switch s {
+	case "Central Standard Time", "Central America Standard Time":
+		return "America/Chicago"
+	case "Eastern Standard Time":
+		return "America/New_York"
+	case "Pacific Standard Time":
+		return "America/Los_Angeles"
+	default:
+		return s
+	}
 }

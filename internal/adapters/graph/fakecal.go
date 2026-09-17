@@ -44,7 +44,11 @@ func handleCalendarFiles(w http.ResponseWriter, r *http.Request, mem *Memory) bo
 	if p == "/me/calendars" {
 		vals := []map[string]any{}
 		for _, c := range mem.Calendars {
-			vals = append(vals, map[string]any{"id": c.ID, "name": c.Name, "isDefaultCalendar": c.IsDefault})
+			tz := c.Timezone
+			if tz == "" {
+				tz = "America/Chicago"
+			}
+			vals = append(vals, map[string]any{"id": c.ID, "name": c.Name, "isDefaultCalendar": c.IsDefault, "timeZone": tz})
 		}
 		_ = json.NewEncoder(w).Encode(map[string]any{"value": vals})
 		return true

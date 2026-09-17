@@ -27,14 +27,14 @@ func RegisterAll() {
 		mem := graph.Seed()
 		out, errw := &bytes.Buffer{}, &bytes.Buffer{}
 		d := cli.Deps{
-			Config: config.Config{ClientID: "x", TenantID: "y"},
-			Store:  &keychain.Fake{},
+			Config:   config.Config{ClientID: "x", TenantID: "y"},
+			Store:    &keychain.Fake{},
 			Mail:     graph.MailAPI{Memory: mem},
 			Teams:    graph.TeamsAPI{Memory: mem},
 			Calendar: graph.CalendarAPI{Memory: mem},
 			Files:    graph.FilesAPI{Memory: mem},
 			Login:    graph.FakeLoginAll(true, true, true, true),
-			Stdout: out, Stderr: errw,
+			Stdout:   out, Stderr: errw,
 		}
 		code := cli.Run(append([]string{"m365"}, parts...), d)
 		if strings.Contains(text, "help") && code != 0 {

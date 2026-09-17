@@ -72,6 +72,8 @@ func runCalendar(args []string, d Deps, format string) int {
 		return calendarUpdate(args, d, sess, format)
 	case "delete":
 		return calendarDelete(args, d, sess, format)
+	case "free":
+		return calendarFree(args, d, sess, format)
 	default:
 		return fail(d, domain.Usagef("unknown calendar verb %q", verb))
 	}
@@ -87,6 +89,9 @@ func calendarCreate(args []string, d Deps, sess domain.Session, format string) i
 	body := fsset.String("body", "", "")
 	bodyFile := fsset.String("body-file", "", "")
 	cal := fsset.String("calendar", "", "")
+	when := fsset.String("when", "", "")
+	until := fsset.String("until", "", "")
+	dur := fsset.String("duration", "", "")
 	dry := fsset.Bool("dry-run", false, "")
 	var attendees []string
 	fsset.Func("attendee", "", func(s string) error { attendees = append(attendees, s); return nil })
@@ -97,16 +102,21 @@ func calendarCreate(args []string, d Deps, sess domain.Session, format string) i
 	if err != nil {
 		return fail(d, err)
 	}
-	id, err := calendar.Create(ctx(), d.Calendar, sess, calendar.WriteInput{
-		CalendarID: *cal, Subject: *subject, Start: *start, End: *end, Location: *loc, Body: b, Attendees: attendees, DryRun: *dry,
-	})
+	in := calendar.WriteInput{
+		CalendarID: *cal, Subject: *subject, Start: *start, End: *end, Location: *loc, Body: b, Attendees: attendees,
+		When: *when, Until: *until, Duration: *dur, Now: calendar.Clock(), TZ: calendarTZ(d, sess, *cal), DryRun: *dry,
+	}
+	id, err := calendar.Create(ctx(), d.Calendar, sess, &in)
 	if err != nil {
 		return fail(d, err)
 	}
+	out := map[string]any{"subject": *subject, "start": in.Start, "end": in.End, "timezone": in.TZ, "when": *when}
 	if *dry {
-		return success(d, format, map[string]any{"dry_run": true, "subject": *subject, "start": *start, "end": *end})
+		out["dry_run"] = true
+		return success(d, format, out)
 	}
-	return success(d, format, map[string]any{"id": id})
+	out["id"] = id
+	return success(d, format, out)
 }
 
 func calendarUpdate(args []string, d Deps, sess domain.Session, format string) int {
@@ -121,12 +131,16 @@ func calendarUpdate(args []string, d Deps, sess domain.Session, format string) i
 	end := fsset.String("end", "", "")
 	loc := fsset.String("location", "", "")
 	body := fsset.String("body", "", "")
+	when := fsset.String("when", "", "")
+	until := fsset.String("until", "", "")
+	dur := fsset.String("duration", "", "")
 	dry := fsset.Bool("dry-run", false, "")
 	if err := parseMixed(fsset, args); err != nil {
 		return fail(d, domain.Usage(err.Error()))
 	}
 	if err := calendar.Update(ctx(), d.Calendar, sess, calendar.WriteInput{
-		ID: id, Subject: *subject, Start: *start, End: *end, Location: *loc, Body: *body, DryRun: *dry,
+		ID: id, Subject: *subject, Start: *start, End: *end, Location: *loc, Body: *body,
+		When: *when, Until: *until, Duration: *dur, Now: calendar.Clock(), TZ: calendarTZ(d, sess, ""), DryRun: *dry,
 	}); err != nil {
 		return fail(d, err)
 	}
@@ -152,4 +166,51 @@ func calendarDelete(args []string, d Deps, sess domain.Session, format string) i
 		return success(d, format, map[string]any{"dry_run": true, "id": id})
 	}
 	return success(d, format, map[string]any{"id": id, "deleted": true})
+}
+
+func calendarTZ(d Deps, sess domain.Session, id string) string {
+	p, err := calendar.ListCalendars(ctx(), d.Calendar, sess, 20, "")
+	if err != nil || len(p.Items) == 0 {
+		return "America/Chicago"
+	}
+	for _, c := range p.Items {
+		if id != "" && (c.ID == id || c.Name == id) && c.Timezone != "" {
+			return c.Timezone
+		}
+		if id == "" && c.IsDefault && c.Timezone != "" {
+			return c.Timezone
+		}
+	}
+	if p.Items[0].Timezone != "" {
+		return p.Items[0].Timezone
+	}
+	return "America/Chicago"
+}
+
+func calendarFree(args []string, d Deps, sess domain.Session, format string) int {
+	if hasHelp(args) {
+		return writeHelp(d.Stdout, calendarHelp)
+	}
+	fsset := flag.NewFlagSet("calendar free", flag.ContinueOnError)
+	fsset.SetOutput(d.Stderr)
+	when := fsset.String("when", "", "")
+	dur := fsset.String("duration", "", "")
+	hours := fsset.String("hours", "", "")
+	cal := fsset.String("calendar", "", "")
+	top := fsset.Int("top", 0, "")
+	dry := fsset.Bool("dry-run", false, "")
+	if err := parseMixed(fsset, args); err != nil {
+		return fail(d, domain.Usage(err.Error()))
+	}
+	if *dry {
+		return fail(d, domain.Usage("dry-run does not apply to calendar free"))
+	}
+	p, err := calendar.Free(ctx(), d.Calendar, sess, calendar.FreeQuery{
+		When: *when, Duration: *dur, Hours: *hours, Calendar: *cal, Top: *top,
+		Now: calendar.Clock(), Location: calendarTZ(d, sess, *cal),
+	})
+	if err != nil {
+		return fail(d, err)
+	}
+	return success(d, format, p)
 }

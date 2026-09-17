@@ -32,6 +32,11 @@ type WriteInput struct {
 	Location   string
 	Body       string
 	Attendees  []string
+	When       string
+	Until      string
+	Duration   string
+	Now        time.Time
+	TZ         string
 	DryRun     bool
 }
 
@@ -104,8 +109,35 @@ func GetEvent(ctx context.Context, st Store, sess domain.Session, id string) (do
 	return st.GetEvent(ctx, id)
 }
 
-func Create(ctx context.Context, st Store, sess domain.Session, in WriteInput) (string, error) {
+func applyWhen(in *WriteInput) error {
+	if in.When != "" && in.Start != "" {
+		return domain.Usage("use only one of --when or --start")
+	}
+	if in.When == "" {
+		return nil
+	}
+	now := in.Now
+	if now.IsZero() {
+		now = Clock()
+	}
+	dur, err := ParseDuration(in.Duration)
+	if err != nil {
+		return err
+	}
+	iv, err := ResolveWhen(in.When, now, loadLoc(in.TZ), dur, in.Until)
+	if err != nil {
+		return err
+	}
+	in.Start = iv.Start.Format(time.RFC3339)
+	in.End = iv.End.Format(time.RFC3339)
+	return nil
+}
+
+func Create(ctx context.Context, st Store, sess domain.Session, in *WriteInput) (string, error) {
 	if err := auth.RequireCalendar(sess); err != nil {
+		return "", err
+	}
+	if err := applyWhen(in); err != nil {
 		return "", err
 	}
 	if strings.TrimSpace(in.Subject) == "" || in.Start == "" || in.End == "" {
@@ -117,7 +149,7 @@ func Create(ctx context.Context, st Store, sess domain.Session, in WriteInput) (
 	if in.DryRun {
 		return "", nil
 	}
-	return st.CreateEvent(ctx, in)
+	return st.CreateEvent(ctx, *in)
 }
 
 func Update(ctx context.Context, st Store, sess domain.Session, in WriteInput) error {
@@ -127,7 +159,10 @@ func Update(ctx context.Context, st Store, sess domain.Session, in WriteInput) e
 	if strings.TrimSpace(in.ID) == "" {
 		return domain.Usage("event id is required")
 	}
-	if in.Subject == "" && in.Start == "" && in.End == "" && in.Location == "" && in.Body == "" && len(in.Attendees) == 0 {
+	if err := applyWhen(&in); err != nil {
+		return err
+	}
+	if in.Subject == "" && in.Start == "" && in.End == "" && in.Location == "" && in.Body == "" && len(in.Attendees) == 0 && in.When == "" {
 		return domain.Usage("at least one field is required")
 	}
 	if in.Start != "" || in.End != "" {

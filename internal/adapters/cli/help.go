@@ -21,9 +21,12 @@ Upload: max 100 MiB per file.
 
 const calendarHelp = `m365 calendar — own calendars and events
 
-Verbs: calendars, list, get, create, update, delete
+Verbs: calendars, list, get, create, update, delete, free
+Create: --subject --when 'tomorrow at 1:30 pm' --until --duration (default 30 minutes) --dry-run
+Free: --when (default tomorrow) --duration (default 30 minutes) --hours 9:00-17:00 --top (default 5, max 20)
+Working hours 09:00-17:00 local; 30-minute grid. --dry-run does not apply to free.
 Flags: --calendar --start --end --top (events default 10, calendars default 20, max 50) --page-token
-Window: default now through +7 days. --dry-run on create/update/delete.
+Window for list: default now through +7 days.
 Output: JSON (default) or --human.
 `
 

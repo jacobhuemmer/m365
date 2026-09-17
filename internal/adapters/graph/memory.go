@@ -57,13 +57,16 @@ func Seed() *Memory {
 			Created: "2026-01-01T00:00:00Z", Reason: "one_to_one",
 		}},
 		Calendars: []domain.Calendar{
-			{ID: "cal-1", Name: "Calendar", IsDefault: true},
-			{ID: "cal-2", Name: "Work"},
+			{ID: "cal-1", Name: "Calendar", IsDefault: true, Timezone: "America/Chicago"},
+			{ID: "cal-2", Name: "Work", Timezone: "America/Chicago"},
 		},
 		CalEvents: []domain.CalendarEvent{
 			{ID: "ev-1", CalendarID: "cal-1", Subject: "Standup", Start: "2026-09-17T10:00:00Z", End: "2026-09-17T10:30:00Z", Organizer: domain.Person{Address: "user@example.com"}, Body: "daily"},
 			{ID: "ev-occ-1", CalendarID: "cal-1", Subject: "Series", Start: "2026-09-18T10:00:00Z", End: "2026-09-18T11:00:00Z"},
 			{ID: "ev-out", CalendarID: "cal-1", Subject: "Later", Start: "2026-10-01T10:00:00Z", End: "2026-10-01T11:00:00Z"},
+			{ID: "ev-busy-1", CalendarID: "cal-1", Subject: "Busy", Start: "2026-09-17T09:00:00-05:00", End: "2026-09-17T10:00:00-05:00"},
+			{ID: "ev-busy-2", CalendarID: "cal-1", Subject: "Busy2", Start: "2026-09-17T13:00:00-05:00", End: "2026-09-17T14:00:00-05:00"},
+			{ID: "ev-booked", CalendarID: "cal-1", Subject: "All", Start: "2026-09-19T09:00:00-05:00", End: "2026-09-19T17:00:00-05:00"},
 		},
 		Drive: domain.DriveRoot{ID: "root", Name: "OneDrive"},
 		Items: []domain.DriveItem{

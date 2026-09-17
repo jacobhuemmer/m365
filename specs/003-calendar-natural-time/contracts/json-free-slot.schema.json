@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/masonhuemmer/m365/specs/003-calendar-natural-time/contracts/json-free-slot.schema.json",
+  "title": "calendar free JSON",
+  "type": "object",
+  "required": ["limit", "count", "items"],
+  "properties": {
+    "limit": { "type": "integer", "minimum": 1, "maximum": 20 },
+    "count": { "type": "integer", "minimum": 0 },
+    "timezone": { "type": "string" },
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["start", "end"],
+        "properties": {
+          "start": { "type": "string" },
+          "end": { "type": "string" },
+          "duration_minutes": { "type": "integer", "minimum": 1 },
+          "calendar_id": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}
