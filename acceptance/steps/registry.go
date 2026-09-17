@@ -29,9 +29,11 @@ func RegisterAll() {
 		d := cli.Deps{
 			Config: config.Config{ClientID: "x", TenantID: "y"},
 			Store:  &keychain.Fake{},
-			Mail:   graph.MailAPI{Memory: mem},
-			Teams:  graph.TeamsAPI{Memory: mem},
-			Login:  graph.FakeLogin(true, true),
+			Mail:     graph.MailAPI{Memory: mem},
+			Teams:    graph.TeamsAPI{Memory: mem},
+			Calendar: graph.CalendarAPI{Memory: mem},
+			Files:    graph.FilesAPI{Memory: mem},
+			Login:    graph.FakeLoginAll(true, true, true, true),
 			Stdout: out, Stderr: errw,
 		}
 		code := cli.Run(append([]string{"m365"}, parts...), d)

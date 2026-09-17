@@ -19,7 +19,9 @@ func main() {
 		mem := graph.Seed()
 		d.Mail = graph.MailAPI{Memory: mem}
 		d.Teams = graph.TeamsAPI{Memory: mem}
-		d.Login = graph.FakeLogin(true, true)
+		d.Calendar = graph.CalendarAPI{Memory: mem}
+		d.Files = graph.FilesAPI{Memory: mem}
+		d.Login = graph.FakeLoginAll(true, true, true, true)
 		home, _ := os.UserHomeDir()
 		state := os.Getenv("XDG_STATE_HOME")
 		if state == "" {
@@ -44,6 +46,8 @@ func main() {
 		d.Store = store
 		d.Mail = httpc
 		d.Teams = &graph.HTTPTeams{HTTPClient: httpc}
+		d.Calendar = &graph.HTTPCalendar{HTTPClient: httpc}
+		d.Files = &graph.HTTPFiles{HTTPClient: httpc}
 		d.Login = graph.RealLogin(cfg.ClientID, cfg.TenantID)
 	}
 	os.Exit(cli.Run(os.Args, d))

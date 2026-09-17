@@ -1,9 +1,12 @@
 package domain
 
 const (
-	DefaultMailTop  = 10
-	DefaultTeamsTop = 20
-	MaxTop          = 50
+	DefaultMailTop      = 10
+	DefaultTeamsTop     = 20
+	DefaultCalendarTop  = 10
+	DefaultCalendarsTop = 20
+	DefaultFilesTop     = 20
+	MaxTop              = 50
 )
 
 type CommandResult struct {

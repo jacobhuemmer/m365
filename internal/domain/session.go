@@ -1,11 +1,13 @@
 package domain
 
 type Session struct {
-	SignedIn       bool
-	SessionUsable  bool
-	Account        string
-	MailConsented  bool
-	TeamsConsented bool
+	SignedIn          bool
+	SessionUsable     bool
+	Account           string
+	MailConsented     bool
+	TeamsConsented    bool
+	CalendarConsented bool
+	FilesConsented    bool
 }
 
 func SignedOut() Session {

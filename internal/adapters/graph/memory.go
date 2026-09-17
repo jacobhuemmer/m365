@@ -11,14 +11,19 @@ import (
 )
 
 type Memory struct {
-	mu       sync.Mutex
-	Throttle bool
-	Mails    []domain.MailMessage
-	Chats    []domain.Chat
-	Msgs     map[string][]domain.ChatMessage
-	Sent     []any
-	Events   []domain.WatchEvent
-	Bytes    map[string][]byte
+	mu        sync.Mutex
+	Throttle  bool
+	Mails     []domain.MailMessage
+	Chats     []domain.Chat
+	Msgs      map[string][]domain.ChatMessage
+	Sent      []any
+	Events    []domain.WatchEvent
+	Bytes     map[string][]byte
+	Calendars []domain.Calendar
+	CalEvents []domain.CalendarEvent
+	Drive     domain.DriveRoot
+	Items     []domain.DriveItem
+	FileBytes map[string][]byte
 }
 
 func Seed() *Memory {
@@ -51,6 +56,21 @@ func Seed() *Memory {
 			ChatID: "chat-1", MessageID: "cmsg-1", From: "Alice", Text: "hi",
 			Created: "2026-01-01T00:00:00Z", Reason: "one_to_one",
 		}},
+		Calendars: []domain.Calendar{
+			{ID: "cal-1", Name: "Calendar", IsDefault: true},
+			{ID: "cal-2", Name: "Work"},
+		},
+		CalEvents: []domain.CalendarEvent{
+			{ID: "ev-1", CalendarID: "cal-1", Subject: "Standup", Start: "2026-09-17T10:00:00Z", End: "2026-09-17T10:30:00Z", Organizer: domain.Person{Address: "user@example.com"}, Body: "daily"},
+			{ID: "ev-occ-1", CalendarID: "cal-1", Subject: "Series", Start: "2026-09-18T10:00:00Z", End: "2026-09-18T11:00:00Z"},
+			{ID: "ev-out", CalendarID: "cal-1", Subject: "Later", Start: "2026-10-01T10:00:00Z", End: "2026-10-01T11:00:00Z"},
+		},
+		Drive: domain.DriveRoot{ID: "root", Name: "OneDrive"},
+		Items: []domain.DriveItem{
+			{ID: "folder-1", Name: "Docs", IsFolder: true, ParentID: "root"},
+			{ID: "file-1", Name: "note.txt", Size: 12, ParentID: "root", LastModified: "2026-09-16T00:00:00Z", WebURL: "https://example.invalid/note.txt"},
+		},
+		FileBytes: map[string][]byte{"file-1": []byte("synthetic-ok")},
 	}
 }
 

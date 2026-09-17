@@ -10,6 +10,8 @@ type Blob struct {
 	Account      string `json:"account"`
 	Mail         bool   `json:"mail"`
 	Teams        bool   `json:"teams"`
+	Calendar     bool   `json:"calendar"`
+	Files        bool   `json:"files"`
 	Usable       bool   `json:"usable"`
 	AccessToken  string `json:"access_token,omitempty"`
 	RefreshToken string `json:"refresh_token,omitempty"`
@@ -38,11 +40,13 @@ func Status(s Store) (domain.Session, error) {
 		return domain.SignedOut(), nil
 	}
 	return domain.Session{
-		SignedIn:       true,
-		SessionUsable:  b.Usable,
-		Account:        b.Account,
-		MailConsented:  b.Mail,
-		TeamsConsented: b.Teams,
+		SignedIn:          true,
+		SessionUsable:     b.Usable,
+		Account:           b.Account,
+		MailConsented:     b.Mail,
+		TeamsConsented:    b.Teams,
+		CalendarConsented: b.Calendar,
+		FilesConsented:    b.Files,
 	}, nil
 }
 
@@ -74,6 +78,26 @@ func Require(sess domain.Session, mail, teams bool) error {
 	}
 	if teams && !sess.TeamsConsented {
 		return domain.Auth("missing Teams consent")
+	}
+	return nil
+}
+
+func RequireCalendar(sess domain.Session) error {
+	if err := Require(sess, false, false); err != nil {
+		return err
+	}
+	if !sess.CalendarConsented {
+		return domain.Auth("missing calendar consent")
+	}
+	return nil
+}
+
+func RequireFiles(sess domain.Session) error {
+	if err := Require(sess, false, false); err != nil {
+		return err
+	}
+	if !sess.FilesConsented {
+		return domain.Auth("missing files consent")
 	}
 	return nil
 }

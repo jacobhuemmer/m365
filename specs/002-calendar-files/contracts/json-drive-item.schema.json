@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/masonhuemmer/m365/specs/002-calendar-files/contracts/json-drive-item.schema.json",
+  "title": "files item JSON",
+  "description": "Folder or file metadata. MUST NOT include file bytes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "is_folder"],
+  "properties": {
+    "id": { "type": "string" },
+    "name": { "type": "string" },
+    "size": { "type": "integer", "minimum": 0 },
+    "is_folder": { "type": "boolean" },
+    "last_modified": { "type": "string" },
+    "parent_id": { "type": "string" },
+    "web_url": { "type": "string" }
+  }
+}

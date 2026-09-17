@@ -83,6 +83,8 @@ func LoginPKCE(ctx context.Context, cfg *oauth2.Config, open auth.BrowserOpener,
 		Usable:       tok.AccessToken != "",
 		Mail:         strings.Contains(scope, "Mail."),
 		Teams:        strings.Contains(scope, "Chat"),
+		Calendar:     strings.Contains(scope, "Calendars."),
+		Files:        strings.Contains(scope, "Files."),
 		Account:      "signed-in",
 	}
 	if b.AccessToken != "" {

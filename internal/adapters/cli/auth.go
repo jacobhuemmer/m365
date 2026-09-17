@@ -20,7 +20,7 @@ func runAuth(args []string, d Deps, format string, verbose bool) int {
 			"signed_in":      st.SignedIn,
 			"session_usable": st.SessionUsable,
 			"account":        st.Account,
-			"namespaces":     map[string]bool{"mail": st.MailConsented, "teams": st.TeamsConsented},
+			"namespaces":     nsMap(st),
 		}
 		if verbose {
 			fmtVerbose(d, "status ok")
@@ -33,7 +33,7 @@ func runAuth(args []string, d Deps, format string, verbose bool) int {
 		st := domain.SignedOut()
 		return success(d, format, map[string]any{
 			"signed_in": st.SignedIn, "session_usable": st.SessionUsable,
-			"namespaces": map[string]bool{"mail": false, "teams": false},
+			"namespaces": nsMap(st),
 		})
 	case "login":
 		if err := d.Config.RequireApp(); err != nil {
@@ -45,10 +45,17 @@ func runAuth(args []string, d Deps, format string, verbose bool) int {
 		}
 		return success(d, format, map[string]any{
 			"signed_in": st.SignedIn, "session_usable": st.SessionUsable, "account": st.Account,
-			"namespaces": map[string]bool{"mail": st.MailConsented, "teams": st.TeamsConsented},
+			"namespaces": nsMap(st),
 		})
 	default:
 		return fail(d, domain.Usagef("unknown auth verb %q", verb))
+	}
+}
+
+func nsMap(st domain.Session) map[string]bool {
+	return map[string]bool{
+		"mail": st.MailConsented, "teams": st.TeamsConsented,
+		"calendar": st.CalendarConsented, "files": st.FilesConsented,
 	}
 }
 

@@ -50,7 +50,9 @@
           "required": ["mail", "teams"],
           "properties": {
             "mail": { "type": "boolean" },
-            "teams": { "type": "boolean" }
+            "teams": { "type": "boolean" },
+            "calendar": { "type": "boolean" },
+            "files": { "type": "boolean" }
           }
         }
       }

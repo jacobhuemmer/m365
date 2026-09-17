@@ -25,9 +25,9 @@ func TestLoginStatusLogout(t *testing.T) {
 		t.Fatalf("signed out: %+v %v", st, err)
 	}
 	st, err = Login(context.Background(), s, func(context.Context) (Blob, error) {
-		return Blob{Account: "user@example.com", Mail: true, Teams: true}, nil
+		return Blob{Account: "user@example.com", Mail: true, Teams: true, Calendar: true, Files: true}, nil
 	})
-	if err != nil || !st.SessionUsable || st.Account != "user@example.com" {
+	if err != nil || !st.SessionUsable || st.Account != "user@example.com" || !st.CalendarConsented || !st.FilesConsented {
 		t.Fatalf("login: %+v %v", st, err)
 	}
 	if err := Logout(s); err != nil {

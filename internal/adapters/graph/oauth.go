@@ -12,8 +12,12 @@ import (
 )
 
 func FakeLogin(mail, teams bool) auth.LoginFn {
+	return FakeLoginAll(mail, teams, false, false)
+}
+
+func FakeLoginAll(mail, teams, calendar, files bool) auth.LoginFn {
 	return func(context.Context) (auth.Blob, error) {
-		return auth.Blob{Account: "user@example.com", Mail: mail, Teams: teams, Usable: true}, nil
+		return auth.Blob{Account: "user@example.com", Mail: mail, Teams: teams, Calendar: calendar, Files: files, Usable: true}, nil
 	}
 }
 
@@ -26,7 +30,7 @@ func PKCEConfig(clientID, tenant, redirect string) *oauth2.Config {
 			TokenURL:  "https://login.microsoftonline.com/" + tenant + "/oauth2/v2.0/token",
 			AuthStyle: oauth2.AuthStyleInParams,
 		},
-		Scopes: []string{"openid", "offline_access", "profile", "Mail.Read", "Mail.Send", "Chat.Read", "ChatMessage.Send"},
+		Scopes: []string{"openid", "offline_access", "profile", "Mail.Read", "Mail.Send", "Chat.Read", "ChatMessage.Send", "Calendars.ReadWrite", "Files.ReadWrite"},
 	}
 }
 

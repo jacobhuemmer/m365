@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"github.com/masonhuemmer/m365/internal/app/auth"
+	"github.com/masonhuemmer/m365/internal/app/calendar"
+	"github.com/masonhuemmer/m365/internal/app/files"
 	"github.com/masonhuemmer/m365/internal/app/mail"
 	"github.com/masonhuemmer/m365/internal/app/teams"
 	"github.com/masonhuemmer/m365/internal/config"
@@ -18,16 +20,18 @@ import (
 )
 
 type Deps struct {
-	Config config.Config
-	Store  auth.Store
-	Mail   mail.Store
-	Teams  teams.Store
-	Login  auth.LoginFn
-	Write  func(string, []byte, bool) error
-	Watch  WatchStore
-	Stdin  io.Reader
-	Stdout io.Writer
-	Stderr io.Writer
+	Config   config.Config
+	Store    auth.Store
+	Mail     mail.Store
+	Teams    teams.Store
+	Calendar calendar.Store
+	Files    files.Store
+	Login    auth.LoginFn
+	Write    func(string, []byte, bool) error
+	Watch    WatchStore
+	Stdin    io.Reader
+	Stdout   io.Writer
+	Stderr   io.Writer
 }
 
 type WatchStore interface {
@@ -67,6 +71,10 @@ func Run(args []string, d Deps) int {
 		return runMail(rest, d, format)
 	case "teams":
 		return runTeams(rest, d, format)
+	case "calendar":
+		return runCalendar(rest, d, format)
+	case "files":
+		return runFiles(rest, d, format)
 	default:
 		if strings.HasPrefix(ns, "-") {
 			return writeHelp(d.Stdout, rootHelp)

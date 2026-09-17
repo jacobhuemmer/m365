@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/masonhuemmer/m365/specs/002-calendar-files/contracts/json-event.schema.json",
+  "title": "calendar event JSON",
+  "description": "One event or occurrence. No tokens. Body optional on list.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "subject", "start", "end"],
+  "properties": {
+    "id": { "type": "string" },
+    "calendar_id": { "type": "string" },
+    "subject": { "type": "string" },
+    "start": { "type": "string" },
+    "end": { "type": "string" },
+    "location": { "type": "string" },
+    "organizer": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "address": { "type": "string" }
+      }
+    },
+    "attendees": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "address": { "type": "string" }
+        }
+      }
+    },
+    "body": { "type": "string" }
+  }
+}

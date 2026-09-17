@@ -11,4 +11,7 @@ func TestChatAliasVerbs(t *testing.T) {
 	if c := Run([]string{"m365", "chat", "messages", "chat-1"}, d); c != 0 {
 		t.Fatal(errw.String())
 	}
+	if c := Run([]string{"m365", "chat", "calendars"}, d); c == 0 {
+		t.Fatal("chat must not be calendar")
+	}
 }

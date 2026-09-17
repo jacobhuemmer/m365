@@ -31,6 +31,10 @@ func NewFakeServer(mem *Memory) *httptest.Server {
 				return
 			}
 		}
+		if denyWorkload(tok, r.URL.Path) {
+			http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+			return
+		}
 		if mem.Throttle {
 			http.Error(w, `{"error":"throttled"}`, http.StatusTooManyRequests)
 			return
@@ -95,6 +99,9 @@ func NewFakeServer(mem *Memory) *httptest.Server {
 			}
 			http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
 		default:
+			if handleCalendarFiles(w, r, mem) {
+				return
+			}
 			_ = json.NewEncoder(w).Encode(map[string]any{"value": []any{}})
 		}
 	})

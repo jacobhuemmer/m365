@@ -16,13 +16,15 @@ func testDeps() (Deps, *bytes.Buffer, *bytes.Buffer) {
 	out, errw := &bytes.Buffer{}, &bytes.Buffer{}
 	st := &keychain.Fake{}
 	d := Deps{
-		Config: config.Config{ClientID: "x", TenantID: "y"},
-		Store:  st,
-		Mail:   graph.MailAPI{Memory: mem},
-		Teams:  graph.TeamsAPI{Memory: mem},
-		Login:  graph.FakeLogin(true, true),
-		Stdout: out,
-		Stderr: errw,
+		Config:   config.Config{ClientID: "x", TenantID: "y"},
+		Store:    st,
+		Mail:     graph.MailAPI{Memory: mem},
+		Teams:    graph.TeamsAPI{Memory: mem},
+		Calendar: graph.CalendarAPI{Memory: mem},
+		Files:    graph.FilesAPI{Memory: mem},
+		Login:    graph.FakeLogin(true, true),
+		Stdout:   out,
+		Stderr:   errw,
 	}
 	return d, out, errw
 }

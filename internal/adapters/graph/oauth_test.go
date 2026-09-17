@@ -3,6 +3,7 @@ package graph
 import (
 	"context"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/masonhuemmer/m365/internal/domain"
@@ -18,8 +19,19 @@ func TestPKCEHelpers(t *testing.T) {
 	}
 	fn := FakeLogin(true, false)
 	b, err := fn(context.Background())
-	if err != nil || !b.Mail || b.Teams {
+	if err != nil || !b.Mail || b.Teams || b.Calendar || b.Files {
 		t.Fatalf("%+v %v", b, err)
+	}
+	all, err := FakeLoginAll(true, true, true, true)(context.Background())
+	if err != nil || !all.Calendar || !all.Files {
+		t.Fatalf("%+v %v", all, err)
+	}
+	joined := strings.Join(cfg.Scopes, " ")
+	if !strings.Contains(joined, "Calendars.ReadWrite") || !strings.Contains(joined, "Files.ReadWrite") {
+		t.Fatal(joined)
+	}
+	if strings.Contains(joined, "Shared") || strings.Contains(joined, "Files.ReadWrite.All") {
+		t.Fatal(joined)
 	}
 	if domain.ExitOf(Denied()) != domain.ExitAuth {
 		t.Fatal("denied")
