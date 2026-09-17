@@ -1,5 +1,6 @@
 .PHONY: fmt vet unit race coverage gosec govulncheck acceptance acceptance-mutation crap verify
 
+export PATH := $(CURDIR)/.tools/bin:$(PATH)
 PKGS := $(shell go list ./... | grep -v '/acceptance/generated')
 
 fmt:
