@@ -37,6 +37,7 @@ MCP writes dry-run unless write_opt_in is true.
 	recipeFiles = `files
 
   files list
+  files get ITEM_ID
   files download ITEM_ID --out /path/to/dest
   files upload --file /path/to/local --dry-run
 

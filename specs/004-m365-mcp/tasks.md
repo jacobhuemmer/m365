@@ -135,7 +135,7 @@
 ### Tests for User Story 4 (MANDATORY)
 
 - [X] T031 [P] [US4] Write Gherkin in features/mcp/help.feature for help with no session on `calendar` (verbs list/create/free) and tool descriptions on tools/list; generate failing acceptance tests via scripts/acceptance.sh
-- [X] T032 [P] [US4] Write RED tests in internal/adapters/cli/mcp_help_test.go: omitted namespace → root help including mcp and write opt-in; `namespace=calendar` names list/create/free; no Store.Get required
+- [X] T032 [P] [US4] Write RED tests in internal/adapters/cli/mcp_help_test.go: omitted namespace → MCP overview (three tools, four recipe topics, write opt-in) not `m365 --help`; `namespace=calendar` names list/create/free; no Store.Get required
 - [X] T033 [US4] RED commit: failing tests from T031–T032 only
 
 ### Implementation for User Story 4

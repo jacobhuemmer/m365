@@ -59,7 +59,7 @@ func TestMCPHelpTopics(t *testing.T) {
 		"mail-search": {"mail list --folder all --search 'from:ajay'", "mail get", "mail thread"},
 		"teams-find":  {"teams list", "MUST NOT send", "Several matches"},
 		"calendar":    {"calendar list", "calendar free", "calendar create --when 'tomorrow at 1:30 pm'"},
-		"files":       {"files list", "files download", "--out", "upload", "--dry-run"},
+		"files":       {"files list", "files get", "files download", "--out", "upload", "--dry-run"},
 	}
 	for topic, wants := range cases {
 		res, err = cs.CallTool(context.Background(), &mcp.CallToolParams{

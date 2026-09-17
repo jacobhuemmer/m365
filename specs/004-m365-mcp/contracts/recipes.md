@@ -38,6 +38,7 @@ MUST include:
 MUST include:
 
 - `files list`
+- `files get`
 - `files download` with a destination path (`--out`)
 - dry-run upload
 
