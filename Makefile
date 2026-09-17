@@ -1,6 +1,6 @@
 .PHONY: fmt vet unit race coverage gosec govulncheck acceptance acceptance-mutation crap verify install
 
-export PATH := $(CURDIR)/.tools/bin:$(PATH)
+TOOLS_BIN := $(shell pwd)/.tools/bin
 PKGS := $(shell go list ./... | grep -v '/acceptance/generated')
 
 fmt:
@@ -19,10 +19,10 @@ coverage:
 	go test -coverprofile=coverage.out $(PKGS)
 
 gosec:
-	gosec -exclude-dir=.tools -exclude-dir=acceptance/generated ./...
+	PATH="$(TOOLS_BIN):$$PATH" gosec -exclude-dir=.tools -exclude-dir=acceptance/generated ./...
 
 govulncheck:
-	govulncheck ./...
+	PATH="$(TOOLS_BIN):$$PATH" govulncheck ./...
 
 acceptance:
 	sh scripts/acceptance.sh

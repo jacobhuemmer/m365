@@ -15,6 +15,9 @@ if [ -d "$HOME/.local/bin" ]; then
   ln -sf "$GOBIN/govulncheck" "$HOME/.local/bin/govulncheck"
   ln -sf "$GOBIN/gocyclo" "$HOME/.local/bin/gocyclo"
 fi
+if [ -n "${GITHUB_PATH:-}" ]; then
+  echo "$GOBIN" >> "$GITHUB_PATH"
+fi
 if [ ! -d "$ROOT/.tools/aps/.git" ]; then
   git clone --filter=blob:none https://github.com/unclebob/Acceptance-Pipeline-Specification.git "$ROOT/.tools/aps"
 fi
