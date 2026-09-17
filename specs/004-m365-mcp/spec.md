@@ -155,4 +155,5 @@ The agent asks help for a namespace or verb and gets the same names, flags, and 
 - lazy-mcp stays Datadog, Notion, Atlassian, Context7. kata stays `kata mcp serve`. m365 is a third dedicated server.
 - Microsoft Enterprise MCP and Agent365 remote servers are out of scope even if the tenant could enable them.
 - `auth login` stays human-only. Agents that see `silent_token.ok` false tell Mason to run `m365 auth login` in a terminal.
+- Companion agent skills `m365-mail-search` and `m365-teams-find` are the worked examples for lookup. MCP `m365_run` uses the same CLI verbs those skills name. The skills live in origin/dotfiles, not this binary.
 - Constitution v1 listed MCP as outside this repository. This spec explicitly adds `m365 mcp serve` as an in-repo interface of the same binary.
