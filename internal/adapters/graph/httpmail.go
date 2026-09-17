@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -18,10 +19,16 @@ type HTTPClient struct {
 	Base    string
 	Token   string
 	TokenFn func() string
+	Refresh func(force bool) (string, error)
 	Client  *http.Client
 }
 
-func (c *HTTPClient) bearer() string {
+func (c *HTTPClient) bearer(force bool) string {
+	if c.Refresh != nil {
+		if t, err := c.Refresh(force); err == nil && t != "" {
+			return t
+		}
+	}
 	if c.TokenFn != nil {
 		if t := c.TokenFn(); t != "" {
 			return t
@@ -37,6 +44,41 @@ func (c *HTTPClient) httpc() *http.Client {
 	return http.DefaultClient
 }
 
+func (c *HTTPClient) request(ctx context.Context, method, raw string, body []byte, contentType, prefer string) (*http.Response, error) {
+	try := func(force bool) (*http.Response, error) {
+		var rdr io.Reader
+		if body != nil {
+			rdr = bytes.NewReader(body)
+		}
+		req, err := http.NewRequestWithContext(ctx, method, raw, rdr)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", "Bearer "+c.bearer(force))
+		if contentType != "" {
+			req.Header.Set("Content-Type", contentType)
+		}
+		if prefer != "" {
+			req.Header.Set("Prefer", prefer)
+		}
+		res, err := c.httpc().Do(req)
+		if err != nil {
+			return nil, domain.Service(err.Error())
+		}
+		return res, nil
+	}
+	res, err := try(false)
+	if err != nil {
+		return nil, err
+	}
+	if res.StatusCode == http.StatusUnauthorized && c.Refresh != nil {
+		_, _ = io.Copy(io.Discard, res.Body)
+		_ = res.Body.Close()
+		res, err = try(true)
+	}
+	return res, err
+}
+
 func (c *HTTPClient) do(ctx context.Context, method, path string) (*http.Response, error) {
 	raw := path
 	if !strings.HasPrefix(path, "http") {
@@ -44,15 +86,9 @@ func (c *HTTPClient) do(ctx context.Context, method, path string) (*http.Respons
 	} else if !allowedNext(c.Base, path) {
 		return nil, domain.Usage("invalid page token")
 	}
-	req, err := http.NewRequestWithContext(ctx, method, raw, nil)
+	res, err := c.request(ctx, method, raw, nil, "", MailBodyPrefer)
 	if err != nil {
 		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+c.bearer())
-	req.Header.Set("Prefer", MailBodyPrefer)
-	res, err := c.httpc().Do(req)
-	if err != nil {
-		return nil, domain.Service(err.Error())
 	}
 	if res.StatusCode >= 400 {
 		b, _ := io.ReadAll(res.Body)

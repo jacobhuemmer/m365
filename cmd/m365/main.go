@@ -33,15 +33,13 @@ func main() {
 			Primary:   keychain.Keyring{},
 			Secondary: &keychain.FileStore{Path: keychain.LiveSessionPath()},
 		}
+		ref := &graph.Refresher{
+			Store:  store,
+			Config: graph.PKCEConfig(cfg.ClientID, cfg.TenantID, ""),
+		}
 		httpc := &graph.HTTPClient{
-			Base: "https://graph.microsoft.com/v1.0",
-			TokenFn: func() string {
-				b, ok, err := store.Get()
-				if err != nil || !ok {
-					return ""
-				}
-				return b.AccessToken
-			},
+			Base:    "https://graph.microsoft.com/v1.0",
+			Refresh: ref.Token,
 		}
 		d.Store = store
 		d.Mail = httpc

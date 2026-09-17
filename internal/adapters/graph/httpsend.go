@@ -1,7 +1,6 @@
 package graph
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -17,23 +16,17 @@ import (
 )
 
 func (c *HTTPClient) doJSON(ctx context.Context, method, path string, payload any) error {
-	var rdr io.Reader
+	var body []byte
 	if payload != nil {
 		b, err := json.Marshal(payload)
 		if err != nil {
 			return domain.Usage(err.Error())
 		}
-		rdr = bytes.NewReader(b)
+		body = b
 	}
-	req, err := http.NewRequestWithContext(ctx, method, strings.TrimRight(c.Base, "/")+path, rdr)
+	res, err := c.request(ctx, method, strings.TrimRight(c.Base, "/")+path, body, "application/json", "")
 	if err != nil {
 		return err
-	}
-	req.Header.Set("Authorization", "Bearer "+c.bearer())
-	req.Header.Set("Content-Type", "application/json")
-	res, err := c.httpc().Do(req)
-	if err != nil {
-		return domain.Service(err.Error())
 	}
 	defer res.Body.Close()
 	if res.StatusCode >= 400 {

@@ -1,7 +1,6 @@
 package graph
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"io"
@@ -183,16 +182,9 @@ func eventBody(in calendar.WriteInput) map[string]any {
 }
 
 func (c *HTTPClient) doBody(ctx context.Context, method, path string, body []byte) (*http.Response, error) {
-	raw := strings.TrimRight(c.Base, "/") + path
-	req, err := http.NewRequestWithContext(ctx, method, raw, bytes.NewReader(body))
+	res, err := c.request(ctx, method, strings.TrimRight(c.Base, "/")+path, body, "application/json", "")
 	if err != nil {
 		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+c.bearer())
-	req.Header.Set("Content-Type", "application/json")
-	res, err := c.httpc().Do(req)
-	if err != nil {
-		return nil, domain.Service(err.Error())
 	}
 	if res.StatusCode >= 400 {
 		b, _ := io.ReadAll(res.Body)

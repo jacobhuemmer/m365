@@ -82,6 +82,7 @@ func LoginPKCE(ctx context.Context, cfg *oauth2.Config, open auth.BrowserOpener,
 	b := auth.Blob{
 		AccessToken:  tok.AccessToken,
 		RefreshToken: tok.RefreshToken,
+		ExpiresAt:    tok.Expiry,
 		Usable:       tok.AccessToken != "",
 		Mail:         strings.Contains(scope, "Mail."),
 		Teams:        strings.Contains(scope, "Chat"),

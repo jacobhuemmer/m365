@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"time"
 
 	"github.com/masonhuemmer/m365/internal/domain"
 )
@@ -13,8 +14,9 @@ type Blob struct {
 	Calendar     bool   `json:"calendar"`
 	Files        bool   `json:"files"`
 	Usable       bool   `json:"usable"`
-	AccessToken  string `json:"access_token,omitempty"`
-	RefreshToken string `json:"refresh_token,omitempty"`
+	AccessToken  string    `json:"access_token,omitempty"`
+	RefreshToken string    `json:"refresh_token,omitempty"`
+	ExpiresAt    time.Time `json:"expires_at,omitempty"`
 }
 
 type Store interface {
