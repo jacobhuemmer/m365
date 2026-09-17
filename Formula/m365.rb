@@ -1,8 +1,8 @@
 class M365 < Formula
   desc "Microsoft 365 CLI for one signed-in user"
-  homepage "https://github.com/masonhuemmer/m365"
+  homepage "https://github.com/jacobhuemmer/m365"
   license "MIT"
-  head "https://github.com/masonhuemmer/m365.git", branch: "main"
+  head "https://github.com/jacobhuemmer/m365.git", branch: "main"
 
   depends_on "go" => :build
 
