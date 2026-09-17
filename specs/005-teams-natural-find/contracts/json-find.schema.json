@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/masonhuemmer/m365/specs/005-teams-natural-find/contracts/json-find.schema.json",
+  "title": "teams find JSON stdout",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["query", "intent", "limit", "count", "incomplete", "items"],
+  "properties": {
+    "query": { "type": "string" },
+    "intent": { "type": "string", "enum": ["person", "group"] },
+    "limit": { "type": "integer", "minimum": 1, "maximum": 20 },
+    "count": { "type": "integer", "minimum": 0 },
+    "incomplete": { "type": "boolean" },
+    "items": { "type": "array" }
+  },
+  "description": "Exactly one JSON object. incomplete true means scan ceiling hit. MUST NOT contain secrets."
+}

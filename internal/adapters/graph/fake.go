@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 
 	"github.com/masonhuemmer/m365/internal/domain"
@@ -67,11 +68,37 @@ func NewFakeServer(mem *Memory) *httptest.Server {
 			w.WriteHeader(http.StatusBadRequest)
 			_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]string{"code": "ErrorInvalidId"}})
 		case p == "/me/chats":
-			vals := []map[string]any{}
-			for _, c := range mem.Chats {
-				vals = append(vals, map[string]any{"id": c.ID, "topic": c.Topic, "chatType": c.Type})
+			top := 50
+			if t := r.URL.Query().Get("$top"); t != "" {
+				if n, err := strconv.Atoi(t); err == nil && n > 0 {
+					top = n
+				}
 			}
-			_ = json.NewEncoder(w).Encode(map[string]any{"value": vals})
+			skip := 0
+			if s := r.URL.Query().Get("$skiptoken"); strings.HasPrefix(s, "s.") {
+				skip, _ = strconv.Atoi(strings.TrimPrefix(s, "s."))
+			}
+			chats := mem.Chats
+			if skip > len(chats) {
+				skip = len(chats)
+			}
+			end := skip + top
+			if end > len(chats) {
+				end = len(chats)
+			}
+			vals := []map[string]any{}
+			for _, c := range chats[skip:end] {
+				mems := []map[string]any{}
+				for _, p := range c.Members {
+					mems = append(mems, map[string]any{"displayName": p.Name, "email": p.Address})
+				}
+				vals = append(vals, map[string]any{"id": c.ID, "topic": c.Topic, "chatType": c.Type, "members": mems})
+			}
+			out := map[string]any{"value": vals}
+			if end < len(chats) {
+				out["@odata.nextLink"] = "s." + strconv.Itoa(end)
+			}
+			_ = json.NewEncoder(w).Encode(out)
 		case strings.HasSuffix(p, "/messages") && strings.Contains(p, "/me/chats/"):
 			id := strings.TrimSuffix(strings.TrimPrefix(p, "/me/chats/"), "/messages")
 			vals := []map[string]any{}

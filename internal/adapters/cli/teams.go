@@ -12,7 +12,7 @@ import (
 
 func runTeams(args []string, d Deps, format string) int {
 	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
-		return writeHelp(d.Stdout, teamsListHelp+teamsSendHelp)
+		return writeHelp(d.Stdout, teamsListHelp+teamsFindHelp+teamsSendHelp)
 	}
 	verb, args := args[0], args[1:]
 	sess, err := session(d)
@@ -62,6 +62,11 @@ func runTeams(args []string, d Deps, format string) int {
 			return fail(d, err)
 		}
 		return success(d, format, p)
+	case "find":
+		if hasHelp(args) {
+			return writeHelp(d.Stdout, teamsFindHelp)
+		}
+		return teamsFind(args, d, sess, format)
 	case "send":
 		if hasHelp(args) {
 			return writeHelp(d.Stdout, teamsSendHelp)
@@ -90,6 +95,7 @@ func teamsSend(args []string, d Deps, sess domain.Session, format string) int {
 	fsset.SetOutput(d.Stderr)
 	text := fsset.String("text", "", "")
 	textFile := fsset.String("text-file", "", "")
+	to := fsset.String("to", "", "")
 	html := fsset.Bool("html", false, "")
 	formatmd := fsset.String("format", "", "")
 	dry := fsset.Bool("dry-run", false, "")
@@ -107,7 +113,7 @@ func teamsSend(args []string, d Deps, sess domain.Session, format string) int {
 		return fail(d, err)
 	}
 	out, err := teams.Send(ctx(), d.Teams, sess, teams.SendInput{
-		ChatID: fsset.Arg(0), Text: body, HTML: *html, MD: *formatmd == "md", DryRun: *dry, Files: files,
+		ChatID: fsset.Arg(0), To: *to, Text: body, HTML: *html, MD: *formatmd == "md", DryRun: *dry, Files: files,
 	})
 	if err != nil {
 		return fail(d, err)

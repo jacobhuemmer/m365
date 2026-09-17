@@ -2,6 +2,8 @@ package graph
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -38,7 +40,7 @@ func Seed() *Memory {
 		From: domain.Person{Address: "user@example.com"}, Received: "2026-01-01T01:00:00Z",
 		Body: "own-reply",
 	}
-	c1 := domain.Chat{ID: "chat-1", Type: "oneOnOne", Topic: "Alice"}
+	c1 := domain.Chat{ID: "chat-1", Type: "oneOnOne", Topic: "Alice", Members: []domain.Person{{Name: "Alice", Address: "alice@example.com"}}}
 	cm := domain.ChatMessage{
 		ID: "cmsg-1", ChatID: "chat-1", From: "Alice", Created: "2026-01-01T00:00:00Z",
 		Text: "hi", Attachments: []domain.Attachment{att},
@@ -49,7 +51,7 @@ func Seed() *Memory {
 	}
 	return &Memory{
 		Mails: []domain.MailMessage{m1, m2},
-		Chats: []domain.Chat{c1, {ID: "chat-2", Type: "group", Topic: "NOC"}},
+		Chats: seedChats(c1),
 		Msgs:  map[string][]domain.ChatMessage{"chat-1": {cm}, "chat-2": {c2m}},
 		Bytes: map[string][]byte{"att-1": []byte("synthetic-ok")},
 		Events: []domain.WatchEvent{{
@@ -201,15 +203,43 @@ func (m *Memory) Download(_ context.Context, messageID, attach string) ([]byte, 
 	return m.Bytes[hits[0].ID], hits[0], nil
 }
 
-func (m *Memory) ListChats(_ context.Context, top int, _ string) (domain.ChatPage, error) {
+func seedChats(c1 domain.Chat) []domain.Chat {
+	chats := []domain.Chat{c1, {ID: "chat-2", Type: "group", Topic: "NOC", Members: []domain.Person{{Name: "Bob"}}}}
+	for i := 0; i < 18; i++ {
+		chats = append(chats, domain.Chat{
+			ID: fmt.Sprintf("pad-%d", i), Type: "oneOnOne",
+			Members: []domain.Person{{Name: fmt.Sprintf("Pad %d", i)}},
+		})
+	}
+	return append(chats,
+		domain.Chat{ID: "chat-ajay", Type: "oneOnOne", Members: []domain.Person{{Name: "Ajay Kumar", Address: "ajay@example.com"}}},
+		domain.Chat{ID: "chat-group-ajay", Type: "group", Topic: "Project", Members: []domain.Person{{Name: "Ajay Kumar", Address: "ajay@example.com"}, {Name: "Other"}}},
+		domain.Chat{ID: "chat-noc-dev", Type: "group", Topic: "NOC-Dev", Members: []domain.Person{{Name: "Ops"}}},
+	)
+}
+
+func (m *Memory) ListChats(_ context.Context, top int, page string) (domain.ChatPage, error) {
 	if err := m.fail(); err != nil {
 		return domain.ChatPage{}, err
 	}
+	if top <= 0 {
+		top = len(m.Chats)
+	}
+	skip := 0
+	if strings.HasPrefix(page, "s.") {
+		skip, _ = strconv.Atoi(strings.TrimPrefix(page, "s."))
+	}
 	items := m.Chats
-	p := domain.ChatPage{Limit: top, Items: items}
-	if len(items) > top {
-		p.Items = items[:top]
-		n := "next"
+	if skip > len(items) {
+		skip = len(items)
+	}
+	end := skip + top
+	if end > len(items) {
+		end = len(items)
+	}
+	p := domain.ChatPage{Limit: top, Items: items[skip:end]}
+	if end < len(items) {
+		n := "s." + strconv.Itoa(end)
 		p.NextPage = &n
 	}
 	p.Count = len(p.Items)

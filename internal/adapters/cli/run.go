@@ -189,7 +189,7 @@ var boolFlags = map[string]bool{
 	"--dry-run": true, "--html": true, "--overwrite": true, "--unread": true,
 	"--all": true, "--include-system": true, "--help": true, "-h": true,
 	"--json": true, "--human": true, "--verbose": true, "--debug": true,
-	"--bodies": true,
+	"--bodies": true, "--group": true,
 }
 
 func parseMixed(fsset *flag.FlagSet, args []string) error {

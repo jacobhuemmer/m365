@@ -23,6 +23,7 @@ type MessageQuery struct {
 
 type SendInput struct {
 	ChatID string
+	To     string
 	Text   string
 	HTML   bool
 	MD     bool
@@ -86,6 +87,33 @@ func Send(ctx context.Context, st Store, sess domain.Session, in SendInput) (any
 	if err := auth.Require(sess, false, true); err != nil {
 		return nil, err
 	}
+	if in.To != "" && in.ChatID != "" {
+		return nil, domain.Usage("use --to or a chat id, not both")
+	}
+	if in.To != "" {
+		q, err := ParseQuery(in.To, false)
+		if err != nil {
+			return nil, err
+		}
+		r, err := Find(ctx, st, sess, q, 0)
+		if err != nil {
+			return nil, err
+		}
+		if r.Incomplete {
+			return nil, domain.Usage("chat search incomplete")
+		}
+		if r.Count == 0 {
+			return nil, domain.NotFound("no matching chat")
+		}
+		if r.Count > 1 {
+			ids := make([]string, 0, r.Count)
+			for _, c := range r.Items {
+				ids = append(ids, c.ID)
+			}
+			return nil, domain.Usagef("several matches (%s); pass a chat id", strings.Join(ids, ", "))
+		}
+		in.ChatID = r.Items[0].ID
+	}
 	if in.ChatID == "" || in.Text == "" {
 		return nil, domain.Usage("chat id and text are required")
 	}
@@ -97,7 +125,11 @@ func Send(ctx context.Context, st Store, sess domain.Session, in SendInput) (any
 		for _, f := range in.Files {
 			atts = append(atts, map[string]any{"name": f.Name, "size": f.Size})
 		}
-		return map[string]any{"dry_run": true, "chat_id": in.ChatID, "text": in.Text, "attachments": atts}, nil
+		out := map[string]any{"dry_run": true, "chat_id": in.ChatID, "text": in.Text, "attachments": atts}
+		if in.To != "" {
+			out["to"] = in.To
+		}
+		return out, nil
 	}
 	id, err := st.Send(ctx, in)
 	if err != nil {

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/masonhuemmer/m365/specs/005-teams-natural-find/contracts/json-send-to.schema.json",
+  "title": "teams send --to dry-run JSON",
+  "type": "object",
+  "required": ["dry_run", "to", "chat_id", "text"],
+  "properties": {
+    "dry_run": { "const": true },
+    "to": { "type": "string" },
+    "chat_id": { "type": "string", "minLength": 1 },
+    "text": { "type": "string" },
+    "attachments": { "type": "array" }
+  }
+}

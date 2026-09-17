@@ -9,7 +9,8 @@ import (
 	"testing"
 )
 
-func TestTeamsDoesNotImportMail(t *testing.T) {
+func TestTeamsDoesNotImportOthers(t *testing.T) {
+	forbid := []string{"internal/app/mail", "internal/app/calendar", "internal/app/files"}
 	entries, err := os.ReadDir(".")
 	if err != nil {
 		t.Fatal(err)
@@ -25,8 +26,10 @@ func TestTeamsDoesNotImportMail(t *testing.T) {
 		}
 		for _, im := range src.Imports {
 			p := strings.Trim(im.Path.Value, `"`)
-			if strings.Contains(p, "internal/app/mail") {
-				t.Fatalf("%s imports mail", e.Name())
+			for _, f := range forbid {
+				if strings.Contains(p, f) {
+					t.Fatalf("%s imports %s", e.Name(), f)
+				}
 			}
 		}
 	}

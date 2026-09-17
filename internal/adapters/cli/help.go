@@ -60,10 +60,22 @@ Flags: --top (default 20, max 50) --page-token
 Output: JSON (default) or --human.
 `
 
+const teamsFindHelp = `m365 teams find — find a chat by person or group
+
+Examples: teams find Ajay
+          teams find --group NOC
+Flags: --group --top (default 10, max 20)
+Person query prefers 1:1. --group matches group topic/members.
+Scan ceiling 10 pages of 50 chats; incomplete=true if not finished.
+Empty list exit 0. Never sends.
+Output: JSON (default) or --human.
+`
+
 const teamsSendHelp = `m365 teams send — send a chat message
 
-Required: CHAT_ID --text or --text-file
+Required: CHAT_ID or --to Ajay, plus --text or --text-file
+Examples: teams send --to Ajay --text ping --dry-run
 Optional: --attach (repeatable) --html --format md --dry-run
-Attachment caps: 10 MiB per file, 10 files.
+--to and chat id together exit 3. Attachment caps: 10 MiB per file, 10 files.
 Output modes: --json (default) --human
 `

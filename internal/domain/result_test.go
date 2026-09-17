@@ -36,3 +36,18 @@ func TestNormalizeTop(t *testing.T) {
 		t.Fatalf("-1 should be usage")
 	}
 }
+
+func TestNormalizeFindTop(t *testing.T) {
+	n, err := NormalizeFindTop(0)
+	if err != nil || n != DefaultFindTop {
+		t.Fatalf("default: %d %v", n, err)
+	}
+	_, err = NormalizeFindTop(21)
+	if ExitOf(err) != ExitUsage {
+		t.Fatal(err)
+	}
+	n, err = NormalizeFindTop(20)
+	if err != nil || n != 20 {
+		t.Fatal(n, err)
+	}
+}

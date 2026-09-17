@@ -6,6 +6,8 @@ const (
 	DefaultCalendarTop  = 10
 	DefaultCalendarsTop = 20
 	DefaultFilesTop     = 20
+	DefaultFindTop      = 10
+	MaxFindTop          = 20
 	MaxTop              = 50
 )
 
@@ -26,6 +28,16 @@ func NormalizeTop(raw int, def int) (int, error) {
 	}
 	if raw < 1 || raw > MaxTop {
 		return 0, Usagef("top must be 1..%d, got %d", MaxTop, raw)
+	}
+	return raw, nil
+}
+
+func NormalizeFindTop(raw int) (int, error) {
+	if raw == 0 {
+		return DefaultFindTop, nil
+	}
+	if raw < 1 || raw > MaxFindTop {
+		return 0, Usagef("top must be 1..%d, got %d", MaxFindTop, raw)
 	}
 	return raw, nil
 }
