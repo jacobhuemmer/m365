@@ -4,13 +4,27 @@ MCP is a second door into the existing CLI. Domain types below are MCP-facing. W
 
 ## MCPCatalog
 
-**Fields**: exactly three tools: `m365_status`, `m365_help`, `m365_run`. Each has a short description.
+**Fields**: exactly three tools: `m365_status`, `m365_help`, `m365_run`. Each has a short description. Four named recipes (prompts): `mail-search`, `teams-find`, `calendar`, `files`.
 
 **Rules**:
-- `tools/list` MUST return these names only (SC-001).
+- `tools/list` MUST return the three tool names only (SC-001).
+- `prompts/list` MUST return the four recipe names (SC-009).
 - No tool per Graph URL, per CLI verb, or per flag.
 - No `auth login` / `auth logout` tools (FR-008).
 - Descriptions MUST be enough to choose status vs help vs run.
+- `m365_run` description MUST point at the four recipe topics (FR-015).
+
+## LookupRecipe
+
+**Fields**: name (`mail-search` | `teams-find` | `calendar` | `files`), body (plain text).
+
+**Rules**:
+- Same body from `prompts/get` and from `m365_help` with that `topic`.
+- MUST include the worked examples in [contracts/recipes.md](contracts/recipes.md).
+- MUST NOT include tokens, live mailbox content, or file bytes.
+- MUST use CLI verbs from 001–003. MUST NOT document `teams find` until 005 exists; until then document `teams list` and “do not send when several people match.”
+- No session required. Unknown topic → usage.
+- `topic` and `namespace` both set on help → usage.
 
 ## SessionSnapshot
 
@@ -83,3 +97,5 @@ Reuses `domain.Session` via `auth status`.
 | Graph/service error | service |
 | Unknown id | not-found |
 | Write without opt-in | success dry-run, no mutation |
+| Unknown help `topic` | usage |
+| Help `topic` and `namespace` both set | usage |

@@ -4,19 +4,19 @@
 
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/, quickstart.md, constitution.md, existing CLI namespaces 001–003
 
-**Tests**: MANDATORY per Constitution I. Spec Verification Strategy requires `tools/list`, status signed-in/out, JSON parity, write dry-run, auth-class vs service-class, and no secrets on the wire. RED commit (failing tests + fixtures only) then GREEN. EX-I-001 does not apply. No live Graph in unit tests. Synthetic fixtures only. Do **not** edit `internal/adapters/cli/mail.go`, `teams.go`, `calendar.go`, or `files.go`. Do **not** rewrite `specs/001-m365-cli/`, `002-calendar-files/`, or `003-calendar-natural-time/`.
+**Tests**: MANDATORY per Constitution I. Spec Verification Strategy requires `tools/list`, named recipes, status, JSON parity, write dry-run, auth-class vs service-class, and no secrets on the wire. RED commit (failing tests + fixtures only) then GREEN. EX-I-001 does not apply. No live Graph in unit tests. Synthetic fixtures only. Do **not** edit `internal/adapters/cli/mail.go`, `teams.go`, `calendar.go`, or `files.go`. Do **not** rewrite `specs/001-m365-cli/`, `002-calendar-files/`, or `003-calendar-natural-time/`. Do **not** implement `teams find` (005).
 
-**Organization**: Setup + Foundational block stories. US1–US4 map to spec User Stories 1–4. MVP = Setup + Foundational + US1.
+**Organization**: US1–US4 (T001–T042) are DONE. Remaining work is US5 lookup recipes (T043+). MVP for the remainder = US5.
 
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: parallel (different files, no incomplete deps)
-- **[Story]**: `[US1]`–`[US4]` on user-story phases only
+- **[Story]**: `[US1]`–`[US5]` on user-story phases only
 - Exact file paths required
 
 ## Path Conventions
 
-`internal/adapters/cli/mcp.go`, `internal/adapters/cli/mcp_dispatch.go`, `internal/adapters/cli/run.go`, `internal/adapters/cli/help.go`, `features/mcp/`, `acceptance/steps/`
+`internal/adapters/cli/mcp.go`, `internal/adapters/cli/mcp_dispatch.go`, `internal/adapters/cli/mcp_recipes.go`, `internal/adapters/cli/run.go`, `internal/adapters/cli/help.go`, `features/mcp/`, `acceptance/steps/`
 
 ---
 
@@ -163,24 +163,52 @@
 
 ---
 
+## Phase 8: User Story 5 — Lookup recipes live in the server (Priority: P1)
+
+**Goal**: Help and named MCP prompts include mail-search, teams-find, calendar, and files recipes so an agent needs no skill file. `tools/list` stays exactly three tools.
+
+**Independent Test**: No session. Help with no topic and with topics `mail-search`, `teams-find`, `calendar`, `files` returns the examples in `contracts/recipes.md`. `prompts/list` has those four names. `tools/list` is still three tools.
+
+**RED Checkpoint**: failing tests only, then GREEN.
+
+### Tests for User Story 5 (MANDATORY)
+
+- [X] T043 [P] [US5] Write Gherkin in features/mcp/recipes.feature for help with no topic (four topic names), topic `mail-search` includes `from:ajay`, topic `teams-find` says not to send on several matches, `prompts/list` four names, `tools/list` still three; generate failing acceptance tests via scripts/acceptance.sh
+- [X] T044 [P] [US5] Write RED tests in internal/adapters/cli/mcp_recipes_test.go quoting data-model: "`prompts/list` MUST return the four recipe names (SC-009)." "`tools/list` MUST return the three tool names only (SC-001)." "Same body from `prompts/get` and from `m365_help` with that `topic`." "MUST NOT include tokens, live mailbox content, or file bytes."
+- [X] T045 [P] [US5] Write RED tests in internal/adapters/cli/mcp_help_test.go for `topic=mail-search` including `mail list --folder all --search 'from:ajay'`, `mail get`, `mail thread`; `topic=teams-find` including several matches MUST NOT send and `teams list` (not `teams find`); `topic=calendar` including `calendar list`, `calendar free`, `calendar create --when 'tomorrow at 1:30 pm'`; `topic=files` including `files list`, `files download`, `--out`, dry-run upload; unknown topic → usage; `topic` and `namespace` both set → usage
+- [X] T046 [US5] RED commit: git add only failing tests and fixtures from T043–T045; no production code
+
+### Implementation for User Story 5
+
+- [X] T047 [P] [US5] Add static recipe bodies in internal/adapters/cli/mcp_recipes.go per contracts/recipes.md; no Graph, no session, no `teams find`
+- [X] T048 [US5] Extend helpIn with `topic` in internal/adapters/cli/mcp.go; empty help names three tools and four topics; `topic` returns recipe text; register four prompts via `Server.AddPrompt`; `m365_run` Description MUST point at the four recipe topics (FR-015)
+- [X] T049 [US5] Name the four topics in internal/adapters/cli/mcp.go `mcpHelp` (and root mcp help if needed)
+- [X] T050 [US5] Implement acceptance/steps/mcp_recipes_steps.go until scripts/acceptance.sh passes features/mcp/recipes.feature
+- [X] T051 [US5] After GREEN T047–T050, commit production code separately from T046; do not edit locked RED tests
+
+**Checkpoint**: US5 independently testable with no session; US1–US4 still green; still exactly three tools.
+
+---
+
+## Phase 9: US5 Polish
+
+- [X] T052 [P] Assert `m365 mcp --help` names the four recipe topics in internal/adapters/cli/mcp_cli_test.go
+- [X] T053 Run make unit (and make verify if gosec is clean enough); execute specs/004-m365-mcp/quickstart.md recipe checks; no secrets in recipe text (SC-007, SC-008, SC-009)
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
 
-- **Setup (Phase 1)**: start immediately
-- **Foundational (Phase 2)**: depends on Setup; BLOCKS all stories
-- **US1 (Phase 3)**: after Foundational — MVP
-- **US2 (Phase 4)**: after Foundational; uses serve + dispatch; independently testable from US1
-- **US3 (Phase 5)**: after US2 (write gate is on `m365_run`)
-- **US4 (Phase 6)**: after Foundational; MAY proceed in parallel with US2 if mcp.go conflicts are sequenced
-- **Polish (Phase 7)**: after desired stories
+- **Setup–Polish (Phases 1–7)**: DONE (T001–T042)
+- **US5 (Phase 8)**: remaining; depends on existing serve/help/run
+- **US5 Polish (Phase 9)**: after US5
 
 ### User Story Dependencies
 
-- **US1 (P1) MVP**: after Foundational — catalog + status
-- **US2 (P1)**: after Foundational — run reads (does not require US1 status beyond shared server)
-- **US3 (P2)**: after US2
-- **US4 (P3)**: after Foundational — help only
+- **US1–US4**: complete
+- **US5 (P1)**: remaining remainder-MVP — recipes/prompts; MUST NOT implement 005 `teams find`
 
 ### Within Each User Story
 
@@ -190,65 +218,40 @@
 
 ### Parallel Opportunities
 
-- T004, T007 after T002
-- T009–T010 (US1 tests)
-- T016–T018 (US2 tests) after Foundational, parallel with US1 tests
-- T025–T026 (US3 tests) after US2 RED shape exists
-- T031–T032 (US4 tests) after Foundational
-- T037–T040 in Polish
+- T043–T045 (US5 tests)
+- T047 recipes text parallel with test files once RED is locked
+- T052 in US5 Polish
 
 ---
 
-## Parallel Example: User Story 1
+## Parallel Example: User Story 5
 
 ```bash
-Task: "Gherkin features/mcp/catalog-status.feature"
-Task: "RED tests internal/adapters/cli/mcp_status_test.go"
-```
-
-## Parallel Example: US1 vs US2 tests
-
-```bash
-Task: "US1 catalog/status tests"
-Task: "US2 run-read tests (mcp_run_test.go + run-read.feature)"
+Task: "Gherkin features/mcp/recipes.feature"
+Task: "RED tests internal/adapters/cli/mcp_recipes_test.go"
+Task: "RED tests internal/adapters/cli/mcp_help_test.go topic cases"
 ```
 
 ---
 
 ## Implementation Strategy
 
-### MVP First (User Story 1 Only)
+### Remainder MVP (User Story 5)
 
-1. Setup + Foundational (SDK, serve, three-tool skeleton, dispatch helper)
-2. US1 `tools/list` + `m365_status`
-3. **STOP**: Independent Test US1 on fakes
-4. Demo: agent lists three tools and sees signed-out vs signed-in consent
+1. RED T043–T046
+2. GREEN recipes + prompts + help topics
+3. **STOP**: Independent Test US5 (no session, three tools still)
 
 ### Incremental Delivery
 
-1. Foundational → stdio server with compact catalog
-2. US1 → status MVP
-3. US2 → read via `m365_run`
-4. US3 → write opt-in dry-run
-5. US4 → help without a session
-6. Polish → 2s status, `make verify`
-
-### Parallel Team Strategy
-
-1. Team completes Setup + Foundational together
-2. After Foundational:
-   - Developer A: US1 status
-   - Developer B: US2 run reads (coordinate mcp.go)
-   - Developer C: US4 help
-3. US3 write gate after US2
+US1–US4 already shipped. US5 adds recipes without a fourth tool.
 
 ---
 
 ## Notes
 
 - [P] tasks = different files, no incomplete dependencies
-- [Story] label maps to spec US1–US4
-- Quote data-model constraints in RED tests; do not invent Graph URLs in MCP
+- [Story] label maps to spec US1–US5
+- Quote data-model constraints in RED tests; do not invent Graph URLs or `teams find` in MCP
 - Commit RED then GREEN separately; do not edit locked RED tests
-- Stop at any checkpoint to validate the story independently
-- Avoid: second binary, lazy-mcp, one tool per Graph URL, collapsing error classes, file bytes on the wire
+- Avoid: fourth tool, skill-file dependency, live mailbox text in recipes

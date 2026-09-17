@@ -11,8 +11,8 @@ Transport: stdio only. No SSE, no Streamable HTTP.
 | Name | Description (MUST convey) | Session |
 | --- | --- | --- |
 | `m365_status` | Signed-in, session usable, per-namespace consent. No tokens. Does not open a browser. | Optional |
-| `m365_help` | CLI help for a namespace or verb. Names flags, limits, and write opt-in. | None |
-| `m365_run` | Run one CLI namespace+verb with a flag map. Returns that command's JSON. Writes dry-run unless `write_opt_in` is true. | Required for workloads |
+| `m365_help` | CLI help for a namespace or verb, or a recipe `topic` (`mail-search`, `teams-find`, `calendar`, `files`). No session required. | None |
+| `m365_run` | Run one CLI namespace+verb with a flag map. Returns that command's JSON. Writes dry-run unless `write_opt_in` is true. Lookup examples: help topics mail-search, teams-find, calendar, files. | Required for workloads |
 
 Unknown tool name → MCP protocol error. Do not add `m365_login`, `m365_graph`, or per-verb tools.
 
@@ -32,8 +32,13 @@ Signed out → success, `signed_in` false, no interactive login.
 | --- | --- | --- |
 | `namespace` | string | no |
 | `verb` | string | no |
+| `topic` | string | no (`mail-search` \| `teams-find` \| `calendar` \| `files`) |
 
-Omitted namespace → root help (MUST mention `mcp`, write opt-in, and the three tools). Namespace only → that namespace help. Namespace+verb → verb help. Exit success without a session. Text is CLI help text, not JSON.
+No args → overview: three tools, four recipe topics, write opt-in. `topic` set → recipe text from [recipes.md](recipes.md) (not CLI `--help`). `namespace` / `verb` → CLI help. `topic` and `namespace` together → usage. Unknown topic → usage. No session. Text, not JSON.
+
+## Named recipes (MCP prompts)
+
+`prompts/list` MUST return exactly: `mail-search`, `teams-find`, `calendar`, `files`. `prompts/get` returns the same body as `m365_help` for that topic. MUST NOT add a fourth tool.
 
 ## `m365_run`
 
@@ -60,7 +65,7 @@ Verbs that MUST dry-run unless `write_opt_in` is true: `mail send`, `mail reply`
 | Command | Behavior |
 | --- | --- |
 | `m365 --help` | Also lists `mcp`. Mail/teams/calendar/files lines stay. |
-| `m365 mcp --help` / `m365 mcp serve --help` | Exit 0, no session. Names stdio, three tools, write opt-in default false. |
+| `m365 mcp --help` / `m365 mcp serve --help` | Exit 0, no session. Names stdio, three tools, write opt-in default false, four recipe topics. |
 | `m365 mcp serve` | JSON-RPC on stdio until stdin closes. `--human` → usage (3). |
 | `m365 mail list` etc. | Unchanged (FR-012). |
 

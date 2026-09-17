@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -54,5 +55,8 @@ func TestToolsListCompactCatalog(t *testing.T) {
 		if got[name] == "" {
 			t.Fatalf("missing %s in %#v", name, got)
 		}
+	}
+	if !strings.Contains(got["m365_run"], "mail-search") {
+		t.Fatal(got["m365_run"])
 	}
 }

@@ -34,7 +34,8 @@ Use `M365_FAKE=1` and synthetic fixtures, or the in-memory MCP client against fa
 6. **Missing consent** — teams run without teams consent is `class=auth`, not `service` (SC-005).
 7. **Write gate** — `mail send` without `write_opt_in` returns `dry_run` true and does not send. Same for `calendar create`. With `write_opt_in` true, send matches CLI without `--dry-run`.
 8. **Help** — `m365_help` with no session names calendar verbs including list, create, and free.
-9. **Human CLI unchanged** — `m365 mail list --help` still names v1 flags and limits.
+9. **Recipes** — no session: help with no topic names the four topics; `topic=mail-search` includes `from:ajay`; `topic=teams-find` says not to send on several matches; `prompts/list` is those four names; `tools/list` stays three tools (SC-008, SC-009).
+10. **Human CLI unchanged** — `m365 mail list --help` still names v1 flags and limits.
 
 Unit: `make unit`. Acceptance: `make acceptance`.
 

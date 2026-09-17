@@ -29,7 +29,7 @@ This SDK is a **protocol adapter**, not a Graph SDK and not a generic provider m
 
 ## Decision: Exactly three tools; `mcp` is a CLI namespace, not a Graph workload
 
-**Rationale**: FR-002. Kata-shaped catalog: `m365_status`, `m365_help`, `m365_run`. `m365 mcp serve` matches `m365 <namespace> <verb>`. Do not add `internal/app/mcp` Graph ports. Do not register resources, prompts, sampling, or SSE/HTTP.
+**Rationale**: FR-002. Kata-shaped catalog: `m365_status`, `m365_help`, `m365_run`. `m365 mcp serve` matches `m365 <namespace> <verb>`. Do not add `internal/app/mcp` Graph ports. Do not register resources, sampling, or SSE/HTTP. Prompts are in scope only as the four lookup recipes (FR-014).
 
 **Alternatives considered**:
 - One MCP tool per CLI verb or per Graph URL: forbidden by FR-002/FR-009.
@@ -74,3 +74,15 @@ This SDK is a **protocol adapter**, not a Graph SDK and not a generic provider m
 **Alternatives considered**:
 - Live tenant MCP in CI: forbidden.
 - Skip Gherkin: violates constitution I/IV.
+
+## Decision: Lookup recipes are MCP prompts plus help topics, not a fourth tool
+
+**Rationale**: FR-014 / US5 / SC-009. Agents that only speak MCP never see origin/dotfiles skills. The official SDK `Server.AddPrompt` exposes `prompts/list` and `prompts/get` without adding tools. The same static text is returned by `m365_help` when `topic` is `mail-search`, `teams-find`, `calendar`, or `files`. Empty help names the three tools and those four topics. `m365_run`'s tool description MUST mention the four topics (FR-015). Recipe bodies are constants in `mcp_recipes.go`: no session, no Graph, no live mail. `namespace=calendar` remains CLI help; `topic=calendar` is the recipe; both set → usage.
+
+Until 005 (`teams find` / `send --to`) exists, the Teams recipe MUST document `teams list` and kata name lookup, and MUST say not to send when several people match (FR-016, SC-008).
+
+**Alternatives considered**:
+- Fourth tool `m365_recipe`: forbidden by FR-002/FR-014.
+- MCP resources (`m365://recipe/...`): extra URI surface; prompts match “named recipes” for agents.
+- Duplicate origin/dotfiles skill files in this repo: recipes must travel with the binary.
+- Implementing `teams find` in 004: that is 005; constitution III forbids pre-building it.
