@@ -31,5 +31,5 @@
 
 ## Notes
 
-- Validation pass 2026-09-16: MCP is a second door into the CLI (status/help/run), not a Graph SDK. JSON-RPC and stdio are the product interface, same class as “the terminal command”. No Go, no SDK names, no third-party package names in FRs.
+- Validation pass 2026-09-16: MCP is a second door into the CLI (status/help/run), not a Graph SDK. Lookup recipes (mail, Teams, calendar, files) are in help and named recipes, still three tools. No Go, no SDK names, no third-party package names in FRs.
 - Ready for `/speckit-plan`.

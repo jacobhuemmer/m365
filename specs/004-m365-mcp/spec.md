@@ -18,6 +18,7 @@ Agents talk to Mason's Microsoft 365 the same way the terminal does: one signed-
 
 - Expose `m365 mcp serve` over stdio so Grok, Claude, Cursor, Codex, and OpenCode can call mail, teams, calendar, and files without shelling out.
 - Keep the tool list tiny (kata-shaped: a handful of tools, not one tool per Graph API).
+- Bake lookup recipes into the server (mail search, Teams DM/group find, calendar, OneDrive) so an agent does not need a separate skill file to know the exact commands.
 - Reuse the existing delegated session, consent isolation, dry-run, limits, and exit classes.
 - Never print tokens. Never become a generic Graph escape hatch.
 
@@ -32,7 +33,7 @@ Agents talk to Mason's Microsoft 365 the same way the terminal does: one signed-
 
 ### Verification Strategy
 
-Verification MUST cover: `tools/list` returns the compact catalog; status works signed-in and signed-out; a read tool returns the same JSON shape as the CLI; a write tool with dry-run does not send; a write without dry-run is refused unless the caller opts in; missing consent is auth-class, not service-class; secrets never appear on the MCP wire. Fixtures MUST be synthetic.
+Verification MUST cover: `tools/list` returns the compact catalog; named recipes and help topics cover mail search, Teams find, calendar, and files; status works signed-in and signed-out; a read tool returns the same JSON shape as the CLI; a write tool with dry-run does not send; a write without dry-run is refused unless the caller opts in; missing consent is auth-class, not service-class; secrets never appear on the MCP wire. Fixtures MUST be synthetic.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -100,6 +101,24 @@ The agent asks help for a namespace or verb and gets the same names, flags, and 
 
 ---
 
+### User Story 5 - Lookup recipes live in the server (Priority: P1)
+
+The agent does not have to load a separate skill file to search mail, find a DM or group chat, list calendar/free slots, or browse OneDrive. Help (and named recipes on the server) include the exact commands and examples. Run still executes those same verbs.
+
+**Why this priority**: Agents using only MCP never see origin/dotfiles skills. The recipes must travel with `m365 mcp serve`.
+
+**Independent Test**: With no session, call help with no topic and with topics `mail-search`, `teams-find`, `calendar`, and `files`. Assert each returns the worked examples in this spec (from:, find a 1:1 vs group, `--when`/`free`, `files list`/`download --out`). List named recipes on the server; the four topics are present. `tools/list` is still exactly three tools.
+
+**Acceptance Scenarios**:
+
+1. **Given** no session, **When** the agent calls help with topic `mail-search`, **Then** the result includes `mail list --folder all --search 'from:ajay'` (or the MCP run equivalent) and `mail get` / `mail thread`.
+2. **Given** no session, **When** the agent calls help with topic `teams-find`, **Then** the result says how to turn a person name into a 1:1, a topic into a group, and that several matches must not send.
+3. **Given** no session, **When** the agent calls help with topic `calendar`, **Then** the result includes `calendar list`, `calendar free` for tomorrow, and `calendar create --when 'tomorrow at 1:30 pm'` with dry-run.
+4. **Given** no session, **When** the agent calls help with topic `files`, **Then** the result includes `files list`, `files download` with a destination path, and dry-run upload. File bytes are not part of the recipe output.
+5. **Given** the MCP client lists named recipes, **When** it does so, **Then** `mail-search`, `teams-find`, `calendar`, and `files` are present, and `tools/list` is still exactly three tools.
+
+---
+
 ### Edge Cases
 
 - MCP client connected while the Keychain session expires mid-call (auth-class).
@@ -116,7 +135,7 @@ The agent asks help for a namespace or verb and gets the same names, flags, and 
 - **FR-001**: The server MUST be invoked as `m365 mcp serve` (stdio JSON-RPC). It MUST NOT be a second binary with a second token store.
 - **FR-002**: The MCP catalog MUST be exactly three tools: `m365_status`, `m365_help`, `m365_run`. The server MUST NOT register one tool per Graph URL or per CLI flag.
 - **FR-003**: `m365_status` MUST report the same facts as `m365 auth status` (signed in, session usable, account display name, per-namespace consent) and MUST NOT print tokens.
-- **FR-004**: `m365_help` MUST accept optional namespace and verb and MUST return the CLI help text for that surface. It MUST work with no session.
+- **FR-004**: `m365_help` MUST accept optional namespace, verb, or recipe topic and MUST work with no session. Namespace/verb MUST return the CLI help text for that surface. Recipe topics `mail-search`, `teams-find`, `calendar`, and `files` MUST return the lookup recipes (exact commands and examples). With no argument, help MUST name the three tools and the four recipe topics.
 - **FR-005**: `m365_run` MUST accept namespace, verb, and a flag map. It MUST execute the equivalent CLI command and return that command's JSON stdout on success.
 - **FR-006**: `m365_run` MUST map CLI exit classes to MCP errors without collapsing them: usage, auth, service, not-found remain distinguishable.
 - **FR-007**: Workload writes (mail send/reply, teams send, calendar create/update/delete, files upload/delete/move) through `m365_run` MUST dry-run unless the caller sets write opt-in true on that call.
@@ -126,10 +145,14 @@ The agent asks help for a namespace or verb and gets the same names, flags, and 
 - **FR-011**: The MCP server MUST NOT log access tokens, refresh tokens, authorization codes, or client secrets.
 - **FR-012**: Enabling MCP MUST NOT change the human CLI: `m365 mail list` and friends stay as specified in 001–003.
 - **FR-013**: Agents SHOULD register this server as a dedicated MCP (like kata), not as a fifth lazy-mcp backend, and not as Microsoft's Enterprise MCP.
+- **FR-014**: The server MUST expose the four lookup recipes as named recipes on the MCP session (same text as `m365_help` for those topics): mail search (`from:`, `subject:`, `folder all`, then get/thread); Teams find (1:1 vs group, no send on several matches, dry-run notify); calendar (list, free tomorrow, create with `--when` and dry-run); files (list, get, download to a named path, dry-run upload). Adding recipes MUST NOT add a fourth tool.
+- **FR-015**: `m365_run`'s tool description MUST point at those four recipe topics so an agent that only reads `tools/list` still knows help has the examples.
+- **FR-016**: Recipe text MUST NOT include tokens, live mailbox content, or file bytes. It MUST match the CLI verbs in 001–003. When `teams find` / `send --to` exist, the Teams recipe MUST prefer them; until then it MUST document `teams list` / kata name lookup.
 
 ### Key Entities
 
-- **MCP catalog**: The three tools and their descriptions.
+- **MCP catalog**: The three tools and their descriptions, plus the four named lookup recipes.
+- **Lookup recipe**: Worked examples for one job (mail search, Teams find, calendar, files). Served by help and by named recipes; not a fifth tool.
 - **Run request**: namespace, verb, flag map, write opt-in.
 - **Run result**: CLI JSON payload, or a classed error (usage, auth, service, not-found).
 - **Session**: The same Keychain session the CLI already uses.
@@ -145,6 +168,9 @@ The agent asks help for a namespace or verb and gets the same names, flags, and 
 - **SC-005**: Missing teams consent on a teams run is reported as auth failure, not a generic tool error.
 - **SC-006**: A person at a terminal can still run every `m365` command unchanged after MCP is added.
 - **SC-007**: No MCP response or log contains an access token, refresh token, authorization code, or client secret.
+- **SC-008**: With no session, help for `mail-search` includes a `from:` example and help for `teams-find` tells the agent not to send when two people match.
+- **SC-009**: Named recipes on the server include `mail-search`, `teams-find`, `calendar`, and `files`, while `tools/list` remains exactly three tools.
+- **SC-010**: A first-time MCP agent can search mail and list tomorrow's free slots using only help/recipes plus run, without a skill file on disk.
 
 ## Assumptions
 
@@ -155,5 +181,5 @@ The agent asks help for a namespace or verb and gets the same names, flags, and 
 - lazy-mcp stays Datadog, Notion, Atlassian, Context7. kata stays `kata mcp serve`. m365 is a third dedicated server.
 - Microsoft Enterprise MCP and Agent365 remote servers are out of scope even if the tenant could enable them.
 - `auth login` stays human-only. Agents that see `silent_token.ok` false tell Mason to run `m365 auth login` in a terminal.
-- Companion agent skills `m365-mail-search` and `m365-teams-find` are the worked examples for lookup. MCP `m365_run` uses the same CLI verbs those skills name. The skills live in origin/dotfiles, not this binary.
+- Lookup recipes live in this binary (help + named recipes). origin/dotfiles skills `m365-mail-search`, `m365-teams-find`, `m365-calendar`, and `m365-files` are the CLI-only copy of the same examples for agents that are not using MCP.
 - Constitution v1 listed MCP as outside this repository. This spec explicitly adds `m365 mcp serve` as an in-repo interface of the same binary.
