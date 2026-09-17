@@ -57,7 +57,7 @@ func TestMCPHelpTopics(t *testing.T) {
 	}
 	cases := map[string][]string{
 		"mail-search": {"mail list --folder all --search 'from:ajay'", "mail get", "mail thread"},
-		"teams-find":  {"teams list", "MUST NOT send", "Several matches"},
+		"teams-find":  {"teams find Ajay", "teams find --group NOC", "MUST NOT send", "Several matches"},
 		"calendar":    {"calendar list", "calendar free", "calendar create --when 'tomorrow at 1:30 pm'"},
 		"files":       {"files list", "files get", "files download", "--out", "upload", "--dry-run"},
 	}
@@ -74,7 +74,7 @@ func TestMCPHelpTopics(t *testing.T) {
 				t.Fatalf("%s missing %q in %s", topic, w, body)
 			}
 		}
-		if topic == "teams-find" && strings.Contains(body, "teams find") {
+		if topic == "teams-find" && !strings.Contains(body, "teams find Ajay") {
 			t.Fatal(body)
 		}
 	}

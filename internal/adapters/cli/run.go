@@ -162,7 +162,7 @@ func readBody(flagVal, fileVal string, stdin io.Reader) (string, error) {
 			b, err := io.ReadAll(stdin)
 			return string(b), err
 		}
-		b, err := os.ReadFile(fileVal)
+		b, err := os.ReadFile(fileVal) // #nosec G304 -- caller --body-file/--text-file path
 		if err != nil {
 			return "", domain.Usagef("cannot read body file: %s", fileVal)
 		}

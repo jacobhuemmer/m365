@@ -24,7 +24,7 @@ func Load() (Config, error) {
 		TenantID: os.Getenv("M365_TENANT_ID"),
 	}
 	path := filepath.Join(configDir(), "m365", "config.json")
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(path) // #nosec G304 -- fixed XDG config.json, not request input
 	if err == nil {
 		var f fileShape
 		if jerr := json.Unmarshal(b, &f); jerr != nil {

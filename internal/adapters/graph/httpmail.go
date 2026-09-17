@@ -56,7 +56,7 @@ func (c *HTTPClient) do(ctx context.Context, method, path string) (*http.Respons
 	}
 	if res.StatusCode >= 400 {
 		b, _ := io.ReadAll(res.Body)
-		res.Body.Close()
+		_ = res.Body.Close()
 		return nil, MapGraphError(res.StatusCode, b)
 	}
 	return res, nil

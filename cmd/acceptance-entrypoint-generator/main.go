@@ -10,7 +10,7 @@ import (
 func main() {
 	root := "features"
 	outDir := "acceptance/generated"
-	_ = os.MkdirAll(outDir, 0o755)
+	_ = os.MkdirAll(outDir, 0o750)
 	_ = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".feature") {
 			return err
@@ -32,7 +32,7 @@ func TestAcceptance_%s(t *testing.T) {
 	runtime.RunFeature(t, %q)
 }
 `, strings.ReplaceAll(base, "-", "_"), feat)
-		_ = os.WriteFile(filepath.Join(outDir, base+"_acceptance_test.go"), []byte(src), 0o644)
+		_ = os.WriteFile(filepath.Join(outDir, base+"_acceptance_test.go"), []byte(src), 0o600)
 		return nil
 	})
 }

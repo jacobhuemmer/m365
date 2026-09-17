@@ -1,4 +1,4 @@
-.PHONY: fmt vet unit race coverage gosec govulncheck acceptance acceptance-mutation crap verify
+.PHONY: fmt vet unit race coverage gosec govulncheck acceptance acceptance-mutation crap verify install
 
 export PATH := $(CURDIR)/.tools/bin:$(PATH)
 PKGS := $(shell go list ./... | grep -v '/acceptance/generated')
@@ -19,7 +19,7 @@ coverage:
 	go test -coverprofile=coverage.out $(PKGS)
 
 gosec:
-	gosec ./...
+	gosec -exclude-dir=.tools -exclude-dir=acceptance/generated ./...
 
 govulncheck:
 	govulncheck ./...
@@ -34,3 +34,6 @@ crap:
 	sh scripts/crap.sh
 
 verify: fmt vet unit race coverage gosec govulncheck acceptance crap
+
+install:
+	go install ./cmd/m365

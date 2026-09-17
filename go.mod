@@ -2,6 +2,8 @@ module github.com/masonhuemmer/m365
 
 go 1.25.0
 
+toolchain go1.26.6
+
 require (
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/zalando/go-keyring v0.2.6

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os/exec"
 	"strings"
+	"time"
 
 	"golang.org/x/oauth2"
 
@@ -16,7 +17,8 @@ import (
 )
 
 func OpenBrowser(rawURL string) error {
-	return exec.Command("open", rawURL).Start()
+	// argv to macOS open, not a shell; URL is the OAuth authorize endpoint.
+	return exec.Command("open", rawURL).Start() // #nosec G204
 }
 
 func StartLoopback() (string, func(context.Context) (string, error), error) {
@@ -27,7 +29,7 @@ func StartLoopback() (string, func(context.Context) (string, error), error) {
 	_, port, _ := net.SplitHostPort(ln.Addr().String())
 	redirect := "http://localhost:" + port + "/"
 	ch := make(chan string, 1)
-	srv := &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := &http.Server{ReadHeaderTimeout: 3 * time.Second, Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c := r.URL.Query().Get("code")
 		_, _ = io.WriteString(w, "ok")
 		select {

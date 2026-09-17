@@ -15,12 +15,13 @@ Do not dump the mailbox. Do not print secrets.
 
 	recipeTeamsFind = `teams-find
 
-Find a chat before notify. Use teams list and match members or topic. A dedicated name-lookup verb is not in this CLI yet.
+Find a chat before notify.
 
-  1:1: teams list, pick the one-on-one whose other member is the person (e.g. Ajay).
-  Group: teams list, match topic (e.g. NOC) or members.
+  1:1: teams find Ajay
+  Group: teams find --group NOC
+  Notify: teams send --to Ajay --text ping --dry-run
 
-Several matches MUST NOT send. Zero matches: do not guess. Dry-run before notify (write_opt_in false / --dry-run).
+Several matches MUST NOT send. Zero matches: do not guess. Dry-run before notify (write_opt_in false).
 
 Do not invent a Graph people-search tool.
 `

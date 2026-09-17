@@ -105,7 +105,7 @@ func (c *HTTPFiles) Upload(ctx context.Context, in files.UploadInput) (string, e
 		if err != nil {
 			return "", err
 		}
-		res.Body.Close()
+		_ = res.Body.Close()
 	}
 	res, err := c.doBody(ctx, http.MethodPut, path, data)
 	if err != nil {
@@ -146,7 +146,7 @@ func (c *HTTPFiles) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	res.Body.Close()
+	_ = res.Body.Close()
 	return nil
 }
 
@@ -163,7 +163,7 @@ func (c *HTTPFiles) Move(ctx context.Context, in files.MoveInput) error {
 	if err != nil {
 		return err
 	}
-	res.Body.Close()
+	_ = res.Body.Close()
 	return nil
 }
 

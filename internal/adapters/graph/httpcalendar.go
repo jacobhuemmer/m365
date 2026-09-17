@@ -114,7 +114,7 @@ func (c *HTTPCalendar) UpdateEvent(ctx context.Context, in calendar.WriteInput) 
 	if err != nil {
 		return err
 	}
-	res.Body.Close()
+	_ = res.Body.Close()
 	return nil
 }
 
@@ -123,7 +123,7 @@ func (c *HTTPCalendar) DeleteEvent(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	res.Body.Close()
+	_ = res.Body.Close()
 	return nil
 }
 
@@ -196,7 +196,7 @@ func (c *HTTPClient) doBody(ctx context.Context, method, path string, body []byt
 	}
 	if res.StatusCode >= 400 {
 		b, _ := io.ReadAll(res.Body)
-		res.Body.Close()
+		_ = res.Body.Close()
 		return nil, MapGraphError(res.StatusCode, b)
 	}
 	return res, nil

@@ -35,7 +35,7 @@ func WriteFile(path string, data []byte, overwrite bool) error {
 	if _, err := os.Stat(path); err == nil && !overwrite {
 		return domain.Usage("destination exists; pass --overwrite")
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil && !os.IsExist(err) {
+	if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil && !os.IsExist(err) {
 		return domain.Usagef("unwritable path: %s", path)
 	}
 	if err := os.WriteFile(path, data, 0o600); err != nil {

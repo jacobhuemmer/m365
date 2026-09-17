@@ -2,6 +2,8 @@ package steps
 
 import (
 	"bytes"
+	"encoding/json"
+	"strconv"
 	"strings"
 
 	"github.com/masonhuemmer/m365/acceptance/runtime"
@@ -9,6 +11,7 @@ import (
 	"github.com/masonhuemmer/m365/internal/adapters/graph"
 	"github.com/masonhuemmer/m365/internal/adapters/keychain"
 	"github.com/masonhuemmer/m365/internal/config"
+	"github.com/masonhuemmer/m365/internal/domain"
 )
 
 func init() {
@@ -36,14 +39,33 @@ func RegisterAll() {
 			Login:    graph.FakeLoginAll(true, true, true, true),
 			Stdout:   out, Stderr: errw,
 		}
-		code := cli.Run(append([]string{"m365"}, parts...), d)
-		if strings.Contains(text, "help") && code != 0 {
-			w.T.Fatalf("help exit %d %s", code, errw)
+		if !strings.Contains(text, "help") && !strings.Contains(text, "--help") {
+			_ = cli.Run([]string{"m365", "auth", "login"}, d)
+			out.Reset()
+			errw.Reset()
 		}
-		_ = out
+		code := cli.Run(append([]string{"m365"}, parts...), d)
+		w.Code, w.Out, w.Err = code, out.String(), errw.String()
 		return nil
 	})
-	runtime.Register("the command succeeds", func(w *runtime.World, _ string) error { return nil })
-	runtime.Register("stdout is JSON", func(w *runtime.World, _ string) error { return nil })
-	runtime.Register("exit code", func(w *runtime.World, _ string) error { return nil })
+	runtime.Register("the command succeeds", func(w *runtime.World, _ string) error {
+		if w.Code != domain.ExitOK {
+			w.T.Fatalf("exit %d stderr %s stdout %s", w.Code, w.Err, w.Out)
+		}
+		return nil
+	})
+	runtime.Register("stdout is JSON", func(w *runtime.World, _ string) error {
+		var v any
+		if err := json.Unmarshal([]byte(strings.TrimSpace(w.Out)), &v); err != nil {
+			w.T.Fatalf("not JSON: %s", w.Out)
+		}
+		return nil
+	})
+	runtime.Register("exit code", func(w *runtime.World, text string) error {
+		want := strings.TrimSpace(strings.TrimPrefix(text, "exit code"))
+		if want != "" && strconv.Itoa(w.Code) != want {
+			w.T.Fatalf("exit %d want %s", w.Code, want)
+		}
+		return nil
+	})
 }

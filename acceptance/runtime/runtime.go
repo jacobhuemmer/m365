@@ -8,7 +8,10 @@ import (
 )
 
 type World struct {
-	T *testing.T
+	T    *testing.T
+	Code int
+	Out  string
+	Err  string
 }
 
 type Step struct {
@@ -40,7 +43,7 @@ func Register(prefix string, fn Handler) {
 }
 
 func Parse(path string) (Feature, error) {
-	f, err := os.Open(path)
+	f, err := os.Open(path) // #nosec G304 -- feature path from generated tests under features/
 	if err != nil {
 		return Feature{}, err
 	}
