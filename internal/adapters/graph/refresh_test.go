@@ -116,5 +116,3 @@ func TestHTTPRetriesUnauthorizedWithRefreshToken(t *testing.T) {
 		t.Fatalf("err=%v sawNew=%v grant=%q page=%+v", err, sawNew, grant, p)
 	}
 }
-
-

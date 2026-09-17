@@ -8,12 +8,12 @@ import (
 )
 
 type Blob struct {
-	Account      string `json:"account"`
-	Mail         bool   `json:"mail"`
-	Teams        bool   `json:"teams"`
-	Calendar     bool   `json:"calendar"`
-	Files        bool   `json:"files"`
-	Usable       bool   `json:"usable"`
+	Account      string    `json:"account"`
+	Mail         bool      `json:"mail"`
+	Teams        bool      `json:"teams"`
+	Calendar     bool      `json:"calendar"`
+	Files        bool      `json:"files"`
+	Usable       bool      `json:"usable"`
 	AccessToken  string    `json:"access_token,omitempty"`
 	RefreshToken string    `json:"refresh_token,omitempty"`
 	ExpiresAt    time.Time `json:"expires_at,omitempty"`
