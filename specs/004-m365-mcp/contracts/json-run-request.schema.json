@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/masonhuemmer/m365/specs/004-m365-mcp/contracts/json-run-request.schema.json",
+  "title": "m365_run arguments",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["namespace", "verb"],
+  "properties": {
+    "namespace": {
+      "type": "string",
+      "minLength": 1,
+      "description": "CLI namespace. chat aliases teams. mcp is usage."
+    },
+    "verb": {
+      "type": "string",
+      "minLength": 1
+    },
+    "args": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Positional arguments after the verb (ids)."
+    },
+    "flags": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "string" },
+          { "type": "number" },
+          { "type": "boolean" },
+          { "type": "array", "items": { "type": "string" } }
+        ]
+      },
+      "description": "CLI long flag names without leading dashes. Repeatable flags are string arrays. Boolean true emits the flag; false omits it."
+    },
+    "write_opt_in": {
+      "type": "boolean",
+      "default": false,
+      "description": "Required true for a real workload write. Default false injects --dry-run."
+    }
+  }
+}

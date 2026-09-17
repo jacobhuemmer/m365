@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/masonhuemmer/m365/specs/004-m365-mcp/contracts/json-tool-error.schema.json",
+  "title": "m365 MCP tool error (isError true text payload)",
+  "description": "Exactly the CLI JSON-mode stderr error object. MUST NOT contain tokens, secrets, or file bytes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["class", "message"],
+  "properties": {
+    "class": {
+      "type": "string",
+      "enum": ["usage", "auth", "service", "not_found"]
+    },
+    "message": { "type": "string", "minLength": 1 },
+    "hint": { "type": "string" }
+  }
+}

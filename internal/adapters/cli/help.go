@@ -10,6 +10,7 @@ Namespaces:
   teams     Teams chats (alias: chat)
   calendar  own calendars and events
   files     own OneDrive
+  mcp       stdio MCP for agents (serve)
 
 Output: JSON on stdout by default. --human for text. Diagnostics on stderr.
 Exit classes: 0 success; 3 usage/config; 4 auth; 5 service; 6 not-found.

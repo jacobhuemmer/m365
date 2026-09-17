@@ -75,6 +75,8 @@ func Run(args []string, d Deps) int {
 		return runCalendar(rest, d, format)
 	case "files":
 		return runFiles(rest, d, format)
+	case "mcp":
+		return runMCP(rest, d, format)
 	default:
 		if strings.HasPrefix(ns, "-") {
 			return writeHelp(d.Stdout, rootHelp)
