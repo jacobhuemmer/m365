@@ -1,7 +1,5 @@
 package keychain
 
-import "strings"
-
 type Fallback struct {
 	Primary   Store
 	Secondary Store
@@ -20,15 +18,14 @@ func (f *Fallback) Get() (Blob, bool, error) {
 	return Blob{}, false, nil
 }
 
+// Put prefers Primary. Any Primary error is written to Secondary when set,
+// including oversized blobs and headless Secret Service failures.
 func (f *Fallback) Put(b Blob) error {
 	var err error
 	if f.Primary != nil {
 		err = f.Primary.Put(b)
 		if err == nil {
 			return nil
-		}
-		if !tooLarge(err) {
-			return err
 		}
 	}
 	if f.Secondary != nil {
@@ -49,12 +46,4 @@ func (f *Fallback) Delete() error {
 		return e1
 	}
 	return e2
-}
-
-func tooLarge(err error) bool {
-	if err == nil {
-		return false
-	}
-	s := strings.ToLower(err.Error())
-	return strings.Contains(s, "too big") || strings.Contains(s, "too large")
 }
