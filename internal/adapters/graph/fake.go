@@ -50,10 +50,11 @@ func NewFakeServer(mem *Memory) *httptest.Server {
 		case p == "/me":
 			_ = json.NewEncoder(w).Encode(map[string]any{"id": "user-1", "displayName": "Test User"})
 		case p == "/me/messages":
-			_ = json.NewEncoder(w).Encode(map[string]any{
-				"value":           graphMailValues(mem),
-				"@odata.nextLink": "https://graph.microsoft.com/v1.0/me/messages?$top=10&$skip=10",
-			})
+			out := map[string]any{"value": graphMailValues(mem)}
+			if r.URL.Query().Get("$filter") == "" {
+				out["@odata.nextLink"] = "https://graph.microsoft.com/v1.0/me/messages?$top=10&$skip=10"
+			}
+			_ = json.NewEncoder(w).Encode(out)
 		case strings.HasPrefix(p, "/me/messages/"):
 			id := strings.TrimPrefix(p, "/me/messages/")
 			if i := strings.IndexByte(id, '?'); i >= 0 {
@@ -150,9 +151,23 @@ func graphMailOne(m domain.MailMessage) map[string]any {
 	}
 	return map[string]any{
 		"id": m.ID, "subject": m.Subject, "conversationId": m.Conversation,
-		"hasAttachments": m.HasAttachments,
-		"body":           map[string]string{"content": m.Body},
-		"from":           map[string]any{"emailAddress": map[string]string{"address": m.From.Address, "name": m.From.Name}},
-		"attachments":    atts,
+		"receivedDateTime": m.Received,
+		"isRead":           m.IsRead,
+		"hasAttachments":   m.HasAttachments,
+		"body":             map[string]string{"content": m.Body},
+		"from":             map[string]any{"emailAddress": map[string]string{"address": m.From.Address, "name": m.From.Name}},
+		"toRecipients":     graphMailRecipients(m.To),
+		"ccRecipients":     graphMailRecipients(m.CC),
+		"attachments":      atts,
 	}
+}
+
+func graphMailRecipients(people []domain.Person) []map[string]any {
+	recipients := make([]map[string]any, 0, len(people))
+	for _, person := range people {
+		recipients = append(recipients, map[string]any{
+			"emailAddress": map[string]string{"address": person.Address, "name": person.Name},
+		})
+	}
+	return recipients
 }

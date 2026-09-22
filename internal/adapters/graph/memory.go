@@ -32,13 +32,19 @@ func Seed() *Memory {
 	att := domain.Attachment{ID: "att-1", Name: "note.txt", Size: 12, ContentType: "text/plain"}
 	m1 := domain.MailMessage{
 		ID: "msg-1", Conversation: "conv-1", Subject: "Hello",
-		From: domain.Person{Address: "a@example.com"}, Received: "2026-01-01T00:00:00Z",
+		From:     domain.Person{Name: "Alice", Address: "a@example.com"},
+		To:       []domain.Person{{Name: "Test User", Address: "user@example.com"}},
+		CC:       []domain.Person{{Name: "Ops", Address: "ops@example.com"}},
+		Received: "2026-01-01T00:00:00Z", IsRead: true,
 		HasAttachments: true, Body: "body-1", Attachments: []domain.Attachment{att},
 	}
 	m2 := domain.MailMessage{
 		ID: "msg-2", Conversation: "conv-1", Subject: "Re: Hello",
-		From: domain.Person{Address: "user@example.com"}, Received: "2026-01-01T01:00:00Z",
-		Body: "own-reply",
+		From:     domain.Person{Name: "Test User", Address: "user@example.com"},
+		To:       []domain.Person{{Name: "Alice", Address: "a@example.com"}},
+		CC:       []domain.Person{{Name: "Ops", Address: "ops@example.com"}},
+		Received: "2026-01-01T01:00:00Z",
+		Body:     "own-reply",
 	}
 	c1 := domain.Chat{ID: "chat-1", Type: "oneOnOne", Topic: "Alice", Members: []domain.Person{{Name: "Alice", Address: "alice@example.com"}}}
 	cm := domain.ChatMessage{
@@ -148,6 +154,7 @@ func (m *Memory) Thread(_ context.Context, id string, bodies bool) (domain.MailT
 			items = append(items, cp)
 		}
 	}
+	sortMailMessages(items)
 	return domain.MailThread{ConversationID: msg.Conversation, Count: len(items), Items: items}, nil
 }
 
