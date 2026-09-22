@@ -82,6 +82,9 @@ func runMail(args []string, d Deps, format string) int {
 		}
 		return mailSend(args, d, sess, format)
 	case "reply":
+		if hasHelp(args) {
+			return writeHelp(d.Stdout, mailReplyHelp)
+		}
 		return mailReply(args, d, sess, format)
 	case "attachments":
 		if len(args) < 1 {

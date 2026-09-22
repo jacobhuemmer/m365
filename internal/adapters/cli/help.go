@@ -66,6 +66,15 @@ Attachment caps: 10 MiB per file, 10 files. --top N/A.
 Output modes: --json (default) --human
 `
 
+const mailReplyHelp = `m365 mail reply — reply to a message
+
+Required: MESSAGE_ID --body or --body-file
+Optional: --all --attach (repeatable) --html --dry-run
+--html posts Graph message.body as HTML. Plain reply uses comment.
+Attachment caps: 10 MiB per file, 10 files.
+Output modes: --json (default) --human
+`
+
 const teamsListHelp = `m365 teams list — list chats
 
 Flags: --top (default 20, max 50) --page-token
@@ -88,6 +97,7 @@ const teamsSendHelp = `m365 teams send — send a chat message
 Required: CHAT_ID or --to Ajay, plus --text or --text-file
 Examples: teams send --to Ajay --text ping --dry-run
 Optional: --attach (repeatable) --html --format md --dry-run
+--format md converts a markdown subset to HTML. --html posts the body as HTML already.
 --to and chat id together exit 3. Attachment caps: 10 MiB per file, 10 files.
 Output modes: --json (default) --human
 `

@@ -74,7 +74,17 @@ func (c *HTTPClient) Reply(ctx context.Context, in mail.ReplyInput) (string, err
 	if in.All {
 		path = "/me/messages/" + url.PathEscape(in.ID) + "/replyAll"
 	}
-	if err := c.doJSON(ctx, http.MethodPost, path, map[string]any{"comment": in.Body}); err != nil {
+	var payload any
+	if in.HTML {
+		payload = map[string]any{
+			"message": map[string]any{
+				"body": map[string]string{"contentType": "HTML", "content": in.Body},
+			},
+		}
+	} else {
+		payload = map[string]any{"comment": in.Body}
+	}
+	if err := c.doJSON(ctx, http.MethodPost, path, payload); err != nil {
 		return "", err
 	}
 	return "sent", nil
@@ -94,10 +104,15 @@ func (c *HTTPClient) Download(ctx context.Context, messageID, attach string) ([]
 }
 
 func (c *HTTPTeams) Send(ctx context.Context, in teams.SendInput) (string, error) {
-	body := map[string]any{"body": map[string]string{"contentType": "text", "content": in.Text}}
-	if in.HTML || in.MD {
-		body = map[string]any{"body": map[string]string{"contentType": "html", "content": in.Text}}
+	ctype, content := "text", in.Text
+	switch {
+	case in.HTML:
+		ctype = "html"
+	case in.MD:
+		ctype = "html"
+		content = mdSubsetToHTML(in.Text)
 	}
+	body := map[string]any{"body": map[string]string{"contentType": ctype, "content": content}}
 	if err := c.doJSON(ctx, http.MethodPost, "/me/chats/"+url.PathEscape(in.ChatID)+"/messages", body); err != nil {
 		return "", err
 	}
