@@ -7,6 +7,7 @@ import (
 	"github.com/masonhuemmer/m365/internal/adapters/cli"
 	"github.com/masonhuemmer/m365/internal/adapters/fs"
 	"github.com/masonhuemmer/m365/internal/adapters/graph"
+	"github.com/masonhuemmer/m365/internal/adapters/jev"
 	"github.com/masonhuemmer/m365/internal/adapters/keychain"
 	"github.com/masonhuemmer/m365/internal/adapters/mailclassifier"
 	"github.com/masonhuemmer/m365/internal/adapters/mailwatchstate"
@@ -16,6 +17,13 @@ import (
 
 func main() {
 	cfg, cfgErr := config.Load()
+	os.Exit(cli.Run(os.Args, buildDeps(cfg, cfgErr, os.Getenv)))
+}
+
+func buildDeps(cfg config.Config, cfgErr error, getenv func(string) string) cli.Deps {
+	if getenv == nil {
+		getenv = os.Getenv
+	}
 	d := cli.Deps{
 		Config:         cfg,
 		ConfigError:    cfgErr,
@@ -23,7 +31,7 @@ func main() {
 		Watch:          &watchstate.File{},
 		MailWatchState: &mailwatchstate.File{},
 	}
-	if os.Getenv("M365_FAKE") == "1" {
+	if getenv("M365_FAKE") == "1" {
 		mem := graph.Seed()
 		mailDelta := graph.MailDeltaAPI{Memory: mem}
 		d.Mail = graph.MailAPI{Memory: mem}
@@ -62,6 +70,15 @@ func main() {
 		d.Calendar = &graph.HTTPCalendar{HTTPClient: httpc}
 		d.Files = &graph.HTTPFiles{HTTPClient: httpc}
 		d.Login = graph.RealLogin(cfg.ClientID, cfg.TenantID)
+		classification := cfg.Experimental.MailResponseClassification
+		if cfgErr == nil && classification.Enabled {
+			classifier, err := jev.NewClient(getenv("TYPESAFE_API_KEY"), classification.Model)
+			if err != nil {
+				d.MailClassifierError = err
+			} else {
+				d.MailClassifier = classifier
+			}
+		}
 	}
-	os.Exit(cli.Run(os.Args, d))
+	return d
 }

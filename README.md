@@ -30,6 +30,8 @@ Login is a browser/device flow in a terminal. Tokens live in the macOS keychain 
 
 ## Usage
 
+Agent CLI contract (JSON, exits, verbs): [docs/m365.md](docs/m365.md).
+
 ```
 m365 <namespace> <verb> [flags]
 ```
@@ -37,13 +39,55 @@ m365 <namespace> <verb> [flags]
 | Namespace | Verbs |
 | --- | --- |
 | `auth` | `login`, `status`, `logout` |
-| `mail` | `list`, `get`, `send`, `reply`, `save-attachment` |
+| `mail` | `list`, `get`, `thread`, `watch`, `send`, `reply`, `attachments`, `save-attachment` |
 | `teams` (`chat`) | `list`, `find`, `get`, `send` |
 | `calendar` | `calendars`, `list`, `get`, `create`, `update`, `delete`, `free` |
 | `files` | `root`, `list`, `get`, `download`, `upload`, `create-folder`, `delete`, `move` |
 | `mcp` | `serve` |
 
 Exit classes: `0` success, `3` usage/config, `4` auth, `5` service, `6` not-found.
+
+## Experimental mail response triage
+
+`mail watch` performs one finite, folder-scoped Outlook delta poll and exits. The first poll records a quiet baseline unless `--include-existing` is set; later polls resume from the protected local checkpoint. JSON output is one body-free `mail.changed` event per line.
+
+Response-responsibility classification is experimental and disabled by default. Enable it explicitly in `$XDG_CONFIG_HOME/m365/config.json` (or `~/.config/m365/config.json`):
+
+```json
+{
+  "experimental": {
+    "mail_response_classification": {
+      "enabled": true,
+      "provider": "jev",
+      "model": "jev-latest",
+      "actionable_threshold": 0.8
+    }
+  }
+}
+```
+
+Set `TYPESAFE_API_KEY` in the environment, never in `config.json` or a command flag. A present key does not enable the feature, and an enabled feature with no key fails before polling mail.
+
+```sh
+m365 mail watch --classify --target-address mason@example.com --target-name "Mason Huemmer"
+```
+
+Classification sends TypeSafe Jev only the latest 10 chronological text messages within a 64 KiB body budget, plus participant, timestamp, subject, target, and truncation metadata. It never sends attachment bytes, Graph cursors, revisions, or credentials. Output uses `mail.response_classified` with one of `waiting_on_target`, `waiting_on_other`, `no_response_expected`, or `unclear`; `actionable` is only a routing hint.
+
+An agent must keep classification and sending as separate trust decisions:
+
+```sh
+# 1. Consume an actionable event, then inspect its cited conversation.
+m365 mail thread MESSAGE_ID --bodies
+
+# 2. Compose text externally and preview the reply.
+m365 mail reply MESSAGE_ID --body-file reply.txt --dry-run
+
+# 3. Send only after review with a separate explicit command.
+m365 mail reply MESSAGE_ID --body-file reply.txt
+```
+
+The classifier does not draft, create Outlook Draft items, or send. Through MCP, the final reply still requires `write_opt_in=true`; without it, `m365_run` forces a dry run even after an actionable event.
 
 ## MCP
 

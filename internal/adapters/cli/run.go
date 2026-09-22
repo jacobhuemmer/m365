@@ -20,23 +20,24 @@ import (
 )
 
 type Deps struct {
-	Config         config.Config
-	ConfigError    error
-	Store          auth.Store
-	Mail           mail.Store
-	MailChanges    mail.ChangeStore
-	MailThreads    mail.ThreadStore
-	MailClassifier mail.ResponseClassifier
-	MailWatchState mail.WatchStateStore
-	Teams          teams.Store
-	Calendar       calendar.Store
-	Files          files.Store
-	Login          auth.LoginFn
-	Write          func(string, []byte, bool) error
-	Watch          WatchStore
-	Stdin          io.Reader
-	Stdout         io.Writer
-	Stderr         io.Writer
+	Config              config.Config
+	ConfigError         error
+	Store               auth.Store
+	Mail                mail.Store
+	MailChanges         mail.ChangeStore
+	MailThreads         mail.ThreadStore
+	MailClassifier      mail.ResponseClassifier
+	MailClassifierError error
+	MailWatchState      mail.WatchStateStore
+	Teams               teams.Store
+	Calendar            calendar.Store
+	Files               files.Store
+	Login               auth.LoginFn
+	Write               func(string, []byte, bool) error
+	Watch               WatchStore
+	Stdin               io.Reader
+	Stdout              io.Writer
+	Stderr              io.Writer
 }
 
 type WatchStore interface {
@@ -130,7 +131,7 @@ func fail(d Deps, err error) int {
 	if de, ok := err.(*domain.Error); ok {
 		hint = de.Hint
 	}
-	_ = json.NewEncoder(d.Stderr).Encode(errObj{Class: cls, Message: redact(msg), Hint: hint})
+	_ = json.NewEncoder(d.Stderr).Encode(errObj{Class: cls, Message: redact(msg), Hint: redact(hint)})
 	return code
 }
 

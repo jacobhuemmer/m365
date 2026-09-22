@@ -117,7 +117,7 @@ func (f *File) replace(payload []byte) error {
 	if err := os.MkdirAll(directory, 0o700); err != nil {
 		return err
 	}
-	if err := os.Chmod(directory, 0o700); err != nil {
+	if err := os.Chmod(directory, 0o700); err != nil { // #nosec G302 -- state directories require owner execute permission
 		return err
 	}
 	temporary, err := os.CreateTemp(directory, "."+filepath.Base(path)+"-*")

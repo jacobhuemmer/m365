@@ -57,6 +57,12 @@ MUST NOT be added to the write gate. A classified event and its `actionable`
 field are routing metadata only. A later `mail reply` remains a separate call
 and MUST still be forced to dry-run unless `write_opt_in` is true.
 
+The supported agent sequence is: consume `mail.response_classified`, read the
+cited thread, compose text outside `m365`, invoke `mail reply` for a preview,
+obtain approval, and only then make a distinct opted-in reply call. Neither an
+`actionable` value nor the earlier watch invocation carries authorization into
+that later call. Classification does not create an Outlook Draft item.
+
 ### Forbidden via run
 
 `auth login`, `auth logout`, namespace `mcp` → `usage` with hint to run `m365 auth login` in a terminal.
@@ -88,4 +94,8 @@ Do not map these onto JSON-RPC error codes.
 
 ## Secrets
 
-Redact access tokens, refresh tokens, authorization codes, and client secrets in every MCP content item and log line. File bytes MUST NOT appear.
+Redact access tokens, refresh tokens, authorization codes, client secrets,
+TypeSafe API keys, and bearer values in every MCP content item and log line.
+`TYPESAFE_API_KEY` is process environment only and MUST NOT be accepted in an
+`m365_run` request. File bytes, classifier request state, and provider response
+bodies MUST NOT appear.

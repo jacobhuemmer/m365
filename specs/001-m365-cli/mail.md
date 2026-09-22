@@ -150,6 +150,19 @@ and absence of bodies, attachments, credentials, cursors, and revisions.
 5. **Given** a thread read, classification, output, or checkpoint save fails,
    **When** the poll ends in error, **Then** the previous cursor remains in
    force and a later invocation may repeat already emitted events.
+6. **Given** classification is enabled with a TypeSafe key, **When** a changed
+   conversation is classified by the live adapter, **Then** exactly one Jev
+   Choice request is made with the configured model and all four response
+   states, and the returned versioned model and probabilities are mapped to
+   the provider-neutral event.
+7. **Given** the feature is disabled even though a TypeSafe key is present, or
+   enabled while the key is absent, **When** classification is requested,
+   **Then** no Jev request is made and the command fails closed before Graph
+   polling or checkpoint changes.
+8. **Given** Jev times out, returns a non-success status, or returns an invalid
+   Choice payload, **When** the classification fails, **Then** the command exits
+   `5`, does not retry implicitly, does not expose provider response or bearer
+   data, and does not advance the checkpoint.
 
 ## Functional Requirements
 
@@ -242,3 +255,21 @@ and absence of bodies, attachments, credentials, cursors, and revisions.
   checkpoint-save failure MUST NOT commit the new cursor. Classification MUST
   remain read/classify behavior; replying remains a separate dry-run or
   explicitly approved write.
+- **FR-048**: The live `jev` provider MUST call
+  `POST https://api.typesafe.ai/v1/systemone` with bearer authentication, the
+  configured model, the bounded classification input as `state`, and exactly
+  one Choice question named `response_owner`. Its criteria MUST be the four
+  statuses in FR-046. The adapter MUST map the selected choice, all four
+  probabilities, optional confidence, and returned model into the stable
+  domain result.
+- **FR-049**: The live classifier MUST be constructed only when experimental
+  classification is explicitly enabled. It MUST read `TYPESAFE_API_KEY` only
+  from the process environment and MUST NOT accept or persist it through CLI,
+  MCP flags, `config.json`, watch state, or output. A missing key MUST fail as
+  usage/config before Graph or classifier requests. A present key MUST NOT
+  enable classification by itself.
+- **FR-050**: Jev requests MUST use a 15-second HTTP timeout and MUST NOT retry
+  in this increment. Timeouts, malformed responses, `429`, and `5xx` responses
+  MUST map to credential-safe class `service` errors without provider bodies,
+  response headers, request state, or bearer values. Such failures MUST retain
+  the prior Graph cursor for explicit retry on a later poll.

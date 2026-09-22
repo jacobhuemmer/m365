@@ -123,6 +123,9 @@ func mailWatch(args []string, d Deps, sess domain.Session, format string) int {
 	if *classify && d.ConfigError != nil {
 		return fail(d, d.ConfigError)
 	}
+	if *classify && d.MailClassifierError != nil {
+		return fail(d, d.MailClassifierError)
+	}
 	sink := &mailWatchSink{writer: d.Stdout, human: format == "human"}
 	classificationConfig := d.Config.Experimental.MailResponseClassification
 	err := mail.Watch(ctx(), d.MailChanges, d.MailThreads, d.MailClassifier, d.MailWatchState, sink, sess, mail.WatchConfig{

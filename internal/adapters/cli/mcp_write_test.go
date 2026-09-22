@@ -8,6 +8,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/masonhuemmer/m365/internal/adapters/graph"
+	"github.com/masonhuemmer/m365/internal/config"
+	"github.com/masonhuemmer/m365/internal/domain"
 )
 
 func TestMCPWriteGateDryRun(t *testing.T) {
@@ -70,5 +72,51 @@ func TestMCPWriteGateDryRun(t *testing.T) {
 	}
 	if len(mem.Sent) == before {
 		t.Fatal("expected send")
+	}
+}
+
+func TestMCPActionableClassificationDoesNotAuthorizeReply(t *testing.T) {
+	d, _, _ := testDeps()
+	d.Config.Experimental.MailResponseClassification = config.MailResponseClassification{
+		Enabled: true, Provider: "jev", Model: "jev-latest", ActionableThreshold: 0.8,
+	}
+	loginAll(t, &d)
+	mem := d.Mail.(graph.MailAPI).Memory
+	client := connectMCP(t, d)
+
+	classified, err := client.CallTool(context.Background(), &mcp.CallToolParams{
+		Name: "m365_run", Arguments: runIn{
+			Namespace: "mail", Verb: "watch",
+			Flags: map[string]any{
+				"classify":         true,
+				"include-existing": true,
+				"target-address":   []string{"user@example.com"},
+			},
+		},
+	})
+	if err != nil || classified.IsError {
+		t.Fatal(err, toolText(t, classified))
+	}
+	var event domain.MailWatchEvent
+	if err := json.Unmarshal([]byte(toolText(t, classified)), &event); err != nil || event.Actionable == nil || !*event.Actionable {
+		t.Fatalf("classified event = %s, %v", toolText(t, classified), err)
+	}
+
+	before := len(mem.Sent)
+	reply, err := client.CallTool(context.Background(), &mcp.CallToolParams{
+		Name: "m365_run", Arguments: runIn{
+			Namespace: "mail", Verb: "reply", Args: []string{"msg-1"},
+			Flags: map[string]any{"body": "reviewed draft"},
+		},
+	})
+	if err != nil || reply.IsError {
+		t.Fatal(err, toolText(t, reply))
+	}
+	var preview map[string]any
+	if err := json.Unmarshal([]byte(toolText(t, reply)), &preview); err != nil || preview["dry_run"] != true {
+		t.Fatalf("reply = %s, %v", toolText(t, reply), err)
+	}
+	if len(mem.Sent) != before {
+		t.Fatal("actionable classification bypassed MCP reply write gate")
 	}
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"github.com/masonhuemmer/m365/internal/adapters/mailclassifier"
 	"github.com/masonhuemmer/m365/internal/config"
 	"github.com/masonhuemmer/m365/internal/domain"
 )
@@ -154,6 +155,50 @@ func TestMailWatchClassificationIsDisabledWithoutExplicitConfig(t *testing.T) {
 	}
 	if len(nonEmptyLines(out.String())) != 1 {
 		t.Fatalf("disabled classification advanced checkpoint: %q", out.String())
+	}
+}
+
+func TestMailWatchMissingJevKeyFailsBeforeCheckpoint(t *testing.T) {
+	d, out, errw := testDeps()
+	d.Config.Experimental.MailResponseClassification = config.MailResponseClassification{
+		Enabled: true, Provider: "jev", Model: "jev-latest", ActionableThreshold: 0.8,
+	}
+	d.MailClassifierError = domain.Usage("TYPESAFE_API_KEY is required when experimental mail response classification is enabled")
+	loginAll(t, &d)
+	out.Reset()
+
+	args := []string{"m365", "mail", "watch", "--classify", "--include-existing", "--target-address", "user@example.com"}
+	if code := Run(args, d); code != domain.ExitUsage || out.Len() != 0 || !strings.Contains(errw.String(), "TYPESAFE_API_KEY") {
+		t.Fatalf("missing key exit=%d stdout=%q stderr=%q", code, out.String(), errw.String())
+	}
+
+	d.MailClassifierError = nil
+	errw.Reset()
+	if code := Run(args, d); code != domain.ExitOK {
+		t.Fatalf("retry exit=%d stderr=%q", code, errw.String())
+	}
+	if len(nonEmptyLines(out.String())) != 1 {
+		t.Fatalf("missing key advanced checkpoint: %q", out.String())
+	}
+}
+
+func TestMailWatchClassifierFailureRedactsCredentials(t *testing.T) {
+	d, out, errw := testDeps()
+	d.Config.Experimental.MailResponseClassification = config.MailResponseClassification{
+		Enabled: true, Provider: "jev", Model: "jev-latest", ActionableThreshold: 0.8,
+	}
+	d.MailClassifier = &mailclassifier.Fake{Err: domain.Service("TYPESAFE_API_KEY=top-secret Authorization: Bearer bearer-secret")}
+	loginAll(t, &d)
+	out.Reset()
+
+	args := []string{"m365", "mail", "watch", "--classify", "--include-existing", "--target-address", "user@example.com"}
+	if code := Run(args, d); code != domain.ExitService || out.Len() != 0 {
+		t.Fatalf("classifier failure exit=%d stdout=%q stderr=%q", code, out.String(), errw.String())
+	}
+	for _, secret := range []string{"top-secret", "bearer-secret"} {
+		if strings.Contains(errw.String(), secret) {
+			t.Fatalf("credential %q leaked: %s", secret, errw.String())
+		}
 	}
 }
 
