@@ -113,6 +113,44 @@ and checkpoint failures and assert that the prior cursor is retained.
    error, **Then** the previous checkpoint remains unchanged. A checkpoint save
    uses atomic replacement so a failed replacement preserves the prior file.
 
+### User Story 12 — Classify response responsibility (Priority: P2, experimental)
+
+The signed-in user or an agent may explicitly classify each changed
+conversation to determine whether a named person or address is expected to
+provide the next substantive response. Classification is disabled by default,
+uses a provider-neutral four-state result, and does not authorize or send a
+reply.
+
+**Why this priority**: A stable, privacy-bounded classification contract lets
+an external agent decide which threads warrant review without coupling polling
+to one provider or weakening the existing reply approval boundary.
+
+**Independent Test**: With classification disabled, request `--classify` and
+assert usage failure before Graph, classifier, output, or checkpoint work. With
+classification enabled and a deterministic fake classifier, classify existing
+mail for repeatable target addresses and names; assert all four probabilities,
+threshold-derived actionability, normalized target identity, CLI/MCP parity,
+and absence of bodies, attachments, credentials, cursors, and revisions.
+
+**Acceptance Scenarios**:
+
+1. **Given** classification is absent or disabled, **When** the caller runs
+   ordinary `mail watch`, **Then** the classifier-free change feed behaves
+   exactly as documented above.
+2. **Given** classification is disabled, **When** the caller adds `--classify`,
+   **Then** the command exits `3` before polling or changing its checkpoint.
+3. **Given** classification is enabled and the target has at least one valid
+   email address, **When** changed conversations are classified, **Then** each
+   event contains a four-state assessment, target probability, optional
+   confidence, model, and threshold-derived `actionable` value.
+4. **Given** the latest thread exceeds ten messages or 64 KiB of UTF-8 body
+   text, **When** it is classified, **Then** only the latest ten chronological
+   messages within the byte budget cross the classifier boundary and
+   truncation metadata records the bound.
+5. **Given** a thread read, classification, output, or checkpoint save fails,
+   **When** the poll ends in error, **Then** the previous cursor remains in
+   force and a later invocation may repeat already emitted events.
+
 ## Functional Requirements
 
 - **FR-023**: `mail list` MUST list messages in inbox by default, or in a
@@ -175,3 +213,32 @@ and checkpoint failures and assert that the prior cursor is retained.
   folder, retain at most 5,000 message revisions in oldest-first pruning order,
   and be atomically replaced in a mode-`0700` directory with a mode-`0600`
   file. Missing state is empty; malformed or unreadable state is an error.
+- **FR-042**: `mail watch --classify` MUST require
+  `experimental.mail_response_classification.enabled=true`. The setting MUST
+  default to false. The provider MUST default to `jev`, the model to
+  `jev-latest`, and the actionable threshold to `0.8`; unsupported providers
+  and thresholds outside `(0, 1]` MUST fail as usage/config errors.
+- **FR-043**: Classification targets MUST contain at least one authoritative
+  email address. An email-shaped signed-in account supplies the default;
+  repeatable `--target-address` aliases are trimmed, case-folded, validated,
+  and deduplicated. Repeatable `--target-name` values are context only and are
+  trimmed and deduplicated.
+- **FR-044**: Classifier input MUST contain at most the latest ten messages in
+  chronological order and at most 65,536 bytes of UTF-8 body text, trimming
+  only on rune boundaries. It MAY contain participants, received times,
+  subjects, and truncation metadata. It MUST NOT contain attachment metadata or
+  bytes, Graph cursors, revisions, credentials, or unrelated messages.
+- **FR-045**: A classified watch line MUST use event name
+  `mail.response_classified` and include the normal stable mail identifiers,
+  normalized target, selected status, all four probabilities, target
+  probability, optional confidence, returned model, and an `actionable`
+  boolean. It MUST NOT include raw message bodies.
+- **FR-046**: Response statuses MUST be `waiting_on_target`,
+  `waiting_on_other`, `no_response_expected`, or `unclear`. `actionable` MUST
+  be true only when the selected status is `waiting_on_target` and its target
+  probability is greater than or equal to the configured threshold.
+- **FR-047**: Delta paging and all thread reads/classifications MUST finish
+  before classified event emission. Thread-read, classifier, event-output, or
+  checkpoint-save failure MUST NOT commit the new cursor. Classification MUST
+  remain read/classify behavior; replying remains a separate dry-run or
+  explicitly approved write.

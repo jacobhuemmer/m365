@@ -388,6 +388,17 @@ type MailAPI struct{ *Memory }
 type MailDeltaAPI struct{ *Memory }
 type TeamsAPI struct{ *Memory }
 
+func (m MailDeltaAPI) LatestThread(ctx context.Context, messageID string, limit int) (domain.MailThread, error) {
+	if m.Memory == nil {
+		return domain.MailThread{}, domain.Service("mail thread client is unavailable")
+	}
+	thread, err := m.Memory.Thread(ctx, messageID, true)
+	if err != nil {
+		return domain.MailThread{}, err
+	}
+	return latestThreadWindow(thread, limit)
+}
+
 func (t TeamsAPI) Send(ctx context.Context, in teams.SendInput) (string, error) {
 	return t.SendChat(ctx, in)
 }

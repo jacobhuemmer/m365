@@ -21,9 +21,12 @@ import (
 
 type Deps struct {
 	Config         config.Config
+	ConfigError    error
 	Store          auth.Store
 	Mail           mail.Store
 	MailChanges    mail.ChangeStore
+	MailThreads    mail.ThreadStore
+	MailClassifier mail.ResponseClassifier
 	MailWatchState mail.WatchStateStore
 	Teams          teams.Store
 	Calendar       calendar.Store
@@ -191,7 +194,7 @@ var boolFlags = map[string]bool{
 	"--dry-run": true, "--html": true, "--overwrite": true, "--unread": true,
 	"--all": true, "--include-system": true, "--help": true, "-h": true,
 	"--json": true, "--human": true, "--verbose": true, "--debug": true,
-	"--bodies": true, "--group": true, "--include-existing": true,
+	"--bodies": true, "--group": true, "--include-existing": true, "--classify": true,
 }
 
 func parseMixed(fsset *flag.FlagSet, args []string) error {

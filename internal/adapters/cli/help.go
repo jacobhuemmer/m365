@@ -48,10 +48,13 @@ Output: JSON (default) or --human. Exit 0 empty list.
 
 const mailWatchHelp = `m365 mail watch — poll one folder for incremental message changes
 
-Flags: --folder (default inbox) --include-existing
+Flags: --folder (default inbox) --include-existing --classify
+Classification target: --target-address and --target-name (repeatable).
 The first poll records a quiet baseline unless --include-existing is set.
 Folder-scoped only: the mailbox-wide all value is not supported.
 JSON output is one body-free mail.changed object per line; empty polls write no lines.
+Experimental response classification is disabled by default and transfers a bounded text thread to the configured provider.
+Classified output is mail.response_classified; actionable is a routing hint, not authorization to reply.
 The cursor is committed only after the complete delta round is emitted.
 `
 

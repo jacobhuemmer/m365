@@ -2,22 +2,90 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/masonhuemmer/m365/contracts/json-mail-watch-event.schema.json",
   "title": "m365 mail watch JSON line",
-  "description": "Each non-empty stdout line is one body-free mail change object. Empty watch: no lines. No cursors, revisions, credentials, attachment metadata, or bodies.",
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["event", "message_id", "conversation_id", "received", "subject", "from"],
-  "properties": {
-    "event": { "const": "mail.changed" },
-    "message_id": { "type": "string", "minLength": 1 },
-    "conversation_id": { "type": "string" },
-    "received": { "type": "string" },
-    "subject": { "type": "string" },
-    "from": {
+  "description": "Each non-empty stdout line is one body-free mail change or response-classification object. Empty watch: no lines. No cursors, revisions, credentials, attachment metadata, or bodies.",
+  "oneOf": [
+    { "$ref": "#/$defs/changedEvent" },
+    { "$ref": "#/$defs/classifiedEvent" }
+  ],
+  "$defs": {
+    "person": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "name": { "type": "string" },
         "address": { "type": "string" }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["names", "addresses"],
+      "properties": {
+        "names": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "addresses": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "format": "email" },
+          "uniqueItems": true
+        }
+      }
+    },
+    "probabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["waiting_on_target", "waiting_on_other", "no_response_expected", "unclear"],
+      "properties": {
+        "waiting_on_target": { "type": "number", "minimum": 0, "maximum": 1 },
+        "waiting_on_other": { "type": "number", "minimum": 0, "maximum": 1 },
+        "no_response_expected": { "type": "number", "minimum": 0, "maximum": 1 },
+        "unclear": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "target_probability", "probabilities", "model"],
+      "properties": {
+        "status": {
+          "enum": ["waiting_on_target", "waiting_on_other", "no_response_expected", "unclear"]
+        },
+        "target_probability": { "type": "number", "minimum": 0, "maximum": 1 },
+        "probabilities": { "$ref": "#/$defs/probabilities" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "model": { "type": "string", "minLength": 1 }
+      }
+    },
+    "changedEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event", "message_id", "conversation_id", "received", "subject", "from"],
+      "properties": {
+        "event": { "const": "mail.changed" },
+        "message_id": { "type": "string", "minLength": 1 },
+        "conversation_id": { "type": "string" },
+        "received": { "type": "string" },
+        "subject": { "type": "string" },
+        "from": { "$ref": "#/$defs/person" }
+      }
+    },
+    "classifiedEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event", "message_id", "conversation_id", "received", "subject", "from", "target", "classification", "actionable"],
+      "properties": {
+        "event": { "const": "mail.response_classified" },
+        "message_id": { "type": "string", "minLength": 1 },
+        "conversation_id": { "type": "string" },
+        "received": { "type": "string" },
+        "subject": { "type": "string" },
+        "from": { "$ref": "#/$defs/person" },
+        "target": { "$ref": "#/$defs/target" },
+        "classification": { "$ref": "#/$defs/classification" },
+        "actionable": { "type": "boolean" }
       }
     }
   }

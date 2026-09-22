@@ -7,6 +7,7 @@ import (
 
 	"github.com/masonhuemmer/m365/internal/adapters/graph"
 	"github.com/masonhuemmer/m365/internal/adapters/keychain"
+	"github.com/masonhuemmer/m365/internal/adapters/mailclassifier"
 	"github.com/masonhuemmer/m365/internal/adapters/mailwatchstate"
 	"github.com/masonhuemmer/m365/internal/config"
 	"github.com/masonhuemmer/m365/internal/domain"
@@ -21,6 +22,8 @@ func testDeps() (Deps, *bytes.Buffer, *bytes.Buffer) {
 		Store:          st,
 		Mail:           graph.MailAPI{Memory: mem},
 		MailChanges:    graph.MailDeltaAPI{Memory: mem},
+		MailThreads:    graph.MailDeltaAPI{Memory: mem},
+		MailClassifier: &mailclassifier.Fake{},
 		MailWatchState: &mailwatchstate.Memory{},
 		Teams:          graph.TeamsAPI{Memory: mem},
 		Calendar:       graph.CalendarAPI{Memory: mem},

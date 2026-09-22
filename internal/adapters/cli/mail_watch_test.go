@@ -10,6 +10,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"github.com/masonhuemmer/m365/internal/config"
 	"github.com/masonhuemmer/m365/internal/domain"
 )
 
@@ -129,11 +130,131 @@ func TestMailWatchHelpDoesNotRequireSession(t *testing.T) {
 	if code := Run([]string{"m365", "mail", "watch", "--help"}, d); code != domain.ExitOK {
 		t.Fatalf("exit %d: %s", code, errw.String())
 	}
-	for _, expected := range []string{"--folder", "--include-existing", "mail.changed", "JSON"} {
+	for _, expected := range []string{"--folder", "--include-existing", "--classify", "--target-address", "disabled by default", "mail.changed", "JSON"} {
 		if !strings.Contains(out.String(), expected) {
 			t.Fatalf("help missing %q: %s", expected, out.String())
 		}
 	}
+}
+
+func TestMailWatchClassificationIsDisabledWithoutExplicitConfig(t *testing.T) {
+	d, out, errw := testDeps()
+	loginAll(t, &d)
+	out.Reset()
+
+	code := Run([]string{"m365", "mail", "watch", "--classify", "--include-existing", "--target-address", "user@example.com"}, d)
+	if code != domain.ExitUsage || !strings.Contains(errw.String(), "disabled") || out.Len() != 0 {
+		t.Fatalf("disabled classification exit=%d stdout=%q stderr=%q", code, out.String(), errw.String())
+	}
+
+	out.Reset()
+	errw.Reset()
+	if code := Run([]string{"m365", "mail", "watch", "--include-existing"}, d); code != domain.ExitOK {
+		t.Fatalf("classifier-free retry exit %d: %s", code, errw.String())
+	}
+	if len(nonEmptyLines(out.String())) != 1 {
+		t.Fatalf("disabled classification advanced checkpoint: %q", out.String())
+	}
+}
+
+func TestMailWatchClassificationShapeAndSensitiveFieldAbsence(t *testing.T) {
+	d, out, errw := testDeps()
+	d.Config.Experimental.MailResponseClassification = config.MailResponseClassification{
+		Enabled: true, Provider: "jev", Model: "jev-latest", ActionableThreshold: 0.8,
+	}
+	loginAll(t, &d)
+	out.Reset()
+
+	args := []string{
+		"m365", "mail", "watch", "--classify", "--include-existing",
+		"--target-address", " USER@example.com ", "--target-address", "alias@example.com",
+		"--target-name", "Mason Huemmer",
+	}
+	if code := Run(args, d); code != domain.ExitOK {
+		t.Fatalf("classified watch exit %d: %s", code, errw.String())
+	}
+	lines := nonEmptyLines(out.String())
+	if len(lines) != 1 {
+		t.Fatalf("classified lines = %q", out.String())
+	}
+	var event map[string]any
+	if err := json.Unmarshal([]byte(lines[0]), &event); err != nil {
+		t.Fatal(err)
+	}
+	if event["event"] != domain.MailResponseClassifiedEvent || event["actionable"] != true {
+		t.Fatalf("classified event = %+v", event)
+	}
+	target, _ := event["target"].(map[string]any)
+	addresses, _ := target["addresses"].([]any)
+	if len(addresses) != 2 || addresses[0] != "user@example.com" || addresses[1] != "alias@example.com" {
+		t.Fatalf("classified target = %+v", target)
+	}
+	classification, _ := event["classification"].(map[string]any)
+	probabilities, _ := classification["probabilities"].(map[string]any)
+	if len(probabilities) != 4 || classification["status"] != string(domain.ResponseWaitingOnTarget) || classification["model"] == "" {
+		t.Fatalf("classification = %+v", classification)
+	}
+	for _, forbidden := range []string{"body", "attachments", "cursor", "token", "revision"} {
+		if containsJSONKey(event, forbidden) {
+			t.Fatalf("classified event exposes %s: %+v", forbidden, event)
+		}
+	}
+}
+
+func TestMCPRunClassifiedMailWatchMatchesDirectJSONLines(t *testing.T) {
+	direct, out, errw := testDeps()
+	direct.Config.Experimental.MailResponseClassification = config.MailResponseClassification{
+		Enabled: true, Provider: "jev", Model: "jev-latest", ActionableThreshold: 0.8,
+	}
+	loginAll(t, &direct)
+	out.Reset()
+	directArgs := []string{"m365", "mail", "watch", "--classify", "--include-existing", "--target-address", "user@example.com", "--target-name", "Mason"}
+	if code := Run(directArgs, direct); code != domain.ExitOK {
+		t.Fatalf("direct classified exit %d: %s", code, errw.String())
+	}
+	want := strings.TrimSpace(out.String())
+
+	throughMCP, _, _ := testDeps()
+	throughMCP.Config.Experimental.MailResponseClassification = direct.Config.Experimental.MailResponseClassification
+	loginAll(t, &throughMCP)
+	client := connectMCP(t, throughMCP)
+	result, err := client.CallTool(context.Background(), &mcp.CallToolParams{
+		Name: "m365_run",
+		Arguments: runIn{
+			Namespace: "mail",
+			Verb:      "watch",
+			Flags: map[string]any{
+				"classify":         true,
+				"include-existing": true,
+				"target-address":   []string{"user@example.com"},
+				"target-name":      []string{"Mason"},
+			},
+		},
+	})
+	if err != nil || result.IsError {
+		t.Fatal(err, toolText(t, result))
+	}
+	if got := toolText(t, result); got != want {
+		t.Fatalf("MCP classified watch = %q, direct = %q", got, want)
+	}
+}
+
+func containsJSONKey(value any, key string) bool {
+	switch typed := value.(type) {
+	case map[string]any:
+		for current, child := range typed {
+			if current == key || containsJSONKey(child, key) {
+				return true
+			}
+		}
+	case []any:
+		for _, child := range typed {
+			if containsJSONKey(child, key) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 type failingWriter struct{}

@@ -3,9 +3,11 @@ package mail
 import (
 	"context"
 	"errors"
+	netmail "net/mail"
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/masonhuemmer/m365/internal/app/auth"
 	"github.com/masonhuemmer/m365/internal/domain"
@@ -14,9 +16,12 @@ import (
 func Watch(
 	ctx context.Context,
 	changes ChangeStore,
+	threads ThreadStore,
+	classifier ResponseClassifier,
 	states WatchStateStore,
 	sink EventSink,
 	sess domain.Session,
+	cfg WatchConfig,
 	query WatchQuery,
 ) error {
 	if err := auth.Require(sess, true, false); err != nil {
@@ -29,12 +34,29 @@ func Watch(
 	if strings.EqualFold(folder, "all") {
 		return domain.Usage("mail watch requires a folder; all is not supported")
 	}
+	target := domain.ResponseTarget{}
+	if query.Classify {
+		if !cfg.ClassificationEnabled {
+			return domain.Usage("experimental mail response classification is disabled")
+		}
+		if cfg.ActionableThreshold <= 0 || cfg.ActionableThreshold > 1 {
+			return domain.Usage("mail response classification threshold must be greater than 0 and at most 1")
+		}
+		var err error
+		target, err = normalizeResponseTarget(sess.Account, query.TargetAddresses, query.TargetNames)
+		if err != nil {
+			return err
+		}
+	}
 	account := strings.ToLower(strings.TrimSpace(sess.Account))
 	if account == "" {
 		return domain.Usage("signed-in account is required for mail watch")
 	}
 	if changes == nil || states == nil || sink == nil {
 		return domain.Usage("mail watch is unavailable")
+	}
+	if query.Classify && (threads == nil || classifier == nil) {
+		return domain.Usage("mail response classification is unavailable")
 	}
 
 	state, err := states.Load(account, folder)
@@ -82,16 +104,43 @@ func Watch(
 		return states.Save(account, folder, state)
 	}
 
-	events := make([]domain.MailWatchEvent, 0, len(candidates))
+	messages := make([]domain.MailMessage, 0, len(candidates))
 	for _, message := range candidates {
-		events = append(events, domain.MailWatchEvent{
+		messages = append(messages, message)
+	}
+	sort.Slice(messages, func(i, j int) bool {
+		return mailMessageLess(messages[i], messages[j])
+	})
+
+	events := make([]domain.MailWatchEvent, 0, len(messages))
+	for _, message := range messages {
+		event := domain.MailWatchEvent{
 			Event:          domain.MailChangedEvent,
 			MessageID:      message.ID,
 			ConversationID: message.Conversation,
 			Received:       message.Received,
 			Subject:        message.Subject,
 			From:           message.From,
-		})
+		}
+		if query.Classify {
+			thread, err := threads.LatestThread(ctx, message.ID, domain.MaxClassificationMessages)
+			if err != nil {
+				return err
+			}
+			input := buildClassificationInput(target, thread)
+			classification, err := classifier.Classify(ctx, input)
+			if err != nil {
+				return err
+			}
+			actionable := classification.Status == domain.ResponseWaitingOnTarget && classification.TargetProbability >= cfg.ActionableThreshold
+			eventTarget := target
+			eventClassification := classification
+			event.Event = domain.MailResponseClassifiedEvent
+			event.Target = &eventTarget
+			event.Classification = &eventClassification
+			event.Actionable = &actionable
+		}
+		events = append(events, event)
 	}
 	sort.Slice(events, func(i, j int) bool {
 		return eventLess(events[i], events[j])
@@ -102,6 +151,117 @@ func Watch(
 		}
 	}
 	return states.Save(account, folder, state)
+}
+
+func normalizeResponseTarget(account string, addresses, names []string) (domain.ResponseTarget, error) {
+	target := domain.ResponseTarget{Names: []string{}, Addresses: []string{}}
+	seenAddresses := map[string]bool{}
+	if normalized, ok := normalizedEmailAddress(account); ok {
+		target.Addresses = append(target.Addresses, normalized)
+		seenAddresses[normalized] = true
+	}
+	for _, address := range addresses {
+		normalized, ok := normalizedEmailAddress(address)
+		if !ok {
+			return domain.ResponseTarget{}, domain.Usagef("invalid target address %q", strings.TrimSpace(address))
+		}
+		if !seenAddresses[normalized] {
+			seenAddresses[normalized] = true
+			target.Addresses = append(target.Addresses, normalized)
+		}
+	}
+	seenNames := map[string]bool{}
+	for _, name := range names {
+		normalized := strings.TrimSpace(name)
+		key := strings.ToLower(normalized)
+		if normalized != "" && !seenNames[key] {
+			seenNames[key] = true
+			target.Names = append(target.Names, normalized)
+		}
+	}
+	if len(target.Addresses) == 0 {
+		return domain.ResponseTarget{}, domain.Usage("at least one target address is required for mail response classification")
+	}
+	return target, nil
+}
+
+func normalizedEmailAddress(value string) (string, bool) {
+	trimmed := strings.TrimSpace(value)
+	parsed, err := netmail.ParseAddress(trimmed)
+	if err != nil || !strings.EqualFold(parsed.Address, trimmed) {
+		return "", false
+	}
+	return strings.ToLower(parsed.Address), true
+}
+
+func buildClassificationInput(target domain.ResponseTarget, thread domain.MailThread) domain.ClassificationInput {
+	items := append([]domain.MailMessage(nil), thread.Items...)
+	sort.Slice(items, func(i, j int) bool {
+		return mailMessageLess(items[i], items[j])
+	})
+	truncated := thread.Count > len(items)
+	if len(items) > domain.MaxClassificationMessages {
+		items = items[len(items)-domain.MaxClassificationMessages:]
+		truncated = true
+	}
+	messages := make([]domain.ClassificationMessage, len(items))
+	remainingBodyBytes := domain.MaxClassificationBodyBytes
+	for i := len(items) - 1; i >= 0; i-- {
+		item := items[i]
+		body := strings.TrimSpace(strings.ToValidUTF8(item.Body, "�"))
+		if len(body) > remainingBodyBytes {
+			body = truncateUTF8(body, remainingBodyBytes)
+			truncated = true
+		}
+		remainingBodyBytes -= len(body)
+		messages[i] = domain.ClassificationMessage{
+			From:     normalizedParticipantAddress(item.From.Address),
+			To:       normalizedParticipantAddresses(item.To),
+			CC:       normalizedParticipantAddresses(item.CC),
+			Received: item.Received,
+			Subject:  strings.TrimSpace(strings.ToValidUTF8(item.Subject, "�")),
+			BodyText: body,
+		}
+	}
+	return domain.ClassificationInput{
+		Target: target,
+		Thread: messages,
+		Truncation: domain.ClassificationTruncation{
+			MessageLimit:  domain.MaxClassificationMessages,
+			BodyByteLimit: domain.MaxClassificationBodyBytes,
+			Truncated:     truncated,
+		},
+	}
+}
+
+func normalizedParticipantAddress(address string) string {
+	return strings.ToLower(strings.TrimSpace(address))
+}
+
+func normalizedParticipantAddresses(people []domain.Person) []string {
+	addresses := make([]string, 0, len(people))
+	seen := map[string]bool{}
+	for _, person := range people {
+		address := normalizedParticipantAddress(person.Address)
+		if address != "" && !seen[address] {
+			seen[address] = true
+			addresses = append(addresses, address)
+		}
+	}
+	return addresses
+}
+
+func truncateUTF8(value string, maxBytes int) string {
+	if maxBytes <= 0 {
+		return ""
+	}
+	if len(value) <= maxBytes {
+		return value
+	}
+	for maxBytes > 0 && !utf8.ValidString(value[:maxBytes]) {
+		maxBytes--
+	}
+	return value[:maxBytes]
 }
 
 func consumeDeltaRound(ctx context.Context, changes ChangeStore, folder, initialToken string) ([]domain.MailDeltaChange, string, error) {

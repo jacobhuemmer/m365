@@ -14,10 +14,26 @@ type DeltaQuery struct {
 type WatchQuery struct {
 	Folder          string
 	IncludeExisting bool
+	Classify        bool
+	TargetAddresses []string
+	TargetNames     []string
+}
+
+type WatchConfig struct {
+	ClassificationEnabled bool
+	ActionableThreshold   float64
 }
 
 type ChangeStore interface {
 	Delta(context.Context, DeltaQuery) (domain.MailDeltaPage, error)
+}
+
+type ThreadStore interface {
+	LatestThread(context.Context, string, int) (domain.MailThread, error)
+}
+
+type ResponseClassifier interface {
+	Classify(context.Context, domain.ClassificationInput) (domain.ResponseClassification, error)
 }
 
 type WatchStateStore interface {

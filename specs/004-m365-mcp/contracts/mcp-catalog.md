@@ -52,6 +52,11 @@ No args → overview: three tools, four recipe topics, write opt-in. `topic` set
 
 Verbs that MUST dry-run unless `write_opt_in` is true: `mail send`, `mail reply`, `teams send`, `calendar create`, `calendar update`, `calendar delete`, `files upload`, `files create-folder`, `files delete`, `files move`.
 
+`mail watch`, including `mail watch --classify`, is read/classify behavior and
+MUST NOT be added to the write gate. A classified event and its `actionable`
+field are routing metadata only. A later `mail reply` remains a separate call
+and MUST still be forced to dry-run unless `write_opt_in` is true.
+
 ### Forbidden via run
 
 `auth login`, `auth logout`, namespace `mcp` → `usage` with hint to run `m365 auth login` in a terminal.

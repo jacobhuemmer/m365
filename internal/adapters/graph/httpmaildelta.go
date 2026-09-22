@@ -16,6 +16,17 @@ type HTTPMailDelta struct {
 	HTTPClient *HTTPClient
 }
 
+func (d *HTTPMailDelta) LatestThread(ctx context.Context, messageID string, limit int) (domain.MailThread, error) {
+	if d == nil || d.HTTPClient == nil {
+		return domain.MailThread{}, domain.Service("mail thread client is unavailable")
+	}
+	thread, err := d.HTTPClient.Thread(ctx, messageID, true)
+	if err != nil {
+		return domain.MailThread{}, err
+	}
+	return latestThreadWindow(thread, limit)
+}
+
 func (d *HTTPMailDelta) Delta(ctx context.Context, query mail.DeltaQuery) (domain.MailDeltaPage, error) {
 	if d == nil || d.HTTPClient == nil {
 		return domain.MailDeltaPage{}, domain.Service("mail delta client is unavailable")
@@ -82,4 +93,14 @@ func (d *HTTPMailDelta) deltaURL(query mail.DeltaQuery) (string, error) {
 	values.Set("$select", "id,changeKey,subject,from,toRecipients,ccRecipients,receivedDateTime,isRead,hasAttachments,conversationId")
 	path := "/me/mailFolders/" + url.PathEscape(strings.TrimSpace(query.Folder)) + "/messages/delta?" + values.Encode()
 	return strings.TrimRight(client.Base, "/") + path, nil
+}
+
+func latestThreadWindow(thread domain.MailThread, limit int) (domain.MailThread, error) {
+	if limit <= 0 {
+		return domain.MailThread{}, domain.Usage("mail thread limit must be greater than zero")
+	}
+	if len(thread.Items) > limit {
+		thread.Items = append([]domain.MailMessage(nil), thread.Items[len(thread.Items)-limit:]...)
+	}
+	return thread, nil
 }

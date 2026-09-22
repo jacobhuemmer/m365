@@ -34,6 +34,21 @@ func TestMCPWriteGateDryRun(t *testing.T) {
 	}
 	res, err = cs.CallTool(context.Background(), &mcp.CallToolParams{
 		Name: "m365_run", Arguments: runIn{
+			Namespace: "mail", Verb: "reply", Args: []string{"msg-1"},
+			Flags: map[string]any{"body": "reviewed draft"},
+		},
+	})
+	if err != nil || res.IsError {
+		t.Fatal(err, toolText(t, res))
+	}
+	if err := json.Unmarshal([]byte(toolText(t, res)), &v); err != nil || v["dry_run"] != true {
+		t.Fatal(toolText(t, res))
+	}
+	if len(mem.Sent) != before {
+		t.Fatal("reply sent without write opt-in")
+	}
+	res, err = cs.CallTool(context.Background(), &mcp.CallToolParams{
+		Name: "m365_run", Arguments: runIn{
 			Namespace: "calendar", Verb: "create",
 			Flags: map[string]any{"subject": "t", "start": "2026-09-16T10:00:00Z", "end": "2026-09-16T11:00:00Z"},
 		},
