@@ -77,6 +77,93 @@ fields and assert exit `3`.
 5. **Given** an unknown reply target, **When** the user runs `mail reply`,
    **Then** the command exits `6` and does not send.
 
+### User Story 11 — Poll resumable mail changes (Priority: P2)
+
+The signed-in user or an agent performs one finite poll of a single Outlook
+folder. The command consumes a complete Microsoft Graph delta round, emits at
+most one body-free change event per changed conversation, commits a protected
+checkpoint, and exits. The first poll establishes a quiet baseline unless the
+caller explicitly requests existing messages.
+
+**Why this priority**: A resumable, classifier-free feed proves mailbox
+recovery and delivery semantics before any message content crosses a
+third-party boundary.
+
+**Independent Test**: Against a synthetic mailbox and isolated state store,
+run two polls to prove a quiet baseline and resume. With a fresh state store,
+run `mail watch --include-existing` to emit one body-free event per changed
+conversation, then prove the next poll is quiet. Inject Graph paging, output,
+and checkpoint failures and assert that the prior cursor is retained.
+
+**Acceptance Scenarios**:
+
+1. **Given** no checkpoint, **When** the user runs `mail watch`, **Then** every
+   delta page is consumed, the terminal cursor and message revisions are saved,
+   no historical event is emitted, and the command exits `0`.
+2. **Given** no checkpoint, **When** the user runs
+   `mail watch --include-existing`, **Then** stdout contains one
+   `mail.changed` JSON object per changed conversation and never contains a
+   body, attachment, revision, or cursor.
+3. **Given** a completed prior poll, **When** unchanged revisions are returned,
+   **Then** no event is emitted and the command exits `0`.
+4. **Given** Graph returns `410 Gone`, **When** the user polls, **Then** the
+   command restarts one fresh delta round while retaining known revisions so
+   replayed messages remain suppressed.
+5. **Given** delta paging or event output fails, **When** the poll ends in an
+   error, **Then** the previous checkpoint remains unchanged. A checkpoint save
+   uses atomic replacement so a failed replacement preserves the prior file.
+
+### User Story 12 — Classify response responsibility (Priority: P2, experimental)
+
+The signed-in user or an agent may explicitly classify each changed
+conversation to determine whether a named person or address is expected to
+provide the next substantive response. Classification is disabled by default,
+uses a provider-neutral four-state result, and does not authorize or send a
+reply.
+
+**Why this priority**: A stable, privacy-bounded classification contract lets
+an external agent decide which threads warrant review without coupling polling
+to one provider or weakening the existing reply approval boundary.
+
+**Independent Test**: With classification disabled, request `--classify` and
+assert usage failure before Graph, classifier, output, or checkpoint work. With
+classification enabled and a deterministic fake classifier, classify existing
+mail for repeatable target addresses and names; assert all four probabilities,
+threshold-derived actionability, normalized target identity, CLI/MCP parity,
+and absence of bodies, attachments, credentials, cursors, and revisions.
+
+**Acceptance Scenarios**:
+
+1. **Given** classification is absent or disabled, **When** the caller runs
+   ordinary `mail watch`, **Then** the classifier-free change feed behaves
+   exactly as documented above.
+2. **Given** classification is disabled, **When** the caller adds `--classify`,
+   **Then** the command exits `3` before polling or changing its checkpoint.
+3. **Given** classification is enabled and the target has at least one valid
+   email address, **When** changed conversations are classified, **Then** each
+   event contains a four-state assessment, target probability, optional
+   confidence, model, and threshold-derived `actionable` value.
+4. **Given** the latest thread exceeds ten messages or 64 KiB of UTF-8 body
+   text, **When** it is classified, **Then** only the latest ten chronological
+   messages within the byte budget cross the classifier boundary and
+   truncation metadata records the bound.
+5. **Given** a thread read, classification, output, or checkpoint save fails,
+   **When** the poll ends in error, **Then** the previous cursor remains in
+   force and a later invocation may repeat already emitted events.
+6. **Given** classification is enabled with a TypeSafe key, **When** a changed
+   conversation is classified by the live adapter, **Then** exactly one Jev
+   Choice request is made with the configured model and all four response
+   states, and the returned versioned model and probabilities are mapped to
+   the provider-neutral event.
+7. **Given** the feature is disabled even though a TypeSafe key is present, or
+   enabled while the key is absent, **When** classification is requested,
+   **Then** no Jev request is made and the command fails closed before Graph
+   polling or checkpoint changes.
+8. **Given** Jev times out, returns a non-success status, or returns an invalid
+   Choice payload, **When** the classification fails, **Then** the command exits
+   `5`, does not retry implicitly, does not expose provider response or bearer
+   data, and does not advance the checkpoint.
+
 ## Functional Requirements
 
 - **FR-023**: `mail list` MUST list messages in inbox by default, or in a
@@ -114,3 +201,75 @@ fields and assert exit `3`.
 - **FR-034**: v1 mail MUST NOT move, delete, create or delete folders,
   manage rules or categories, open calendar, operate a shared mailbox, or
   treat OneDrive or SharePoint as a file picker.
+- **FR-035**: `mail watch` MUST perform one complete folder-scoped delta round
+  and exit. `--folder` MUST default to `inbox`; mailbox-wide `all` MUST be
+  rejected because message delta synchronization is folder-scoped.
+- **FR-036**: A first poll MUST establish a quiet baseline unless
+  `--include-existing` is present. Later polls MUST resume from the persisted
+  terminal cursor and suppress revisions already present in the bounded
+  revision history.
+- **FR-037**: `mail watch` JSON stdout MUST be JSON Lines. Each event MUST have
+  event name `mail.changed`, stable message and conversation ids, received
+  time, subject, and sender. It MUST NOT include bodies, attachments, Graph
+  cursors, or revision values.
+- **FR-038**: Repeated changes in a delta round MUST collapse to the newest
+  changed message per conversation. Events MUST be ordered by received time
+  ascending and then message id.
+- **FR-039**: Delta paging MUST finish before event emission. Event emission
+  MUST finish before checkpoint replacement. A paging or output failure MUST
+  leave the prior checkpoint unchanged; a later poll MAY repeat already
+  emitted events.
+- **FR-040**: A Graph `410 Gone` delta response MUST cause at most one fresh
+  delta round while retaining known revisions. Any second reset or incomplete
+  round MUST fail without replacing the checkpoint.
+- **FR-041**: Mail watch state MUST be isolated by normalized account and
+  folder, retain at most 5,000 message revisions in oldest-first pruning order,
+  and be atomically replaced in a mode-`0700` directory with a mode-`0600`
+  file. Missing state is empty; malformed or unreadable state is an error.
+- **FR-042**: `mail watch --classify` MUST require
+  `experimental.mail_response_classification.enabled=true`. The setting MUST
+  default to false. The provider MUST default to `jev`, the model to
+  `jev-latest`, and the actionable threshold to `0.8`; unsupported providers
+  and thresholds outside `(0, 1]` MUST fail as usage/config errors.
+- **FR-043**: Classification targets MUST contain at least one authoritative
+  email address. An email-shaped signed-in account supplies the default;
+  repeatable `--target-address` aliases are trimmed, case-folded, validated,
+  and deduplicated. Repeatable `--target-name` values are context only and are
+  trimmed and deduplicated.
+- **FR-044**: Classifier input MUST contain at most the latest ten messages in
+  chronological order and at most 65,536 bytes of UTF-8 body text, trimming
+  only on rune boundaries. It MAY contain participants, received times,
+  subjects, and truncation metadata. It MUST NOT contain attachment metadata or
+  bytes, Graph cursors, revisions, credentials, or unrelated messages.
+- **FR-045**: A classified watch line MUST use event name
+  `mail.response_classified` and include the normal stable mail identifiers,
+  normalized target, selected status, all four probabilities, target
+  probability, optional confidence, returned model, and an `actionable`
+  boolean. It MUST NOT include raw message bodies.
+- **FR-046**: Response statuses MUST be `waiting_on_target`,
+  `waiting_on_other`, `no_response_expected`, or `unclear`. `actionable` MUST
+  be true only when the selected status is `waiting_on_target` and its target
+  probability is greater than or equal to the configured threshold.
+- **FR-047**: Delta paging and all thread reads/classifications MUST finish
+  before classified event emission. Thread-read, classifier, event-output, or
+  checkpoint-save failure MUST NOT commit the new cursor. Classification MUST
+  remain read/classify behavior; replying remains a separate dry-run or
+  explicitly approved write.
+- **FR-048**: The live `jev` provider MUST call
+  `POST https://api.typesafe.ai/v1/systemone` with bearer authentication, the
+  configured model, the bounded classification input as `state`, and exactly
+  one Choice question named `response_owner`. Its criteria MUST be the four
+  statuses in FR-046. The adapter MUST map the selected choice, all four
+  probabilities, optional confidence, and returned model into the stable
+  domain result.
+- **FR-049**: The live classifier MUST be constructed only when experimental
+  classification is explicitly enabled. It MUST read `TYPESAFE_API_KEY` only
+  from the process environment and MUST NOT accept or persist it through CLI,
+  MCP flags, `config.json`, watch state, or output. A missing key MUST fail as
+  usage/config before Graph or classifier requests. A present key MUST NOT
+  enable classification by itself.
+- **FR-050**: Jev requests MUST use a 15-second HTTP timeout and MUST NOT retry
+  in this increment. Timeouts, malformed responses, `429`, and `5xx` responses
+  MUST map to credential-safe class `service` errors without provider bodies,
+  response headers, request state, or bearer values. Such failures MUST retain
+  the prior Graph cursor for explicit retry on a later poll.

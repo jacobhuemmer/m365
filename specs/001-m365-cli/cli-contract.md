@@ -45,7 +45,7 @@ stdout with exit `0`.
 - **FR-002**: v1 MUST provide these verbs (names MAY be clarified in help
   text; coverage MUST match):
   - Core: `auth login`, `auth status`, `auth logout`, top-level `--help`
-  - mail: `list`, `get`, `thread`, `send`, `reply`, list attachments, save
+  - mail: `list`, `get`, `thread`, `watch`, `send`, `reply`, list attachments, save
     attachment
   - teams: `list`, `get`, `messages`, `send`, `watch`, list attachments, save
     attachment
@@ -55,8 +55,8 @@ stdout with exit `0`.
 - **FR-004**: Every command MUST support machine-readable JSON and
   human-readable output. JSON MUST be the default. `--json` MUST select JSON.
   `--human` MUST select human-readable stdout. Non-watch JSON stdout MUST be
-  exactly one parseable JSON value. `teams watch` JSON stdout MUST be JSON
-  lines: each non-empty line one parseable JSON object.
+  exactly one parseable JSON value. `mail watch` and `teams watch` JSON stdout
+  MUST be JSON lines: each non-empty line one parseable JSON object.
 - **FR-005**: Exit classes MUST be stable and documented: `0` success; `3`
   usage, validation, and configuration; `4` authentication and consent; `5`
   Microsoft 365 service error; `6` not-found. Once these classes exist,
@@ -104,6 +104,7 @@ stdout with exit `0`.
 | `auth logout` | already signed out is success | n/a | n/a | n/a | n/a |
 | `mail list` | no messages → 0, empty items | bad flags or `--top` out of range → 3 | no/expired session or no mail consent → 4 | yes | unknown folder → 6 |
 | `mail get` / `thread` | n/a | missing id → 3 | 4 | yes | unknown message → 6 |
+| `mail watch` | no changes → 0, empty stdout in JSON | `all` folder or bad flags → 3 | 4 | yes | unknown folder → 6 |
 | `mail send` / `reply` | n/a | missing required fields or attach validation → 3 | 4 | yes | reply target unknown → 6 |
 | `teams list` | no chats → 0, empty items | `--top` out of range → 3 | 4 | yes | n/a |
 | `teams get` / `messages` | no messages → 0, empty items | missing id → 3 | 4 | yes | unknown chat or message → 6 |

@@ -8,8 +8,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/masonhuemmer/m365/internal/app/mail"
 	"github.com/masonhuemmer/m365/internal/domain"
@@ -179,23 +181,29 @@ func (c *HTTPClient) Thread(ctx context.Context, id string, bodies bool) (domain
 	if err != nil {
 		return domain.MailThread{}, err
 	}
-	res, err := c.do(ctx, http.MethodGet, "/me/messages?$filter="+url.QueryEscape("conversationId eq '"+msg.Conversation+"'")+"&$expand=attachments")
-	if err != nil {
-		return domain.MailThread{}, err
-	}
-	defer res.Body.Close()
-	var raw graphList
-	if err := json.NewDecoder(res.Body).Decode(&raw); err != nil {
-		return domain.MailThread{}, domain.Service("invalid thread")
-	}
-	items := make([]domain.MailMessage, 0, len(raw.Value))
-	for _, g := range raw.Value {
-		m := g.toMail()
-		if !bodies {
-			m.Body = ""
+	next := "/me/messages?$filter=" + url.QueryEscape("conversationId eq '"+msg.Conversation+"'") + "&$expand=attachments"
+	items := make([]domain.MailMessage, 0)
+	for next != "" {
+		res, err := c.do(ctx, http.MethodGet, next)
+		if err != nil {
+			return domain.MailThread{}, err
 		}
-		items = append(items, m)
+		var raw graphList
+		decodeErr := json.NewDecoder(res.Body).Decode(&raw)
+		_ = res.Body.Close()
+		if decodeErr != nil {
+			return domain.MailThread{}, domain.Service("invalid thread")
+		}
+		for _, g := range raw.Value {
+			m := g.toMail()
+			if !bodies {
+				m.Body = ""
+			}
+			items = append(items, m)
+		}
+		next = raw.Next
 	}
+	sortMailMessages(items)
 	return domain.MailThread{ConversationID: msg.Conversation, Count: len(items), Items: items}, nil
 }
 
@@ -214,21 +222,30 @@ type graphList struct {
 
 type graphMsg struct {
 	ID             string `json:"id"`
+	ChangeKey      string `json:"changeKey"`
 	Subject        string `json:"subject"`
 	ConversationID string `json:"conversationId"`
+	Received       string `json:"receivedDateTime"`
+	IsRead         bool   `json:"isRead"`
 	Body           struct {
 		Content string `json:"content"`
 	} `json:"body"`
-	From struct {
-		EmailAddress struct {
-			Name, Address string
-		} `json:"emailAddress"`
-	} `json:"from"`
-	HasAttachments bool `json:"hasAttachments"`
+	From           graphRecipient   `json:"from"`
+	ToRecipients   []graphRecipient `json:"toRecipients"`
+	CCRecipients   []graphRecipient `json:"ccRecipients"`
+	HasAttachments bool             `json:"hasAttachments"`
 	Attachments    []struct {
 		ID, Name, ContentType string
 		Size                  int64
 	} `json:"attachments"`
+	Removed json.RawMessage `json:"@removed"`
+}
+
+type graphRecipient struct {
+	EmailAddress struct {
+		Name    string `json:"name"`
+		Address string `json:"address"`
+	} `json:"emailAddress"`
 }
 
 func (g graphMsg) toMail() domain.MailMessage {
@@ -239,6 +256,37 @@ func (g graphMsg) toMail() domain.MailMessage {
 	return domain.MailMessage{
 		ID: g.ID, Conversation: g.ConversationID, Subject: g.Subject,
 		From: domain.Person{Name: g.From.EmailAddress.Name, Address: g.From.EmailAddress.Address},
+		To:   graphRecipients(g.ToRecipients), CC: graphRecipients(g.CCRecipients),
+		Received: g.Received, IsRead: g.IsRead,
 		Body: g.Body.Content, HasAttachments: g.HasAttachments, Attachments: atts,
 	}
+}
+
+func graphRecipients(recipients []graphRecipient) []domain.Person {
+	people := make([]domain.Person, 0, len(recipients))
+	for _, recipient := range recipients {
+		people = append(people, domain.Person{
+			Name:    recipient.EmailAddress.Name,
+			Address: recipient.EmailAddress.Address,
+		})
+	}
+	return people
+}
+
+func sortMailMessages(messages []domain.MailMessage) {
+	sort.Slice(messages, func(i, j int) bool {
+		a, b := messages[i], messages[j]
+		at, aerr := time.Parse(time.RFC3339Nano, a.Received)
+		bt, berr := time.Parse(time.RFC3339Nano, b.Received)
+		if aerr == nil && berr == nil {
+			if !at.Equal(bt) {
+				return at.Before(bt)
+			}
+			return a.ID < b.ID
+		}
+		if a.Received != b.Received {
+			return a.Received < b.Received
+		}
+		return a.ID < b.ID
+	})
 }
