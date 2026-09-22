@@ -24,12 +24,13 @@ Attachment caps (help MUST show): 10 MiB per file, 10 files per send/reply.
 | `mail list` | `--folder`, `--unread`, `--search`, `--top`, `--page-token` | folder=`inbox`; top=`10` |
 | `mail get` | `MESSAGE_ID` | body as text |
 | `mail thread` | `MESSAGE_ID`, `--bodies` | oldest-first; bodies off |
+| `mail watch` | `--folder`, `--include-existing` | folder=`inbox`; quiet first baseline; JSON lines |
 | `mail send` | `--to` (repeat), `--subject`, `--body` / `--body-file`, `--cc` (repeat), `--attach` (repeat), `--html`, `--dry-run` | |
 | `mail reply` | `MESSAGE_ID`, `--body` / `--body-file`, `--all`, `--attach`, `--html`, `--dry-run` | reply sender only |
 | `mail attachments` | `MESSAGE_ID` | metadata list |
 | `mail save-attachment` | `MESSAGE_ID`, `ATTACHMENT`, `--out`, `--overwrite` | refuse existing file |
 
-Well-known folders: `inbox`, `sentitems`, `drafts`, `all`. Unknown folder → 6. Max `--top` 50.
+Well-known folders: `inbox`, `sentitems`, `drafts`, `all`. Unknown folder → 6. Max `--top` 50. `mail watch` is folder-scoped and rejects `all`.
 
 ## teams (`chat` alias)
 

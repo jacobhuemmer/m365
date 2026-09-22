@@ -2,6 +2,7 @@ package graph
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"strconv"
 	"strings"
@@ -26,6 +27,9 @@ type Memory struct {
 	Drive     domain.DriveRoot
 	Items     []domain.DriveItem
 	FileBytes map[string][]byte
+
+	MailRevisions  map[string]string
+	MailDeltaToken string
 }
 
 func Seed() *Memory {
@@ -57,9 +61,14 @@ func Seed() *Memory {
 	}
 	return &Memory{
 		Mails: []domain.MailMessage{m1, m2},
-		Chats: seedChats(c1),
-		Msgs:  map[string][]domain.ChatMessage{"chat-1": {cm}, "chat-2": {c2m}},
-		Bytes: map[string][]byte{"att-1": []byte("synthetic-ok")},
+		MailRevisions: map[string]string{
+			"msg-1": "rev-1",
+			"msg-2": "rev-2",
+		},
+		MailDeltaToken: "memory-v1",
+		Chats:          seedChats(c1),
+		Msgs:           map[string][]domain.ChatMessage{"chat-1": {cm}, "chat-2": {c2m}},
+		Bytes:          map[string][]byte{"att-1": []byte("synthetic-ok")},
 		Events: []domain.WatchEvent{{
 			ChatID: "chat-1", MessageID: "cmsg-1", From: "Alice", Text: "hi",
 			Created: "2026-01-01T00:00:00Z", Reason: "one_to_one",
@@ -156,6 +165,38 @@ func (m *Memory) Thread(_ context.Context, id string, bodies bool) (domain.MailT
 	}
 	sortMailMessages(items)
 	return domain.MailThread{ConversationID: msg.Conversation, Count: len(items), Items: items}, nil
+}
+
+func (m *Memory) Delta(_ context.Context, query mail.DeltaQuery) (domain.MailDeltaPage, error) {
+	if err := m.fail(); err != nil {
+		return domain.MailDeltaPage{}, err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	token := m.MailDeltaToken
+	if token == "" {
+		token = "memory-v1"
+	}
+	if query.Token == token {
+		return domain.MailDeltaPage{Changes: []domain.MailDeltaChange{}, DeltaToken: token}, nil
+	}
+	changes := make([]domain.MailDeltaChange, 0, len(m.Mails))
+	for _, message := range m.Mails {
+		copyMessage := message
+		copyMessage.Body = ""
+		copyMessage.Attachments = nil
+		revision := m.MailRevisions[message.ID]
+		if revision == "" {
+			revision = memoryMailRevision(message)
+		}
+		changes = append(changes, domain.MailDeltaChange{Message: copyMessage, Revision: revision})
+	}
+	return domain.MailDeltaPage{Changes: changes, DeltaToken: token}, nil
+}
+
+func memoryMailRevision(message domain.MailMessage) string {
+	sum := sha256.Sum256([]byte(fmt.Sprintf("%#v", message)))
+	return fmt.Sprintf("memory-%x", sum[:8])
 }
 
 func (m *Memory) Send(_ context.Context, in mail.SendInput) (string, error) {
@@ -344,6 +385,7 @@ func (m *Memory) DownloadTeam(ctx context.Context, chatID, messageID, attach str
 }
 
 type MailAPI struct{ *Memory }
+type MailDeltaAPI struct{ *Memory }
 type TeamsAPI struct{ *Memory }
 
 func (t TeamsAPI) Send(ctx context.Context, in teams.SendInput) (string, error) {

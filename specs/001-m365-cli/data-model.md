@@ -102,6 +102,44 @@ Domain types for `internal/domain`. No Graph SDK fields, URLs, HTTP statuses, or
 - Advances only through emitted events.
 - `--since` seeds the first run when no checkpoint exists.
 
+## MailDeltaChange and MailDeltaPage
+
+**MailDeltaChange fields**: mail message, opaque revision, removed flag.
+
+**MailDeltaPage fields**: changes[], next token for the current round, terminal
+delta token for the next invocation.
+
+**Rules**:
+- A non-removed change MUST have a non-empty revision.
+- A page has either a next token or a terminal delta token, never both.
+- Tokens remain internal to the Graph adapter, application use case, and
+  protected state. They MUST NOT appear in command output.
+- Removed changes do not emit `mail.changed` events.
+
+## MailWatchState
+
+**Fields**: terminal cursor, map of message id to latest revision, revision ids
+in oldest-first order.
+
+**Rules**:
+- State is isolated by normalized account and folder.
+- At most 5,000 revisions are retained; oldest ids are pruned first.
+- Missing state is empty. Malformed or unreadable state is an error.
+- The state directory is mode `0700`; the file and same-directory temporary
+  are mode `0600`; replacement is atomic after the temporary is synced.
+- State contains no bodies, attachment bytes, or credentials.
+
+## MailWatchEvent
+
+**Fields**: event (`mail.changed`), message id, conversation id, received time,
+subject, sender.
+
+**Rules**:
+- One event represents the newest changed message in one conversation.
+- Events are sorted by received time ascending, then message id.
+- Events contain no body, attachments, revision, or Graph cursor.
+- JSON mode writes one event per line; no changes is successful empty stdout.
+
 ## DryRunSend
 
 **Fields**: destination (recipients or chat id), subject (mail), body/text, attachments[] of {name, size}, html/md flags.

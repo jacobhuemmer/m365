@@ -46,6 +46,15 @@ Well-known folders: inbox, sentitems, drafts, all
 Output: JSON (default) or --human. Exit 0 empty list.
 `
 
+const mailWatchHelp = `m365 mail watch — poll one folder for incremental message changes
+
+Flags: --folder (default inbox) --include-existing
+The first poll records a quiet baseline unless --include-existing is set.
+Folder-scoped only: the mailbox-wide all value is not supported.
+JSON output is one body-free mail.changed object per line; empty polls write no lines.
+The cursor is committed only after the complete delta round is emitted.
+`
+
 const mailSendHelp = `m365 mail send — send mail
 
 Required: --to --subject --body or --body-file

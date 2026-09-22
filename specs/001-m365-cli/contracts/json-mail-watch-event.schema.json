@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/masonhuemmer/m365/contracts/json-mail-watch-event.schema.json",
+  "title": "m365 mail watch JSON line",
+  "description": "Each non-empty stdout line is one body-free mail change object. Empty watch: no lines. No cursors, revisions, credentials, attachment metadata, or bodies.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["event", "message_id", "conversation_id", "received", "subject", "from"],
+  "properties": {
+    "event": { "const": "mail.changed" },
+    "message_id": { "type": "string", "minLength": 1 },
+    "conversation_id": { "type": "string" },
+    "received": { "type": "string" },
+    "subject": { "type": "string" },
+    "from": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "address": { "type": "string" }
+      }
+    }
+  }
+}

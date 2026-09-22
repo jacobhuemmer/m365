@@ -8,16 +8,23 @@ import (
 	"github.com/masonhuemmer/m365/internal/adapters/fs"
 	"github.com/masonhuemmer/m365/internal/adapters/graph"
 	"github.com/masonhuemmer/m365/internal/adapters/keychain"
+	"github.com/masonhuemmer/m365/internal/adapters/mailwatchstate"
 	"github.com/masonhuemmer/m365/internal/adapters/watchstate"
 	"github.com/masonhuemmer/m365/internal/config"
 )
 
 func main() {
 	cfg, _ := config.Load()
-	d := cli.Deps{Config: cfg, Write: fs.WriteFile, Watch: &watchstate.File{}}
+	d := cli.Deps{
+		Config:         cfg,
+		Write:          fs.WriteFile,
+		Watch:          &watchstate.File{},
+		MailWatchState: &mailwatchstate.File{},
+	}
 	if os.Getenv("M365_FAKE") == "1" {
 		mem := graph.Seed()
 		d.Mail = graph.MailAPI{Memory: mem}
+		d.MailChanges = graph.MailDeltaAPI{Memory: mem}
 		d.Teams = graph.TeamsAPI{Memory: mem}
 		d.Calendar = graph.CalendarAPI{Memory: mem}
 		d.Files = graph.FilesAPI{Memory: mem}
@@ -43,6 +50,7 @@ func main() {
 		}
 		d.Store = store
 		d.Mail = httpc
+		d.MailChanges = &graph.HTTPMailDelta{HTTPClient: httpc}
 		d.Teams = &graph.HTTPTeams{HTTPClient: httpc}
 		d.Calendar = &graph.HTTPCalendar{HTTPClient: httpc}
 		d.Files = &graph.HTTPFiles{HTTPClient: httpc}

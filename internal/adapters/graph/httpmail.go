@@ -222,6 +222,7 @@ type graphList struct {
 
 type graphMsg struct {
 	ID             string `json:"id"`
+	ChangeKey      string `json:"changeKey"`
 	Subject        string `json:"subject"`
 	ConversationID string `json:"conversationId"`
 	Received       string `json:"receivedDateTime"`
@@ -237,6 +238,7 @@ type graphMsg struct {
 		ID, Name, ContentType string
 		Size                  int64
 	} `json:"attachments"`
+	Removed json.RawMessage `json:"@removed"`
 }
 
 type graphRecipient struct {

@@ -20,18 +20,20 @@ import (
 )
 
 type Deps struct {
-	Config   config.Config
-	Store    auth.Store
-	Mail     mail.Store
-	Teams    teams.Store
-	Calendar calendar.Store
-	Files    files.Store
-	Login    auth.LoginFn
-	Write    func(string, []byte, bool) error
-	Watch    WatchStore
-	Stdin    io.Reader
-	Stdout   io.Writer
-	Stderr   io.Writer
+	Config         config.Config
+	Store          auth.Store
+	Mail           mail.Store
+	MailChanges    mail.ChangeStore
+	MailWatchState mail.WatchStateStore
+	Teams          teams.Store
+	Calendar       calendar.Store
+	Files          files.Store
+	Login          auth.LoginFn
+	Write          func(string, []byte, bool) error
+	Watch          WatchStore
+	Stdin          io.Reader
+	Stdout         io.Writer
+	Stderr         io.Writer
 }
 
 type WatchStore interface {
@@ -189,7 +191,7 @@ var boolFlags = map[string]bool{
 	"--dry-run": true, "--html": true, "--overwrite": true, "--unread": true,
 	"--all": true, "--include-system": true, "--help": true, "-h": true,
 	"--json": true, "--human": true, "--verbose": true, "--debug": true,
-	"--bodies": true, "--group": true,
+	"--bodies": true, "--group": true, "--include-existing": true,
 }
 
 func parseMixed(fsset *flag.FlagSet, args []string) error {

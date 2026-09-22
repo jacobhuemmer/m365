@@ -77,6 +77,42 @@ fields and assert exit `3`.
 5. **Given** an unknown reply target, **When** the user runs `mail reply`,
    **Then** the command exits `6` and does not send.
 
+### User Story 11 — Poll resumable mail changes (Priority: P2)
+
+The signed-in user or an agent performs one finite poll of a single Outlook
+folder. The command consumes a complete Microsoft Graph delta round, emits at
+most one body-free change event per changed conversation, commits a protected
+checkpoint, and exits. The first poll establishes a quiet baseline unless the
+caller explicitly requests existing messages.
+
+**Why this priority**: A resumable, classifier-free feed proves mailbox
+recovery and delivery semantics before any message content crosses a
+third-party boundary.
+
+**Independent Test**: Against a synthetic mailbox and isolated state store,
+run two polls to prove a quiet baseline and resume. With a fresh state store,
+run `mail watch --include-existing` to emit one body-free event per changed
+conversation, then prove the next poll is quiet. Inject Graph paging, output,
+and checkpoint failures and assert that the prior cursor is retained.
+
+**Acceptance Scenarios**:
+
+1. **Given** no checkpoint, **When** the user runs `mail watch`, **Then** every
+   delta page is consumed, the terminal cursor and message revisions are saved,
+   no historical event is emitted, and the command exits `0`.
+2. **Given** no checkpoint, **When** the user runs
+   `mail watch --include-existing`, **Then** stdout contains one
+   `mail.changed` JSON object per changed conversation and never contains a
+   body, attachment, revision, or cursor.
+3. **Given** a completed prior poll, **When** unchanged revisions are returned,
+   **Then** no event is emitted and the command exits `0`.
+4. **Given** Graph returns `410 Gone`, **When** the user polls, **Then** the
+   command restarts one fresh delta round while retaining known revisions so
+   replayed messages remain suppressed.
+5. **Given** delta paging or event output fails, **When** the poll ends in an
+   error, **Then** the previous checkpoint remains unchanged. A checkpoint save
+   uses atomic replacement so a failed replacement preserves the prior file.
+
 ## Functional Requirements
 
 - **FR-023**: `mail list` MUST list messages in inbox by default, or in a
@@ -114,3 +150,28 @@ fields and assert exit `3`.
 - **FR-034**: v1 mail MUST NOT move, delete, create or delete folders,
   manage rules or categories, open calendar, operate a shared mailbox, or
   treat OneDrive or SharePoint as a file picker.
+- **FR-035**: `mail watch` MUST perform one complete folder-scoped delta round
+  and exit. `--folder` MUST default to `inbox`; mailbox-wide `all` MUST be
+  rejected because message delta synchronization is folder-scoped.
+- **FR-036**: A first poll MUST establish a quiet baseline unless
+  `--include-existing` is present. Later polls MUST resume from the persisted
+  terminal cursor and suppress revisions already present in the bounded
+  revision history.
+- **FR-037**: `mail watch` JSON stdout MUST be JSON Lines. Each event MUST have
+  event name `mail.changed`, stable message and conversation ids, received
+  time, subject, and sender. It MUST NOT include bodies, attachments, Graph
+  cursors, or revision values.
+- **FR-038**: Repeated changes in a delta round MUST collapse to the newest
+  changed message per conversation. Events MUST be ordered by received time
+  ascending and then message id.
+- **FR-039**: Delta paging MUST finish before event emission. Event emission
+  MUST finish before checkpoint replacement. A paging or output failure MUST
+  leave the prior checkpoint unchanged; a later poll MAY repeat already
+  emitted events.
+- **FR-040**: A Graph `410 Gone` delta response MUST cause at most one fresh
+  delta round while retaining known revisions. Any second reset or incomplete
+  round MUST fail without replacing the checkpoint.
+- **FR-041**: Mail watch state MUST be isolated by normalized account and
+  folder, retain at most 5,000 message revisions in oldest-first pruning order,
+  and be atomically replaced in a mode-`0700` directory with a mode-`0600`
+  file. Missing state is empty; malformed or unreadable state is an error.
