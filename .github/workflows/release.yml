@@ -27,4 +27,16 @@ jobs:
           version: "~> v2"
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+  winget:
+    runs-on: ubuntu-latest
+    needs: goreleaser
+    steps:
+      - uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: JacobHuemmer.m365
+          installers-regex: '_windows_.*\.zip$'
+          max-versions-to-keep: 5
+          fork-user: jacobhuemmer
+          token: ${{ secrets.WINGET_TOKEN }}

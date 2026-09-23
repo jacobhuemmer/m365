@@ -44,7 +44,8 @@ brews:
     license: MIT
     repository:
       owner: jacobhuemmer
-      name: m365
+      name: homebrew-tap
+      token: "{{ .Env.GITHUB_TOKEN }}"
     custom_block: |
       head "https://github.com/jacobhuemmer/m365.git", branch: "main"
     test: |
@@ -54,11 +55,11 @@ brews:
 
 scoops:
   - name: m365
-    directory: bucket
     homepage: "https://github.com/jacobhuemmer/m365"
     description: "Microsoft 365 CLI for one signed-in user"
     license: MIT
     repository:
       owner: jacobhuemmer
-      name: m365
+      name: scoop-bucket
+      token: "{{ .Env.GITHUB_TOKEN }}"
     commit_msg_template: "Scoop update for {{ .ProjectName }} version {{ .Tag }}"
