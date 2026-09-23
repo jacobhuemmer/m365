@@ -140,7 +140,7 @@ m365 mcp serve
 
 Stdio JSON-RPC. Three tools: `m365_status`, `m365_help`, `m365_run`. Six recipe prompts: `mail-search`, `teams-find`, `calendar`, `files`, `mail-write`, `teams-write`. Do not pass `--human`. Writes through `m365_run` stay dry-run unless `write_opt_in` is true.
 
-This repo has no `m365 skill` command. Copy `skills/<topic>/SKILL.md` into an agent skill root if you want files on disk:
+This repo has no `m365 skill` command. Copy `skills/<topic>/SKILL.md` into an agent skill root if you want files on disk. `skills/writing-style` is a voice guide for drafts that go out under your name; edit its examples to match how you write.
 
 ```text
 Cursor    .cursor/skills/<topic>/SKILL.md
