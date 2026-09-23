@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/masonhuemmer/m365/internal/adapters/chatmap"
 	"github.com/masonhuemmer/m365/internal/adapters/cli"
 	"github.com/masonhuemmer/m365/internal/adapters/fs"
 	"github.com/masonhuemmer/m365/internal/adapters/graph"
@@ -30,6 +31,7 @@ func buildDeps(cfg config.Config, cfgErr error, getenv func(string) string) cli.
 		Write:          fs.WriteFile,
 		Watch:          &watchstate.File{},
 		MailWatchState: &mailwatchstate.File{},
+		ChatMap:        &chatmap.File{},
 	}
 	if getenv("M365_FAKE") == "1" {
 		mem := graph.Seed()

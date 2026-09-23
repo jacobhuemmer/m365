@@ -31,6 +31,7 @@ type Deps struct {
 	MailClassifierError error
 	MailWatchState      mail.WatchStateStore
 	Teams               teams.Store
+	ChatMap             teams.ChatMap
 	Calendar            calendar.Store
 	Files               files.Store
 	Login               auth.LoginFn
@@ -203,7 +204,7 @@ var boolFlags = map[string]bool{
 	"--all": true, "--include-system": true, "--help": true, "-h": true,
 	"--json": true, "--human": true, "--verbose": true, "--debug": true,
 	"--bodies": true, "--group": true, "--include-existing": true, "--classify": true,
-	"--version": true,
+	"--version": true, "--note-to-self": true,
 }
 
 func parseMixed(fsset *flag.FlagSet, args []string) error {

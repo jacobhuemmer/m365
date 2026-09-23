@@ -54,6 +54,10 @@ func ParseQuery(raw string, groupFlag bool) (FindQuery, error) {
 }
 
 func Find(ctx context.Context, st Store, sess domain.Session, q FindQuery, top int) (FindResult, error) {
+	return FindMapped(ctx, st, nil, sess, q, top)
+}
+
+func FindMapped(ctx context.Context, st Store, m ChatMap, sess domain.Session, q FindQuery, top int) (FindResult, error) {
 	out := FindResult{Query: q.Raw, Intent: q.Intent, Items: []domain.Chat{}}
 	if err := auth.Require(sess, false, true); err != nil {
 		return out, err
@@ -74,6 +78,16 @@ func Find(ctx context.Context, st Store, sess domain.Session, q FindQuery, top i
 			out.Items = []domain.Chat{c}
 			out.Count = 1
 			return out, nil
+		}
+	}
+	if q.Intent == IntentPerson && m != nil && sess.Account != "" {
+		if id, ok, err := m.Lookup(sess.Account, chatMapKey(q.Needle)); err == nil && ok {
+			ch, gerr := st.GetChat(ctx, id)
+			if gerr == nil {
+				out.Items = []domain.Chat{ch}
+				out.Count = 1
+				return out, nil
+			}
 		}
 	}
 	page := ""
@@ -108,6 +122,12 @@ func Find(ctx context.Context, st Store, sess domain.Session, q FindQuery, top i
 	}
 	out.Count = len(out.Items)
 	out.Incomplete = incomplete && out.Count <= 1
+	if q.Intent == IntentPerson && out.Count == 1 && !out.Incomplete {
+		rememberChats(m, sess.Account, out.Items)
+		if m != nil && sess.Account != "" {
+			_ = m.Remember(sess.Account, chatMapKey(q.Needle), out.Items[0].ID)
+		}
+	}
 	return out, nil
 }
 

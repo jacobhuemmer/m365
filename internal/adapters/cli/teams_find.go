@@ -21,7 +21,7 @@ func teamsFind(args []string, d Deps, sess domain.Session, format string) int {
 	if err != nil {
 		return fail(d, err)
 	}
-	r, err := teams.Find(ctx(), d.Teams, sess, q, *top)
+	r, err := teams.FindMapped(ctx(), d.Teams, d.ChatMap, sess, q, *top)
 	if err != nil {
 		return fail(d, err)
 	}

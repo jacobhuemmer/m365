@@ -170,6 +170,7 @@ func mailSend(args []string, d Deps, sess domain.Session, format string) int {
 	bodyFile := fsset.String("body-file", "", "")
 	html := fsset.Bool("html", false, "")
 	dry := fsset.Bool("dry-run", false, "")
+	note := fsset.Bool("note-to-self", false, "")
 	var to, cc, attach []string
 	fsset.Func("to", "", func(s string) error { to = append(to, s); return nil })
 	fsset.Func("cc", "", func(s string) error { cc = append(cc, s); return nil })
@@ -186,7 +187,7 @@ func mailSend(args []string, d Deps, sess domain.Session, format string) int {
 		return fail(d, err)
 	}
 	out, err := mail.Send(ctx(), d.Mail, sess, mail.SendInput{
-		To: to, CC: cc, Subject: *subject, Body: b, HTML: *html, DryRun: *dry, Files: files,
+		To: to, CC: cc, Subject: *subject, Body: b, HTML: *html, DryRun: *dry, NoteToSelf: *note, Files: files,
 	})
 	if err != nil {
 		return fail(d, err)

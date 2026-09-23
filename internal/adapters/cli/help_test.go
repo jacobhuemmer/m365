@@ -25,7 +25,12 @@ func TestHelpCaps(t *testing.T) {
 	}
 	out.Reset()
 	Run([]string{"m365", "teams", "send", "--help"}, d)
-	if !strings.Contains(out.String(), "10 MiB") {
+	if !strings.Contains(out.String(), "10 MiB") || !strings.Contains(out.String(), "--note-to-self") {
+		t.Fatal(out.String())
+	}
+	out.Reset()
+	Run([]string{"m365", "mail", "send", "--help"}, d)
+	if !strings.Contains(out.String(), "--note-to-self") {
 		t.Fatal(out.String())
 	}
 }

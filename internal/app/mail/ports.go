@@ -17,12 +17,13 @@ type ListQuery struct {
 }
 
 type SendInput struct {
-	To, CC  []string
-	Subject string
-	Body    string
-	HTML    bool
-	DryRun  bool
-	Files   []domain.OutboundFile
+	To, CC     []string
+	Subject    string
+	Body       string
+	HTML       bool
+	DryRun     bool
+	NoteToSelf bool
+	Files      []domain.OutboundFile
 }
 
 type ReplyInput struct {
@@ -82,6 +83,18 @@ func Thread(ctx context.Context, st Store, sess domain.Session, id string, bodie
 func Send(ctx context.Context, st Store, sess domain.Session, in SendInput) (any, error) {
 	if err := auth.Require(sess, true, false); err != nil {
 		return nil, err
+	}
+	if in.NoteToSelf {
+		if len(in.To) > 0 {
+			return nil, domain.Usage("use --note-to-self or --to, not both")
+		}
+		if strings.TrimSpace(sess.Account) == "" {
+			return nil, domain.Usage("signed-in account is required")
+		}
+		in.To = []string{sess.Account}
+		if in.Subject == "" {
+			in.Subject = "Note to self"
+		}
 	}
 	if len(in.To) == 0 || in.Subject == "" || in.Body == "" {
 		return nil, domain.Usage("to, subject, and body are required")

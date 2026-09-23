@@ -40,3 +40,24 @@ func TestSendToNoneAndBoth(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestSendNoteToSelfUsesNotes(t *testing.T) {
+	st := &chatMem{chats: sampleChats()}
+	sess := domain.Session{SignedIn: true, SessionUsable: true, TeamsConsented: true, Account: "Mason.Huemmer@Sesami.io"}
+	out, err := Send(context.Background(), st, sess, SendInput{Text: "ping", NoteToSelf: true, DryRun: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := out.(map[string]any)
+	if m["chat_id"] != SelfChatID || m["dry_run"] != true {
+		t.Fatal(m)
+	}
+	_, err = Send(context.Background(), st, sess, SendInput{Text: "ping", NoteToSelf: true, To: "Ajay"})
+	if domain.ExitOf(err) != domain.ExitUsage {
+		t.Fatal(err)
+	}
+	_, err = Send(context.Background(), st, sess, SendInput{Text: "ping", NoteToSelf: true, ChatID: "chat-1"})
+	if domain.ExitOf(err) != domain.ExitUsage {
+		t.Fatal(err)
+	}
+}

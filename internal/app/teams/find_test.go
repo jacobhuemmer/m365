@@ -9,10 +9,12 @@ import (
 )
 
 type chatMem struct {
-	chats []domain.Chat
+	chats     []domain.Chat
+	listCalls int
 }
 
 func (m *chatMem) ListChats(_ context.Context, top int, page string) (domain.ChatPage, error) {
+	m.listCalls++
 	skip := 0
 	if strings.HasPrefix(page, "s.") {
 		skip = atoi(strings.TrimPrefix(page, "s."))
@@ -34,7 +36,12 @@ func (m *chatMem) ListChats(_ context.Context, top int, page string) (domain.Cha
 	}
 	return p, nil
 }
-func (m *chatMem) GetChat(context.Context, string) (domain.Chat, error) {
+func (m *chatMem) GetChat(_ context.Context, id string) (domain.Chat, error) {
+	for _, c := range m.chats {
+		if c.ID == id {
+			return c, nil
+		}
+	}
 	return domain.Chat{}, domain.NotFound("no")
 }
 func (m *chatMem) Messages(context.Context, MessageQuery) (domain.ChatMessagePage, error) {
