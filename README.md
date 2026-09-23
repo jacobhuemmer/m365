@@ -1,126 +1,146 @@
 # m365
 
-Microsoft 365 CLI for one signed-in user. JSON on stdout by default; `--human` for text.
+A command-line tool for **your** Microsoft 365 account: Outlook, Teams, calendar, and OneDrive.
+
+JSON on stdout by default. Add `--human` if you want plain text. Writes stay dry-run until you drop `--dry-run` (or, for agents, set `write_opt_in`).
+
+Current release: **0.1.1**.
 
 ## Install
 
-From source (Go 1.25+):
-
-```sh
-make install
-```
-
-Homebrew:
+### macOS (Homebrew)
 
 ```sh
 brew tap jacobhuemmer/tap
 brew install m365
+m365 --version    # 0.1.1
 ```
 
-HEAD still works:
+Upgrade later with `brew update && brew upgrade m365`.
+
+To build the latest `main` instead of a numbered release:
 
 ```sh
 brew install --HEAD jacobhuemmer/tap/m365
 ```
 
-Scoop (Windows):
+### Windows (Scoop)
 
 ```powershell
 scoop bucket add jacobhuemmer https://github.com/jacobhuemmer/scoop-bucket
 scoop install m365
+m365 --version
 ```
 
-WinGet (Windows):
+### Windows (WinGet)
+
+The first community package is in review: [microsoft/winget-pkgs#439501](https://github.com/microsoft/winget-pkgs/pull/439501). After that merges:
 
 ```powershell
 winget install JacobHuemmer.m365
 ```
 
-## Auth
+Until then, use Scoop or a zip from [Releases](https://github.com/jacobhuemmer/m365/releases).
 
-Copy `.env.example` to `~/.config/m365/.env` (or export the same names) with an Entra app `M365_CLIENT_ID` and `M365_TENANT_ID`. Then:
+### From source
+
+Go 1.25+:
+
+```sh
+git clone https://github.com/jacobhuemmer/m365.git
+cd m365
+make install
+```
+
+## Sign in
+
+You need an Entra app registration that you are allowed to use (delegated, as yourself). Put the IDs in `~/.config/m365/.env`:
+
+```sh
+mkdir -p ~/.config/m365
+cp .env.example ~/.config/m365/.env
+```
+
+```
+M365_CLIENT_ID=...
+M365_TENANT_ID=...
+```
+
+You can export the same names instead of a file. Then, in a real terminal (browser login):
 
 ```sh
 m365 auth login
 m365 auth status
 ```
 
-Login is a browser/device flow in a terminal. Tokens live in the macOS keychain (file fallback if needed).
+`signed_in` and `session_usable` should be true, with the namespaces you granted (`mail`, `teams`, `calendar`, `files`). Tokens go in the macOS keychain, with a file fallback if needed.
 
-## Usage
+Do not run `auth login` through MCP. If status is not usable, stop and log in from a terminal.
 
-Agent CLI contract (JSON, exits, verbs): [docs/m365.md](docs/m365.md).
+## Everyday use
 
 ```
-m365 <namespace> <verb> [flags]
+m365 <area> <command> [flags]
 ```
 
-| Namespace | Verbs |
+`--help` on any command does not need a session. `chat` is an alias for `teams`.
+
+| Area | What it does |
 | --- | --- |
 | `auth` | `login`, `status`, `logout` |
-| `mail` | `list`, `get`, `thread`, `watch`, `send`, `reply`, `attachments`, `save-attachment` |
-| `teams` (`chat`) | `list`, `find`, `get`, `send` |
-| `calendar` | `calendars`, `list`, `get`, `create`, `update`, `delete`, `free` |
-| `files` | `root`, `list`, `get`, `download`, `upload`, `create-folder`, `delete`, `move` |
-| `mcp` | `serve` |
+| `mail` | list, read, send, reply |
+| `teams` | find a chat, read, send |
+| `calendar` | list, free slots, create |
+| `files` | OneDrive list, download, upload |
+| `mcp` | `serve` for agents |
 
-Exit classes: `0` success, `3` usage/config, `4` auth, `5` service, `6` not-found.
+Exit codes: `0` ok, `3` usage/config, `4` sign-in, `5` Microsoft Graph, `6` not found.
 
-## Experimental mail response triage
+Preview any send with `--dry-run` first.
 
-`mail watch` performs one finite, folder-scoped Outlook delta poll and exits. The first poll records a quiet baseline unless `--include-existing` is set; later polls resume from the protected local checkpoint. JSON output is one body-free `mail.changed` event per line.
-
-Response-responsibility classification is experimental and disabled by default. Enable it explicitly in `$XDG_CONFIG_HOME/m365/config.json` (or `~/.config/m365/config.json`):
-
-```json
-{
-  "experimental": {
-    "mail_response_classification": {
-      "enabled": true,
-      "provider": "jev",
-      "model": "jev-latest",
-      "actionable_threshold": 0.8
-    }
-  }
-}
-```
-
-Set `TYPESAFE_API_KEY` in the environment, never in `config.json` or a command flag. A present key does not enable the feature, and an enabled feature with no key fails before polling mail.
+### Mail
 
 ```sh
-m365 mail watch --classify --target-address mason@example.com --target-name "Mason Huemmer"
+m365 mail list --unread --top 10 --human
+m365 mail get MESSAGE_ID
+m365 mail send --to you@example.com --subject 'Status' --body 'In UAT.' --dry-run
+m365 mail send --note-to-self --body 'Remember this.' --dry-run
 ```
 
-Classification sends TypeSafe Jev only the latest 10 chronological text messages within a 64 KiB body budget, plus participant, timestamp, subject, target, and truncation metadata. It never sends attachment bytes, Graph cursors, revisions, or credentials. Output uses `mail.response_classified` with one of `waiting_on_target`, `waiting_on_other`, `no_response_expected`, or `unclear`; `actionable` is only a routing hint.
+HTML mail (paragraphs, lists, links): `--html` and a real HTML `--body`. Replies with `--html` go out as HTML, not a jammed comment.
 
-An agent must keep classification and sending as separate trust decisions:
+### Teams
 
 ```sh
-# 1. Consume an actionable event, then inspect its cited conversation.
-m365 mail thread MESSAGE_ID --bodies
-
-# 2. Compose text externally and preview the reply.
-m365 mail reply MESSAGE_ID --body-file reply.txt --dry-run
-
-# 3. Send only after review with a separate explicit command.
-m365 mail reply MESSAGE_ID --body-file reply.txt
+m365 teams find Ajay
+m365 teams send --to Ajay --text 'Looking into this.' --dry-run
+m365 teams send --note-to-self --text 'Scratch note.' --dry-run
 ```
 
-The classifier does not draft, create Outlook Draft items, or send. Through MCP, the final reply still requires `write_opt_in=true`; without it, `m365_run` forces a dry run even after an actionable event.
+`--note-to-self` is **Chat with yourself** (`48:notes`), not a hidden 1:1. Do not combine it with `--to` or a chat id.
 
-## MCP
+For a list or a link, use `--format md` (a small markdown subset becomes HTML) or `--html` with HTML already written.
+
+After a unique `teams find` or a listed 1:1, later `--to Ajay` remembers the chat id so it does not scan the whole list again.
+
+### Calendar and files
+
+```sh
+m365 calendar list --human
+m365 calendar free --when tomorrow
+m365 calendar create --when 'tomorrow at 1:30 pm' --subject 'Sync' --dry-run
+m365 files list --human
+```
+
+## Agents (MCP)
 
 ```sh
 m365 mcp serve
 ```
 
-Stdio JSON-RPC for agents. Do not pass `--human`. Login stays `m365 auth login` in a terminal.
+Stdio JSON-RPC. Three tools: `m365_status`, `m365_help`, `m365_run`. Six recipe prompts: `mail-search`, `teams-find`, `calendar`, `files`, `mail-write`, `teams-write`. Do not pass `--human`. Writes through `m365_run` stay dry-run unless `write_opt_in` is true.
 
-Three tools (`m365_status`, `m365_help`, `m365_run`) and six recipe prompts: `mail-search`, `teams-find`, `calendar`, `files`, `mail-write`, `teams-write`. Writes through `m365_run` stay dry-run unless `write_opt_in` is true.
-
-## Agent skills (copy)
-
-This repo has no `m365 skill` CLI. Copy `skills/<topic>/SKILL.md` into an agent skill root:
+This repo has no `m365 skill` command. Copy `skills/<topic>/SKILL.md` into an agent skill root if you want files on disk:
 
 ```text
 Cursor    .cursor/skills/<topic>/SKILL.md
@@ -130,7 +150,11 @@ Grok      .grok/skills/<topic>/SKILL.md
 OpenCode  .opencode/skills/<topic>/SKILL.md
 ```
 
-Topics: `mail-search`, `teams-find`, `calendar`, `files`, `mail-write`, `teams-write`. MCP-only agents already get the same text from `m365_help` / `prompts/get`.
+Full CLI contract for agents: [docs/m365.md](docs/m365.md).
+
+## Experimental: mail watch
+
+`mail watch` is one folder-scoped poll, then exit. Classification is off unless you enable it in `~/.config/m365/config.json`. Keep `TYPESAFE_API_KEY` in the environment, never in that file. An `actionable` event is not permission to send; still `--dry-run`, then an explicit send.
 
 ## Develop
 
@@ -138,8 +162,6 @@ Topics: `mail-search`, `teams-find`, `calendar`, `files`, `mail-write`, `teams-w
 sh scripts/install-tools.sh
 make verify
 ```
-
-CI runs `make verify` on `macos-latest` for pushes and PRs to `main`.
 
 ## License
 
