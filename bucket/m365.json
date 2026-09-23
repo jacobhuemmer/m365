@@ -1,13 +1,22 @@
 {
-  "version": "0.0.0",
-  "description": "Microsoft 365 CLI for one signed-in user",
-  "homepage": "https://github.com/jacobhuemmer/m365",
-  "license": "MIT",
-  "architecture": {
-    "64bit": {
-      "url": "https://github.com/jacobhuemmer/m365/releases/download/v0.0.0/m365_0.0.0_windows_amd64.zip",
-      "hash": "0000000000000000000000000000000000000000000000000000000000000000",
-      "bin": "m365.exe"
-    }
-  }
+    "version": "0.1.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/jacobhuemmer/m365/releases/download/v0.1.0/m365_0.1.0_windows_amd64.zip",
+            "bin": [
+                "m365.exe"
+            ],
+            "hash": "7a78f36dd4638fa01f6c36641453e4a041c67052e7081477b4f164a4300ab5bd"
+        },
+        "arm64": {
+            "url": "https://github.com/jacobhuemmer/m365/releases/download/v0.1.0/m365_0.1.0_windows_arm64.zip",
+            "bin": [
+                "m365.exe"
+            ],
+            "hash": "6ee6b367bd86be2a1f03257e09f492e496ab4af44f9f16b11fdd421214ffa4ca"
+        }
+    },
+    "homepage": "https://github.com/jacobhuemmer/m365",
+    "license": "MIT",
+    "description": "Microsoft 365 CLI for one signed-in user"
 }
