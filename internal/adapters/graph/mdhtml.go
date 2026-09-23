@@ -56,7 +56,27 @@ func mdSubsetToHTML(src string) string {
 		}
 		var para []string
 		para, i = consumeParagraph(lines, i)
-		writeBlock(&b, "<p>"+inlineMD(strings.Join(para, "\n"))+"</p>")
+		writeBlock(&b, "<p>"+inlineMD(strings.Join(para, "<br>"))+"</p>")
+	}
+	return b.String()
+}
+
+// plainTextToHTML escapes plain text and keeps its layout: blank lines
+// become paragraphs and single newlines become <br>. Outlook reply comments
+// and Teams messages otherwise collapse newlines into one line.
+func plainTextToHTML(src string) string {
+	src = strings.ReplaceAll(src, "\r\n", "\n")
+	var b strings.Builder
+	for _, block := range strings.Split(src, "\n\n") {
+		block = strings.Trim(block, "\n")
+		if strings.TrimSpace(block) == "" {
+			continue
+		}
+		lines := strings.Split(block, "\n")
+		for i, l := range lines {
+			lines[i] = html.EscapeString(l)
+		}
+		writeBlock(&b, "<p>"+strings.Join(lines, "<br>")+"</p>")
 	}
 	return b.String()
 }

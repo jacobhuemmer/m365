@@ -71,7 +71,8 @@ const mailReplyHelp = `m365 mail reply — reply to a message
 
 Required: MESSAGE_ID --body or --body-file
 Optional: --all --attach (repeatable) --html --dry-run
---html posts Graph message.body as HTML. Plain reply uses comment.
+Plain text keeps paragraphs and line breaks. --html sends the body as HTML unchanged.
+Both go in the Graph reply comment, so the quoted thread stays below.
 Attachment caps: 10 MiB per file, 10 files.
 Output modes: --json (default) --human
 `
@@ -110,6 +111,7 @@ Required: CHAT_ID or --to Ajay, plus --text or --text-file
 Examples: teams send --to Ajay --text ping --dry-run
 Optional: --attach (repeatable) --html --format md --dry-run --note-to-self
 --note-to-self posts to Teams Notes (48:notes). Do not combine with --to or a chat id.
+Plain text keeps paragraphs and line breaks (sent as HTML).
 --format md converts a markdown subset to HTML. --html posts the body as HTML already.
 --to and chat id together exit 3. Attachment caps: 10 MiB per file, 10 files.
 Output modes: --json (default) --human

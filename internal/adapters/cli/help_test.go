@@ -56,7 +56,7 @@ func TestMailReplyHelpNamesHTML(t *testing.T) {
 		t.Fatal(code)
 	}
 	s := out.String()
-	for _, want := range []string{"--html", "message.body", "comment"} {
+	for _, want := range []string{"--html", "line breaks", "quoted thread"} {
 		if !strings.Contains(s, want) {
 			t.Fatalf("missing %q in %s", want, s)
 		}
