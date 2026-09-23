@@ -13,21 +13,27 @@ make install
 Homebrew:
 
 ```sh
-brew tap jacobhuemmer/m365 https://github.com/jacobhuemmer/m365
-brew install jacobhuemmer/m365/m365
+brew tap jacobhuemmer/tap
+brew install m365
 ```
 
 HEAD still works:
 
 ```sh
-brew install --HEAD jacobhuemmer/m365/m365
+brew install --HEAD jacobhuemmer/tap/m365
 ```
 
-Scoop (Windows amd64):
+Scoop (Windows):
 
 ```powershell
-scoop bucket add m365 https://github.com/jacobhuemmer/m365
+scoop bucket add jacobhuemmer https://github.com/jacobhuemmer/scoop-bucket
 scoop install m365
+```
+
+WinGet (Windows):
+
+```powershell
+winget install JacobHuemmer.m365
 ```
 
 ## Auth
