@@ -154,7 +154,7 @@ Full CLI contract for agents: [docs/m365.md](docs/m365.md).
 
 ## Experimental: mail watch
 
-`mail watch` is one folder-scoped poll, then exit. Classification is off unless you enable it in `~/.config/m365/config.json`. Keep `TYPESAFE_API_KEY` in the environment, never in that file. An `actionable` event is not permission to send; still `--dry-run`, then an explicit send.
+`mail watch` is one folder-scoped poll, then exit. Classification is off unless you enable it in `~/.config/m365/config.json`. Keep `TYPESAFE_API_KEY` (or the alias `TYPESAFE_AI_TOKEN`) in the environment, never in that file. An `actionable` event is not permission to send; still `--dry-run`, then an explicit send.
 
 ## Develop
 
