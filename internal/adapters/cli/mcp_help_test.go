@@ -60,6 +60,8 @@ func TestMCPHelpTopics(t *testing.T) {
 		"teams-find":  {"teams find Ajay", "teams find --group NOC", "MUST NOT send", "Several matches"},
 		"calendar":    {"calendar list", "calendar free", "calendar create --when 'tomorrow at 1:30 pm'"},
 		"files":       {"files list", "files get", "files download", "--out", "upload", "--dry-run"},
+		"mail-write":  {"<p>", "<ul>", "<a href", "mail send", "--html", "--body", "--dry-run", "mail reply", "flags.body"},
+		"teams-write": {"--html", "--format md", "teams send --to Ajay --format md", "flags.text", "<p>", "<ul>"},
 	}
 	for topic, wants := range cases {
 		res, err = cs.CallTool(context.Background(), &mcp.CallToolParams{

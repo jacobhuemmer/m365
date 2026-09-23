@@ -7,9 +7,9 @@ Feature: MCP lookup recipes
     Given an MCP server
     When the client calls MCP help topic mail-search
     Then MCP help includes from:ajay
-  Scenario: prompts stay four and tools stay three
+  Scenario: prompts stay six and tools stay three
     Given an MCP server
     When the client lists MCP tools
     Then the MCP catalog is compact
     When the client lists MCP prompts
-    Then the MCP recipes are four
+    Then the MCP recipes are six

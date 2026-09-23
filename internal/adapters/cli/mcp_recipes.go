@@ -51,9 +51,14 @@ var recipeBodies = map[string]string{
 	"teams-find":  recipeTeamsFind,
 	"calendar":    recipeCalendar,
 	"files":       recipeFiles,
+	"mail-write":  recipeMailWrite,
+	"teams-write": recipeTeamsWrite,
 }
 
-var recipeNames = []string{"mail-search", "teams-find", "calendar", "files"}
+var recipeNames = []string{
+	"mail-search", "teams-find", "calendar", "files",
+	"mail-write", "teams-write",
+}
 
 func recipe(topic string) (string, bool) {
 	s, ok := recipeBodies[topic]

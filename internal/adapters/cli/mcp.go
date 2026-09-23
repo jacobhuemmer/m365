@@ -15,7 +15,7 @@ const mcpHelp = `m365 mcp — stdio MCP for agents
 
 Verbs: serve
 serve: JSON-RPC on stdin/stdout. Tools: m365_status, m365_help, m365_run.
-Recipe topics: mail-search, teams-find, calendar, files (also MCP prompts).
+Recipe topics: mail-search, teams-find, calendar, files, mail-write, teams-write (also MCP prompts).
 Writes through m365_run dry-run unless write_opt_in is true.
 Do not use --human. Login stays m365 auth login in a terminal.
 No session required for --help.
@@ -24,7 +24,7 @@ No session required for --help.
 type helpIn struct {
 	Namespace string `json:"namespace,omitempty" jsonschema:"optional CLI namespace"`
 	Verb      string `json:"verb,omitempty" jsonschema:"optional verb"`
-	Topic     string `json:"topic,omitempty" jsonschema:"recipe topic: mail-search, teams-find, calendar, or files"`
+	Topic     string `json:"topic,omitempty" jsonschema:"recipe topic: mail-search, teams-find, calendar, files, mail-write, or teams-write"`
 }
 
 type runIn struct {
@@ -65,11 +65,11 @@ func NewMCPServer(d Deps) *mcp.Server {
 	})
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "m365_help",
-		Description: "CLI help for a namespace or verb, or recipe topic mail-search, teams-find, calendar, files. No session required.",
+		Description: "CLI help for a namespace or verb, or recipe topic mail-search, teams-find, calendar, files, mail-write, teams-write. No session required.",
 	}, handleHelp)
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "m365_run",
-		Description: "Run one CLI namespace+verb with a flag map. Returns that command's JSON. Writes dry-run unless write_opt_in is true. Lookup examples: help topics mail-search, teams-find, calendar, files.",
+		Description: "Run one CLI namespace+verb with a flag map. Returns that command's JSON. Writes dry-run unless write_opt_in is true. Lookup and write examples: help topics mail-search, teams-find, calendar, files, mail-write, teams-write.",
 	}, func(_ context.Context, _ *mcp.CallToolRequest, in runIn) (*mcp.CallToolResult, any, error) {
 		args, err := buildRunArgs(in.Namespace, in.Verb, in.Args, in.Flags, in.WriteOptIn)
 		if err != nil {
@@ -79,7 +79,7 @@ func NewMCPServer(d Deps) *mcp.Server {
 	})
 	for _, name := range recipeNames {
 		n := name
-		s.AddPrompt(&mcp.Prompt{Name: n, Description: "Lookup recipe " + n}, recipePrompt(n))
+		s.AddPrompt(&mcp.Prompt{Name: n, Description: recipePromptDescription(n)}, recipePrompt(n))
 	}
 	return s
 }
