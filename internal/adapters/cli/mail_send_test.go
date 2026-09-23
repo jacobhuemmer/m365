@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/masonhuemmer/m365/internal/adapters/graph"
+	"github.com/masonhuemmer/m365/internal/domain"
 )
 
 func TestMailDryRun(t *testing.T) {
@@ -23,5 +24,24 @@ func TestMailDryRun(t *testing.T) {
 	mem := d.Mail.(graph.MailAPI).Memory
 	if len(mem.Sent) != 0 {
 		t.Fatal("sent")
+	}
+}
+
+func TestMailNoteToSelfDryRun(t *testing.T) {
+	d, out, errw := testDeps()
+	login(t, d)
+	out.Reset()
+	c := Run([]string{"m365", "mail", "send", "--note-to-self", "--body", "remember", "--dry-run"}, d)
+	if c != 0 {
+		t.Fatal(errw.String())
+	}
+	var m map[string]any
+	if err := json.Unmarshal(out.Bytes(), &m); err != nil || m["dry_run"] != true {
+		t.Fatal(out.String(), err)
+	}
+	out.Reset()
+	c = Run([]string{"m365", "mail", "send", "--note-to-self", "--to", "a@b.c", "--body", "x"}, d)
+	if c != domain.ExitUsage {
+		t.Fatal(c, errw.String())
 	}
 }

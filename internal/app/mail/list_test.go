@@ -13,6 +13,7 @@ type stub struct {
 	th   domain.MailThread
 	err  error
 	sent int
+	last SendInput
 }
 
 func (s *stub) List(context.Context, ListQuery) (domain.MailPage, error) {
@@ -22,8 +23,9 @@ func (s *stub) Get(context.Context, string) (domain.MailMessage, error) { return
 func (s *stub) Thread(context.Context, string, bool) (domain.MailThread, error) {
 	return s.th, s.err
 }
-func (s *stub) Send(context.Context, SendInput) (string, error) {
+func (s *stub) Send(_ context.Context, in SendInput) (string, error) {
 	s.sent++
+	s.last = in
 	return "new-1", s.err
 }
 func (s *stub) Reply(context.Context, ReplyInput) (string, error) {

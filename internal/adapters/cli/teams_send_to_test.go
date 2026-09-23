@@ -30,4 +30,12 @@ func TestTeamsSendToDryRun(t *testing.T) {
 	if c := Run([]string{"m365", "teams", "send", "chat-1", "--dry-run", "--text", "hi"}, d); c != 0 {
 		t.Fatal(errw.String())
 	}
+	out.Reset()
+	if c := Run([]string{"m365", "teams", "send", "--note-to-self", "--text", "ping", "--dry-run"}, d); c != 0 {
+		t.Fatal(errw.String())
+	}
+	var n map[string]any
+	if err := json.Unmarshal(out.Bytes(), &n); err != nil || n["chat_id"] != "48:notes" {
+		t.Fatal(out.String(), err)
+	}
 }

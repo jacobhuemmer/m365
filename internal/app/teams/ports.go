@@ -22,13 +22,14 @@ type MessageQuery struct {
 }
 
 type SendInput struct {
-	ChatID string
-	To     string
-	Text   string
-	HTML   bool
-	MD     bool
-	DryRun bool
-	Files  []domain.OutboundFile
+	ChatID     string
+	To         string
+	Text       string
+	HTML       bool
+	MD         bool
+	DryRun     bool
+	NoteToSelf bool
+	Files      []domain.OutboundFile
 }
 
 type WatchQuery struct {
@@ -86,6 +87,12 @@ func Messages(ctx context.Context, st Store, sess domain.Session, q MessageQuery
 func Send(ctx context.Context, st Store, sess domain.Session, in SendInput) (any, error) {
 	if err := auth.Require(sess, false, true); err != nil {
 		return nil, err
+	}
+	if in.NoteToSelf {
+		if in.To != "" || in.ChatID != "" {
+			return nil, domain.Usage("use --note-to-self or --to or a chat id, not both")
+		}
+		in.ChatID = SelfChatID
 	}
 	if in.To != "" && in.ChatID != "" {
 		return nil, domain.Usage("use --to or a chat id, not both")

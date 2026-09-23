@@ -61,7 +61,8 @@ The cursor is committed only after the complete delta round is emitted.
 const mailSendHelp = `m365 mail send — send mail
 
 Required: --to --subject --body or --body-file
-Optional: --cc --attach (repeatable) --html --dry-run
+Optional: --cc --attach (repeatable) --html --dry-run --note-to-self
+--note-to-self sends to the signed-in mailbox (default subject Note to self). Do not combine with --to.
 Attachment caps: 10 MiB per file, 10 files. --top N/A.
 Output modes: --json (default) --human
 `
@@ -97,7 +98,8 @@ const teamsSendHelp = `m365 teams send — send a chat message
 
 Required: CHAT_ID or --to Ajay, plus --text or --text-file
 Examples: teams send --to Ajay --text ping --dry-run
-Optional: --attach (repeatable) --html --format md --dry-run
+Optional: --attach (repeatable) --html --format md --dry-run --note-to-self
+--note-to-self posts to Teams Notes (48:notes). Do not combine with --to or a chat id.
 --format md converts a markdown subset to HTML. --html posts the body as HTML already.
 --to and chat id together exit 3. Attachment caps: 10 MiB per file, 10 files.
 Output modes: --json (default) --human

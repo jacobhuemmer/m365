@@ -99,6 +99,7 @@ func teamsSend(args []string, d Deps, sess domain.Session, format string) int {
 	html := fsset.Bool("html", false, "")
 	formatmd := fsset.String("format", "", "")
 	dry := fsset.Bool("dry-run", false, "")
+	note := fsset.Bool("note-to-self", false, "")
 	var attach []string
 	fsset.Func("attach", "", func(s string) error { attach = append(attach, s); return nil })
 	if err := parseMixed(fsset, args); err != nil {
@@ -113,7 +114,7 @@ func teamsSend(args []string, d Deps, sess domain.Session, format string) int {
 		return fail(d, err)
 	}
 	out, err := teams.Send(ctx(), d.Teams, sess, teams.SendInput{
-		ChatID: fsset.Arg(0), To: *to, Text: body, HTML: *html, MD: *formatmd == "md", DryRun: *dry, Files: files,
+		ChatID: fsset.Arg(0), To: *to, Text: body, HTML: *html, MD: *formatmd == "md", DryRun: *dry, NoteToSelf: *note, Files: files,
 	})
 	if err != nil {
 		return fail(d, err)
