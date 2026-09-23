@@ -71,7 +71,15 @@ func mapGraphChat(g graphChat) domain.Chat {
 }
 
 func (c *HTTPTeams) Messages(ctx context.Context, q teams.MessageQuery) (domain.ChatMessagePage, error) {
-	res, err := c.do(ctx, http.MethodGet, "/me/chats/"+url.PathEscape(q.ChatID)+"/messages?$top="+strconv.Itoa(q.Top))
+	u := "/me/chats/" + url.PathEscape(q.ChatID) + "/messages?$top=" + strconv.Itoa(q.Top)
+	if q.PageToken != "" {
+		if next, ok := decodeNext(q.PageToken); ok {
+			u = next
+		} else {
+			u += "&$skiptoken=" + url.QueryEscape(q.PageToken)
+		}
+	}
+	res, err := c.do(ctx, http.MethodGet, u)
 	if err != nil {
 		return domain.ChatMessagePage{}, err
 	}
@@ -88,7 +96,11 @@ func (c *HTTPTeams) Messages(ctx context.Context, q teams.MessageQuery) (domain.
 		}
 		items = append(items, m)
 	}
-	return domain.ChatMessagePage{Limit: q.Top, Count: len(items), Items: items}, nil
+	p := domain.ChatMessagePage{Limit: q.Top, Count: len(items), Items: items}
+	if tok := encodeNext(raw.Next); tok != "" {
+		p.NextPage = &tok
+	}
+	return p, nil
 }
 
 func (c *HTTPTeams) Attachments(context.Context, string, string) ([]domain.Attachment, error) {
@@ -114,6 +126,7 @@ type graphMember struct {
 }
 type graphMsgList struct {
 	Value []graphChatMsg `json:"value"`
+	Next  string         `json:"@odata.nextLink"`
 }
 type graphChatMsg struct {
 	ID      string `json:"id"`

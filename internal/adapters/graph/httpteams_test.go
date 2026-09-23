@@ -44,3 +44,26 @@ func TestHTTPTeamsMessagesSender(t *testing.T) {
 		t.Fatalf("include system: %+v", p.Items)
 	}
 }
+
+func TestHTTPTeamsMessagesPage(t *testing.T) {
+	var srv *httptest.Server
+	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("$skiptoken") == "two" {
+			_, _ = w.Write([]byte(`{"value":[{"id":"m-2","messageType":"message","from":{"user":{"displayName":"Bob"}}}]}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"value":[{"id":"m-1","messageType":"message","from":{"user":{"displayName":"Alice"}}}],
+"@odata.nextLink":"` + srv.URL + `/chats/chat-1/messages?$top=1&$skiptoken=two"}`))
+	}))
+	defer srv.Close()
+	c := &HTTPTeams{HTTPClient: &HTTPClient{Base: srv.URL, Token: "fake-both", Client: srv.Client()}}
+
+	p, err := c.Messages(context.Background(), teams.MessageQuery{ChatID: "chat-1", Top: 1})
+	if err != nil || p.NextPage == nil || p.Items[0].From != "Alice" {
+		t.Fatalf("page 1: %+v %v", p, err)
+	}
+	p, err = c.Messages(context.Background(), teams.MessageQuery{ChatID: "chat-1", Top: 1, PageToken: *p.NextPage})
+	if err != nil || p.NextPage != nil || p.Items[0].From != "Bob" {
+		t.Fatalf("page 2: %+v %v", p, err)
+	}
+}
