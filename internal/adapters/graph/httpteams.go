@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/masonhuemmer/m365/internal/app/teams"
 	"github.com/masonhuemmer/m365/internal/domain"
@@ -16,7 +17,17 @@ type HTTPTeams struct{ *HTTPClient }
 func (c *HTTPTeams) ListChats(ctx context.Context, top int, page string) (domain.ChatPage, error) {
 	path := "/me/chats?$expand=members&$top=" + strconv.Itoa(top)
 	if page != "" {
-		path += "&$skiptoken=" + url.QueryEscape(page)
+		if next, ok := decodeNext(page); ok {
+			if strings.HasPrefix(next, "http") {
+				path = next
+			} else {
+				path += "&$skiptoken=" + url.QueryEscape(next)
+			}
+		} else if strings.HasPrefix(page, "http") {
+			path = page
+		} else {
+			path += "&$skiptoken=" + url.QueryEscape(page)
+		}
 	}
 	res, err := c.do(ctx, http.MethodGet, path)
 	if err != nil {
@@ -32,9 +43,8 @@ func (c *HTTPTeams) ListChats(ctx context.Context, top int, page string) (domain
 		items = append(items, mapGraphChat(g))
 	}
 	p := domain.ChatPage{Limit: top, Count: len(items), Items: items}
-	if raw.Next != "" {
-		n := raw.Next
-		p.NextPage = &n
+	if tok := encodeNext(raw.Next); tok != "" {
+		p.NextPage = &tok
 	}
 	return p, nil
 }

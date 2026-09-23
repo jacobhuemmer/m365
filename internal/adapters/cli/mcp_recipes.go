@@ -18,6 +18,7 @@ Do not dump the mailbox. Do not print secrets.
 Find a chat before notify.
 
   1:1: teams find Ajay
+  Yourself: teams find Mason   (Notes / 48:notes; list omits it)
   Group: teams find --group NOC
   Notify: teams send --to Ajay --text ping --dry-run
 
@@ -51,9 +52,14 @@ var recipeBodies = map[string]string{
 	"teams-find":  recipeTeamsFind,
 	"calendar":    recipeCalendar,
 	"files":       recipeFiles,
+	"mail-write":  recipeMailWrite,
+	"teams-write": recipeTeamsWrite,
 }
 
-var recipeNames = []string{"mail-search", "teams-find", "calendar", "files"}
+var recipeNames = []string{
+	"mail-search", "teams-find", "calendar", "files",
+	"mail-write", "teams-write",
+}
 
 func recipe(topic string) (string, bool) {
 	s, ok := recipeBodies[topic]

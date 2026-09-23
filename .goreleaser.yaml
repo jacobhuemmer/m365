@@ -1,0 +1,64 @@
+version: 2
+
+project_name: m365
+
+builds:
+  - id: m365
+    main: ./cmd/m365
+    binary: m365
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X github.com/masonhuemmer/m365/internal/version.Version={{.Version}}
+
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+
+release:
+  github:
+    owner: jacobhuemmer
+    name: m365
+
+brews:
+  - name: m365
+    directory: Formula
+    homepage: "https://github.com/jacobhuemmer/m365"
+    description: "Microsoft 365 CLI for one signed-in user"
+    license: MIT
+    repository:
+      owner: jacobhuemmer
+      name: m365
+    custom_block: |
+      head "https://github.com/jacobhuemmer/m365.git", branch: "main"
+    test: |
+      assert_match "m365", shell_output("#{bin}/m365 --help")
+      assert_match version.to_s, shell_output("#{bin}/m365 --version")
+    commit_msg_template: "Brew formula update for {{ .ProjectName }} version {{ .Tag }}"
+
+scoops:
+  - name: m365
+    directory: bucket
+    homepage: "https://github.com/jacobhuemmer/m365"
+    description: "Microsoft 365 CLI for one signed-in user"
+    license: MIT
+    repository:
+      owner: jacobhuemmer
+      name: m365
+    commit_msg_template: "Scoop update for {{ .ProjectName }} version {{ .Tag }}"

@@ -10,11 +10,24 @@ From source (Go 1.25+):
 make install
 ```
 
-Homebrew (HEAD):
+Homebrew:
 
 ```sh
 brew tap jacobhuemmer/m365 https://github.com/jacobhuemmer/m365
+brew install jacobhuemmer/m365/m365
+```
+
+HEAD still works:
+
+```sh
 brew install --HEAD jacobhuemmer/m365/m365
+```
+
+Scoop (Windows amd64):
+
+```powershell
+scoop bucket add m365 https://github.com/jacobhuemmer/m365
+scoop install m365
 ```
 
 ## Auth
@@ -96,6 +109,22 @@ m365 mcp serve
 ```
 
 Stdio JSON-RPC for agents. Do not pass `--human`. Login stays `m365 auth login` in a terminal.
+
+Three tools (`m365_status`, `m365_help`, `m365_run`) and six recipe prompts: `mail-search`, `teams-find`, `calendar`, `files`, `mail-write`, `teams-write`. Writes through `m365_run` stay dry-run unless `write_opt_in` is true.
+
+## Agent skills (copy)
+
+This repo has no `m365 skill` CLI. Copy `skills/<topic>/SKILL.md` into an agent skill root:
+
+```text
+Cursor    .cursor/skills/<topic>/SKILL.md
+Claude    .claude/skills/<topic>/SKILL.md
+Codex     .codex/skills/<topic>/SKILL.md
+Grok      .grok/skills/<topic>/SKILL.md
+OpenCode  .opencode/skills/<topic>/SKILL.md
+```
+
+Topics: `mail-search`, `teams-find`, `calendar`, `files`, `mail-write`, `teams-write`. MCP-only agents already get the same text from `m365_help` / `prompts/get`.
 
 ## Develop
 

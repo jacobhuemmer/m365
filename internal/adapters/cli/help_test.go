@@ -29,3 +29,31 @@ func TestHelpCaps(t *testing.T) {
 		t.Fatal(out.String())
 	}
 }
+
+func TestTeamsSendHelpNamesFormatMD(t *testing.T) {
+	d, out, _ := testDeps()
+	code := Run([]string{"m365", "teams", "send", "--help"}, d)
+	if code != 0 {
+		t.Fatal(code)
+	}
+	s := out.String()
+	for _, want := range []string{"--format md", "--html", "converts", "already"} {
+		if !strings.Contains(s, want) {
+			t.Fatalf("missing %q in %s", want, s)
+		}
+	}
+}
+
+func TestMailReplyHelpNamesHTML(t *testing.T) {
+	d, out, _ := testDeps()
+	code := Run([]string{"m365", "mail", "reply", "--help"}, d)
+	if code != 0 {
+		t.Fatal(code)
+	}
+	s := out.String()
+	for _, want := range []string{"--html", "message.body", "comment"} {
+		if !strings.Contains(s, want) {
+			t.Fatalf("missing %q in %s", want, s)
+		}
+	}
+}

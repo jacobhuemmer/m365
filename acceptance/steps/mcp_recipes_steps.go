@@ -17,7 +17,7 @@ func init() {
 	})
 	runtime.Register("MCP help names recipe topics", func(w *runtime.World, _ string) error {
 		s := mcpText()
-		for _, want := range []string{"mail-search", "teams-find", "calendar", "files"} {
+		for _, want := range []string{"mail-search", "teams-find", "calendar", "files", "mail-write", "teams-write"} {
 			if !strings.Contains(s, want) {
 				w.T.Fatalf("missing %s in %s", want, s)
 			}
@@ -48,8 +48,8 @@ func init() {
 		}
 		return nil
 	})
-	runtime.Register("the MCP recipes are four", func(w *runtime.World, _ string) error {
-		if len(cur.tools) != 4 {
+	runtime.Register("the MCP recipes are six", func(w *runtime.World, _ string) error {
+		if len(cur.tools) != 6 {
 			w.T.Fatalf("prompts %v", cur.tools)
 		}
 		return nil

@@ -295,6 +295,9 @@ func (m *Memory) ListChats(_ context.Context, top int, page string) (domain.Chat
 }
 
 func (m *Memory) GetChat(_ context.Context, id string) (domain.Chat, error) {
+	if id == teams.SelfChatID {
+		return domain.Chat{ID: teams.SelfChatID, Type: "oneOnOne"}, nil
+	}
 	for _, c := range m.Chats {
 		if c.ID == id {
 			return c, nil

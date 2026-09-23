@@ -118,6 +118,29 @@ func TestFindSeveralAjays(t *testing.T) {
 	}
 }
 
+func TestFindSelfReturnsNotes(t *testing.T) {
+	st := &chatMem{chats: sampleChats()}
+	sess := domain.Session{SignedIn: true, SessionUsable: true, TeamsConsented: true, Account: "Mason.Huemmer@Sesami.io"}
+	q, _ := ParseQuery("Mason Huemmer", false)
+	r, err := Find(context.Background(), st, sess, q, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Count != 1 || r.Items[0].ID != SelfChatID || r.Incomplete {
+		t.Fatalf("%+v", r)
+	}
+}
+
+func TestFindSelfByLocalPart(t *testing.T) {
+	st := &chatMem{chats: sampleChats()}
+	sess := domain.Session{SignedIn: true, SessionUsable: true, TeamsConsented: true, Account: "user@example.com"}
+	q, _ := ParseQuery("user", false)
+	r, err := Find(context.Background(), st, sess, q, 0)
+	if err != nil || r.Count != 1 || r.Items[0].ID != SelfChatID {
+		t.Fatalf("%+v %v", r, err)
+	}
+}
+
 func TestFindNone(t *testing.T) {
 	st := &chatMem{chats: sampleChats()}
 	sess := domain.Session{SignedIn: true, SessionUsable: true, TeamsConsented: true}

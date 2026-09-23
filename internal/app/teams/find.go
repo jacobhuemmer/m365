@@ -15,6 +15,8 @@ const (
 	IntentGroup  = "group"
 	ScanPageSize = 50
 	ScanMaxPages = 10
+	// SelfChatID is Teams Notes (chat with yourself). Graph list omits it.
+	SelfChatID = "48:notes"
 )
 
 type FindQuery struct {
@@ -66,6 +68,14 @@ func Find(ctx context.Context, st Store, sess domain.Session, q FindQuery, top i
 		s int
 	}
 	var hits []scored
+	if c, s, ok := selfChat(sess, q); ok {
+		hits = append(hits, scored{c, s})
+		if s >= 2 {
+			out.Items = []domain.Chat{c}
+			out.Count = 1
+			return out, nil
+		}
+	}
 	page := ""
 	incomplete := false
 	for i := 0; i < ScanMaxPages; i++ {
@@ -133,6 +143,26 @@ func scoreChat(c domain.Chat, q FindQuery, self string) (int, bool) {
 		}
 	}
 	return best, best > 0
+}
+
+func selfChat(sess domain.Session, q FindQuery) (domain.Chat, int, bool) {
+	if q.Intent != IntentPerson || strings.TrimSpace(sess.Account) == "" {
+		return domain.Chat{}, 0, false
+	}
+	local, _, _ := strings.Cut(sess.Account, "@")
+	p := domain.Person{
+		Name:    strings.ReplaceAll(strings.ReplaceAll(local, ".", " "), "_", " "),
+		Address: sess.Account,
+	}
+	s := memberScore(p, strings.ToLower(strings.TrimSpace(q.Needle)))
+	if s == 0 {
+		return domain.Chat{}, 0, false
+	}
+	return domain.Chat{
+		ID:      SelfChatID,
+		Type:    "oneOnOne",
+		Members: []domain.Person{{Name: p.Name, Address: sess.Account}},
+	}, s, true
 }
 
 func memberScore(p domain.Person, q string) int {

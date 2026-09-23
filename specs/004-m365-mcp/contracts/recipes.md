@@ -1,6 +1,8 @@
-# Lookup recipes
+# Recipes
 
 Static text. No session. No Graph. No tokens, live mailbox content, or file bytes. Same body for `m365_help` `topic` and `prompts/get`.
+
+Lookup topics: `mail-search`, `teams-find`, `calendar`, `files`. Write topics: `mail-write`, `teams-write`. Prompt descriptions for write topics are “Write recipe …”, not “Lookup recipe …”.
 
 Teams find uses `teams find` / `send --to` (005).
 
@@ -43,3 +45,30 @@ MUST include:
 - dry-run upload
 
 MUST NOT put file bytes in the recipe text.
+
+## `mail-write`
+
+MUST include:
+
+- paragraphs via `<p>`, lists (`<ul>` / `<ol>`), and `<a href>`
+- `mail send --html --body '…' --dry-run`
+- `mail reply --html --body '…' --dry-run`
+- MCP examples use `flags.body` string (not `body-file=-`)
+
+MUST NOT:
+
+- use a markdown heading as the mail body
+- set `write_opt_in` true in the happy-path example
+
+## `teams-write`
+
+MUST include:
+
+- `--html` with real HTML, or `--format md` with the documented subset
+- `teams send --to Ajay --format md --text '…' --dry-run`
+- MCP examples use `flags.text` (not `text-file=-`)
+
+MUST NOT:
+
+- post one run-on `--text` string with embedded markdown left unconverted
+- mention `mentions[]`, Adaptive Cards, or Graph beta markdown

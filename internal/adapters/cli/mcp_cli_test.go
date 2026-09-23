@@ -20,7 +20,7 @@ func TestMCPHelpAndHuman(t *testing.T) {
 		t.Fatal(errw.String())
 	}
 	s := out.String()
-	for _, want := range []string{"m365_status", "m365_help", "m365_run", "write_opt_in", "serve", "mail-search", "teams-find"} {
+	for _, want := range []string{"m365_status", "m365_help", "m365_run", "write_opt_in", "serve", "mail-search", "teams-find", "mail-write", "teams-write"} {
 		if !strings.Contains(s, want) {
 			t.Fatalf("missing %q in %s", want, s)
 		}
