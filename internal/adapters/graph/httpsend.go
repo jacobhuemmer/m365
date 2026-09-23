@@ -74,17 +74,13 @@ func (c *HTTPClient) Reply(ctx context.Context, in mail.ReplyInput) (string, err
 	if in.All {
 		path = "/me/messages/" + url.PathEscape(in.ID) + "/replyAll"
 	}
-	var payload any
-	if in.HTML {
-		payload = map[string]any{
-			"message": map[string]any{
-				"body": map[string]string{"contentType": "HTML", "content": in.Body},
-			},
-		}
-	} else {
-		payload = map[string]any{"comment": in.Body}
+	// Graph renders comment as HTML above the quoted thread. message.body
+	// would replace the whole reply and drop the thread.
+	comment := in.Body
+	if !in.HTML {
+		comment = plainTextToHTML(in.Body)
 	}
-	if err := c.doJSON(ctx, http.MethodPost, path, payload); err != nil {
+	if err := c.doJSON(ctx, http.MethodPost, path, map[string]any{"comment": comment}); err != nil {
 		return "", err
 	}
 	return "sent", nil
@@ -104,15 +100,15 @@ func (c *HTTPClient) Download(ctx context.Context, messageID, attach string) ([]
 }
 
 func (c *HTTPTeams) Send(ctx context.Context, in teams.SendInput) (string, error) {
-	ctype, content := "text", in.Text
+	// Teams collapses newlines in contentType text, so plain text goes out as HTML too.
+	content := plainTextToHTML(in.Text)
 	switch {
 	case in.HTML:
-		ctype = "html"
+		content = in.Text
 	case in.MD:
-		ctype = "html"
 		content = mdSubsetToHTML(in.Text)
 	}
-	body := map[string]any{"body": map[string]string{"contentType": ctype, "content": content}}
+	body := map[string]any{"body": map[string]string{"contentType": "html", "content": content}}
 	if err := c.doJSON(ctx, http.MethodPost, "/me/chats/"+url.PathEscape(in.ChatID)+"/messages", body); err != nil {
 		return "", err
 	}

@@ -77,10 +77,10 @@ func TestHTTPTeamsSendTextHTMLMDPayloads(t *testing.T) {
 		wantHTML    bool
 	}{
 		{
-			name:        "text",
-			in:          teams.SendInput{ChatID: "chat-1", Text: "hi"},
-			wantType:    "text",
-			wantContent: "hi",
+			name:        "text keeps line breaks as html",
+			in:          teams.SendInput{ChatID: "chat-1", Text: "SDO-559: approve?\n\nRollback is removing it.\nThanks"},
+			wantType:    "html",
+			wantContent: "<p>SDO-559: approve?</p>\n<p>Rollback is removing it.<br>Thanks</p>",
 		},
 		{
 			name:        "html",
@@ -134,40 +134,43 @@ func TestHTTPTeamsSendTextHTMLMDPayloads(t *testing.T) {
 	}
 }
 
-func TestHTTPMailReplyCommentVsHTMLBody(t *testing.T) {
-	t.Run("plain comment", func(t *testing.T) {
-		srv, cap := captureJSONServer(t)
-		c := &HTTPClient{Base: srv.URL, Token: "t"}
-		if _, err := c.Reply(context.Background(), mail.ReplyInput{ID: "msg-1", Body: "plain"}); err != nil {
-			t.Fatal(err)
-		}
-		if cap.Method != http.MethodPost {
-			t.Fatalf("method %s", cap.Method)
-		}
-		if !strings.HasSuffix(cap.Path, "/me/messages/msg-1/reply") {
-			t.Fatalf("path %s", cap.Path)
-		}
-		if cap.Body["comment"] != "plain" {
-			t.Fatalf("comment payload %+v", cap.Body)
-		}
-		if _, ok := cap.Body["message"]; ok {
-			t.Fatalf("plain reply must not send message.body: %+v", cap.Body)
-		}
-	})
-	t.Run("html message.body", func(t *testing.T) {
-		srv, cap := captureJSONServer(t)
-		c := &HTTPClient{Base: srv.URL, Token: "t"}
-		html := "<p>hello</p>"
-		if _, err := c.Reply(context.Background(), mail.ReplyInput{ID: "msg-1", Body: html, HTML: true}); err != nil {
-			t.Fatal(err)
-		}
-		if _, ok := cap.Body["comment"]; ok {
-			t.Fatalf("html reply must not send comment: %+v", cap.Body)
-		}
-		msg, _ := cap.Body["message"].(map[string]any)
-		body, _ := msg["body"].(map[string]any)
-		if body["contentType"] != "HTML" || body["content"] != html {
-			t.Fatalf("message.body %+v", body)
-		}
-	})
+func TestHTTPMailReplyKeepsQuotedThread(t *testing.T) {
+	cases := []struct {
+		name string
+		in   mail.ReplyInput
+		want string
+	}{
+		{
+			name: "plain text becomes html comment",
+			in:   mail.ReplyInput{ID: "msg-1", Body: "Hi all,\n\nNot DNS.\n- Iulia: retry.\n\nThanks,\nMason"},
+			want: "<p>Hi all,</p>\n<p>Not DNS.<br>- Iulia: retry.</p>\n<p>Thanks,<br>Mason</p>",
+		},
+		{
+			name: "html goes in comment unchanged",
+			in:   mail.ReplyInput{ID: "msg-1", Body: "<p>hello</p>", HTML: true},
+			want: "<p>hello</p>",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			srv, cap := captureJSONServer(t)
+			c := &HTTPClient{Base: srv.URL, Token: "t"}
+			if _, err := c.Reply(context.Background(), tc.in); err != nil {
+				t.Fatal(err)
+			}
+			if cap.Method != http.MethodPost {
+				t.Fatalf("method %s", cap.Method)
+			}
+			if !strings.HasSuffix(cap.Path, "/me/messages/msg-1/reply") {
+				t.Fatalf("path %s", cap.Path)
+			}
+			if cap.Body["comment"] != tc.want {
+				t.Fatalf("comment %q want %q", cap.Body["comment"], tc.want)
+			}
+			// message.body replaces the reply body and drops the quoted thread.
+			if _, ok := cap.Body["message"]; ok {
+				t.Fatalf("reply must not send message.body: %+v", cap.Body)
+			}
+		})
+	}
 }

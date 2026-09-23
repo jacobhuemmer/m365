@@ -7,7 +7,7 @@ description: Write Teams chat messages as HTML or converted markdown so they ren
 
 Write a Teams chat message that renders: paragraphs, lists, links. No session required to read this recipe.
 
-Use --html with real HTML, or --format md with the documented subset (# / ## / ###, **bold**, - / * / 1. lists, [label](url), fenced code, blank-line paragraphs). --format md converts that subset to HTML. --html posts the body as HTML already.
+Use --html with real HTML, or --format md with the documented subset (# / ## / ###, **bold**, - / * / 1. lists, [label](url), fenced code, blank-line paragraphs). --format md converts that subset to HTML. --html posts the body as HTML already. Plain text keeps its paragraphs and line breaks.
 
   teams send --to Ajay --format md --text 'The change is in UAT.
 

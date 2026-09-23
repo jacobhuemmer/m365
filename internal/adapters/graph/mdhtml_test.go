@@ -44,3 +44,21 @@ func TestMdSubsetToHTMLSkipsImageSyntax(t *testing.T) {
 		t.Fatalf("image markdown should pass through: %q", got)
 	}
 }
+
+func TestMdSubsetToHTMLKeepsLineBreaksInParagraph(t *testing.T) {
+	got := mdSubsetToHTML("Thanks,\nMason")
+	if got != "<p>Thanks,<br>Mason</p>" {
+		t.Fatalf("got %q", got)
+	}
+}
+
+func TestPlainTextToHTML(t *testing.T) {
+	got := plainTextToHTML("Hi Jeff,\r\n\r\n\r\nUse <b> & **not md**.\n  indented\n\nThanks,\nMason\n")
+	want := "<p>Hi Jeff,</p>\n<p>Use &lt;b&gt; &amp; **not md**.<br>  indented</p>\n<p>Thanks,<br>Mason</p>"
+	if got != want {
+		t.Fatalf("got %q want %q", got, want)
+	}
+	if plainTextToHTML("\n\n") != "" {
+		t.Fatal("blank input should be empty")
+	}
+}
