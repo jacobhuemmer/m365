@@ -11,6 +11,10 @@ import (
 func TestPromptsListSixRecipes(t *testing.T) {
 	d, _, _ := testDeps()
 	cs := connectMCP(t, d)
+	ir := cs.InitializeResult()
+	if ir == nil || ir.ServerInfo == nil || ir.ServerInfo.Version != "dev" {
+		t.Fatalf("serverInfo %+v", ir)
+	}
 	pl, err := cs.ListPrompts(context.Background(), nil)
 	if err != nil {
 		t.Fatal(err)

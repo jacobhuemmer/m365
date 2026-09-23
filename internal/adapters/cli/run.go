@@ -17,6 +17,7 @@ import (
 	"github.com/masonhuemmer/m365/internal/app/teams"
 	"github.com/masonhuemmer/m365/internal/config"
 	"github.com/masonhuemmer/m365/internal/domain"
+	"github.com/masonhuemmer/m365/internal/version"
 )
 
 type Deps struct {
@@ -55,7 +56,11 @@ func Run(args []string, d Deps) int {
 	if d.Stderr == nil {
 		d.Stderr = os.Stderr
 	}
-	human, jsonOn, verbose, rest := peelGlobals(args)
+	human, jsonOn, verbose, showVersion, rest := peelGlobals(args)
+	if showVersion {
+		fmt.Fprintln(d.Stdout, version.Version)
+		return domain.ExitOK
+	}
 	if human && jsonOn {
 		return fail(d, domain.Usage("use only one of --json or --human"))
 	}
@@ -91,7 +96,7 @@ func Run(args []string, d Deps) int {
 	}
 }
 
-func peelGlobals(args []string) (human, jsonOn, verbose bool, rest []string) {
+func peelGlobals(args []string) (human, jsonOn, verbose, showVersion bool, rest []string) {
 	if len(args) > 0 {
 		base := args[0]
 		if strings.HasSuffix(base, "m365") || strings.HasSuffix(base, "m365.exe") || strings.Contains(base, "/") {
@@ -107,6 +112,8 @@ func peelGlobals(args []string) (human, jsonOn, verbose bool, rest []string) {
 			jsonOn = true
 		case "--verbose", "--debug":
 			verbose = true
+		case "--version":
+			showVersion = true
 		case "--help", "-h":
 			if !sawCmd {
 				rest = append(rest, "help")
@@ -196,6 +203,7 @@ var boolFlags = map[string]bool{
 	"--all": true, "--include-system": true, "--help": true, "-h": true,
 	"--json": true, "--human": true, "--verbose": true, "--debug": true,
 	"--bodies": true, "--group": true, "--include-existing": true, "--classify": true,
+	"--version": true,
 }
 
 func parseMixed(fsset *flag.FlagSet, args []string) error {

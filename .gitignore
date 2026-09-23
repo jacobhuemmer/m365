@@ -11,6 +11,7 @@ bin/
 /m365
 vendor/
 build/
+dist/
 .tools/
 acceptance/generated/
 *.key

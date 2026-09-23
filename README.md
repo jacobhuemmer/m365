@@ -10,11 +10,24 @@ From source (Go 1.25+):
 make install
 ```
 
-Homebrew (HEAD):
+Homebrew:
 
 ```sh
 brew tap jacobhuemmer/m365 https://github.com/jacobhuemmer/m365
+brew install jacobhuemmer/m365/m365
+```
+
+HEAD still works:
+
+```sh
 brew install --HEAD jacobhuemmer/m365/m365
+```
+
+Scoop (Windows amd64):
+
+```powershell
+scoop bucket add m365 https://github.com/jacobhuemmer/m365
+scoop install m365
 ```
 
 ## Auth

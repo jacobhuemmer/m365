@@ -40,6 +40,13 @@ func toolText(t *testing.T, res *mcp.CallToolResult) string {
 func TestToolsListCompactCatalog(t *testing.T) {
 	d, _, _ := testDeps()
 	cs := connectMCP(t, d)
+	ir := cs.InitializeResult()
+	if ir == nil || ir.ServerInfo == nil {
+		t.Fatal("missing initialize serverInfo")
+	}
+	if ir.ServerInfo.Name != "m365" || ir.ServerInfo.Version != "dev" {
+		t.Fatalf("serverInfo %+v", ir.ServerInfo)
+	}
 	list, err := cs.ListTools(context.Background(), nil)
 	if err != nil {
 		t.Fatal(err)

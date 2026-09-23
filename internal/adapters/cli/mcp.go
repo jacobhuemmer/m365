@@ -9,6 +9,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/masonhuemmer/m365/internal/domain"
+	"github.com/masonhuemmer/m365/internal/version"
 )
 
 const mcpHelp = `m365 mcp — stdio MCP for agents
@@ -56,7 +57,7 @@ func ServeMCP(d Deps) error {
 }
 
 func NewMCPServer(d Deps) *mcp.Server {
-	s := mcp.NewServer(&mcp.Implementation{Name: "m365", Version: "1.0.0"}, nil)
+	s := mcp.NewServer(&mcp.Implementation{Name: "m365", Version: version.Version}, nil)
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "m365_status",
 		Description: "Signed-in, session usable, per-namespace consent. No tokens. Does not open a browser.",
