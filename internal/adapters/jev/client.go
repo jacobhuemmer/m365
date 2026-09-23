@@ -31,7 +31,7 @@ type Client struct {
 func NewClient(apiKey, model string) (*Client, error) {
 	apiKey = strings.TrimSpace(apiKey)
 	if apiKey == "" {
-		return nil, domain.Usage("TYPESAFE_API_KEY is required when experimental mail response classification is enabled")
+		return nil, domain.Usage("TYPESAFE_API_KEY (or TYPESAFE_AI_TOKEN) is required when experimental mail response classification is enabled")
 	}
 	model = strings.TrimSpace(model)
 	if model == "" {

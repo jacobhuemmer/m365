@@ -110,7 +110,9 @@ Domain types for `internal/domain`. No Graph SDK fields, URLs, HTTP statuses, or
 delta token for the next invocation.
 
 **Rules**:
-- A non-removed change MUST have a non-empty revision.
+- A non-removed change MUST have a non-empty revision. Graph partial updates
+  without `changeKey` (for example read-state-only `{id, isRead}` items) are
+  not changes; the adapter skips them so the round can complete.
 - A page has either a next token or a terminal delta token, never both.
 - Tokens remain internal to the Graph adapter, application use case, and
   protected state. They MUST NOT appear in command output.

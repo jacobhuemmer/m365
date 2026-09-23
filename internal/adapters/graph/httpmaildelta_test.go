@@ -93,20 +93,26 @@ func TestHTTPMailDeltaMapsGoneToResetSignal(t *testing.T) {
 	}
 }
 
-func TestHTTPMailDeltaRejectsMissingRevision(t *testing.T) {
+func TestHTTPMailDeltaSkipsPartialUpdateWithoutRevision(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"value":            []any{map[string]any{"id": "msg-1"}},
+			"value": []any{
+				map[string]any{"@odata.type": "#microsoft.graph.message", "id": "msg-read", "isRead": true},
+				map[string]any{"id": "msg-2", "changeKey": "rev-2", "conversationId": "conv-2", "receivedDateTime": "2026-01-01T01:00:00Z"},
+			},
 			"@odata.deltaLink": "https://graph.microsoft.com/v1.0/cursor",
 		})
 	}))
 	defer server.Close()
 
 	adapter := &HTTPMailDelta{HTTPClient: &HTTPClient{Base: server.URL, Token: "fake", Client: server.Client()}}
-	_, err := adapter.Delta(context.Background(), mail.DeltaQuery{Folder: "inbox"})
-	if domain.ExitOf(err) != domain.ExitService {
-		t.Fatalf("missing revision error = %v", err)
+	page, err := adapter.Delta(context.Background(), mail.DeltaQuery{Folder: "inbox"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if page.DeltaToken != "https://graph.microsoft.com/v1.0/cursor" || len(page.Changes) != 1 || page.Changes[0].Message.ID != "msg-2" {
+		t.Fatalf("partial update page = %+v", page)
 	}
 }
 

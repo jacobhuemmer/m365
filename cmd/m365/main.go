@@ -74,7 +74,7 @@ func buildDeps(cfg config.Config, cfgErr error, getenv func(string) string) cli.
 		d.Login = graph.RealLogin(cfg.ClientID, cfg.TenantID)
 		classification := cfg.Experimental.MailResponseClassification
 		if cfgErr == nil && classification.Enabled {
-			classifier, err := jev.NewClient(getenv("TYPESAFE_API_KEY"), classification.Model)
+			classifier, err := jev.NewClient(typesafeKey(getenv), classification.Model)
 			if err != nil {
 				d.MailClassifierError = err
 			} else {
@@ -83,4 +83,12 @@ func buildDeps(cfg config.Config, cfgErr error, getenv func(string) string) cli.
 		}
 	}
 	return d
+}
+
+// typesafeKey reads TYPESAFE_API_KEY, falling back to the TYPESAFE_AI_TOKEN alias.
+func typesafeKey(getenv func(string) string) string {
+	if key := getenv("TYPESAFE_API_KEY"); key != "" {
+		return key
+	}
+	return getenv("TYPESAFE_AI_TOKEN")
 }

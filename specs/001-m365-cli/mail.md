@@ -263,7 +263,8 @@ and absence of bodies, attachments, credentials, cursors, and revisions.
   probabilities, optional confidence, and returned model into the stable
   domain result.
 - **FR-049**: The live classifier MUST be constructed only when experimental
-  classification is explicitly enabled. It MUST read `TYPESAFE_API_KEY` only
+  classification is explicitly enabled. It MUST read `TYPESAFE_API_KEY`, or the
+  alias `TYPESAFE_AI_TOKEN` when `TYPESAFE_API_KEY` is unset, only
   from the process environment and MUST NOT accept or persist it through CLI,
   MCP flags, `config.json`, watch state, or output. A missing key MUST fail as
   usage/config before Graph or classifier requests. A present key MUST NOT

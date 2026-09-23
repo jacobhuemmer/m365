@@ -39,6 +39,13 @@ func TestBuildDepsConstructsClassifierOnlyWhenEnabled(t *testing.T) {
 		}
 	})
 
+	t.Run("enabled accepts TYPESAFE_AI_TOKEN alias", func(t *testing.T) {
+		d := buildDeps(enabled, nil, testEnvironment(map[string]string{"TYPESAFE_AI_TOKEN": "present"}))
+		if _, ok := d.MailClassifier.(*jev.Client); !ok || d.MailClassifierError != nil {
+			t.Fatalf("classifier=%T error=%v", d.MailClassifier, d.MailClassifierError)
+		}
+	})
+
 	t.Run("fake mode keeps deterministic classifier without key", func(t *testing.T) {
 		d := buildDeps(enabled, nil, testEnvironment(map[string]string{"M365_FAKE": "1"}))
 		if _, ok := d.MailClassifier.(*mailclassifier.Fake); !ok || d.MailClassifierError != nil {

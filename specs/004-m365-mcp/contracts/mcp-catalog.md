@@ -96,6 +96,6 @@ Do not map these onto JSON-RPC error codes.
 
 Redact access tokens, refresh tokens, authorization codes, client secrets,
 TypeSafe API keys, and bearer values in every MCP content item and log line.
-`TYPESAFE_API_KEY` is process environment only and MUST NOT be accepted in an
+`TYPESAFE_API_KEY` and its alias `TYPESAFE_AI_TOKEN` are process environment only and MUST NOT be accepted in an
 `m365_run` request. File bytes, classifier request state, and provider response
 bodies MUST NOT appear.

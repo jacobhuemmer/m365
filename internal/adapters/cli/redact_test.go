@@ -6,8 +6,8 @@ import (
 )
 
 func TestRedact(t *testing.T) {
-	s := redact("Authorization: Bearer abc.def TYPESAFE_API_KEY=jev-secret access_token=graph-secret")
-	for _, secret := range []string{"abc.def", "jev-secret", "graph-secret"} {
+	s := redact("Authorization: Bearer abc.def TYPESAFE_API_KEY=jev-secret TYPESAFE_AI_TOKEN=jev-alias-secret access_token=graph-secret")
+	for _, secret := range []string{"abc.def", "jev-secret", "jev-alias-secret", "graph-secret"} {
 		if strings.Contains(s, secret) {
 			t.Fatal(s)
 		}

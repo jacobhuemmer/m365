@@ -67,7 +67,9 @@ func (d *HTTPMailDelta) Delta(ctx context.Context, query mail.DeltaQuery) (domai
 	for _, item := range rawPage.Value {
 		removed := len(item.Removed) > 0 && string(item.Removed) != "null"
 		if !removed && item.ChangeKey == "" {
-			return domain.MailDeltaPage{}, domain.Service("mail delta change is missing a revision")
+			// Graph sends partial updates such as {id, isRead} without changeKey;
+			// they carry no new content, so they are not changes.
+			continue
 		}
 		message := item.toMail()
 		message.Body = ""
