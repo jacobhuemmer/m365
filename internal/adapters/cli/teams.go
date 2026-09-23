@@ -12,7 +12,7 @@ import (
 
 func runTeams(args []string, d Deps, format string) int {
 	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
-		return writeHelp(d.Stdout, teamsListHelp+teamsFindHelp+teamsSendHelp)
+		return writeHelp(d.Stdout, teamsListHelp+teamsMessagesHelp+teamsFindHelp+teamsSendHelp)
 	}
 	verb, args := args[0], args[1:]
 	sess, err := session(d)
@@ -46,6 +46,9 @@ func runTeams(args []string, d Deps, format string) int {
 		}
 		return success(d, format, c)
 	case "messages":
+		if hasHelp(args) {
+			return writeHelp(d.Stdout, teamsMessagesHelp)
+		}
 		fsset := flag.NewFlagSet("teams messages", flag.ContinueOnError)
 		fsset.SetOutput(d.Stderr)
 		top := fsset.Int("top", 0, "")

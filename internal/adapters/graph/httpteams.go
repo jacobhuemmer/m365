@@ -71,7 +71,15 @@ func mapGraphChat(g graphChat) domain.Chat {
 }
 
 func (c *HTTPTeams) Messages(ctx context.Context, q teams.MessageQuery) (domain.ChatMessagePage, error) {
-	res, err := c.do(ctx, http.MethodGet, "/me/chats/"+url.PathEscape(q.ChatID)+"/messages?$top="+strconv.Itoa(q.Top))
+	u := "/me/chats/" + url.PathEscape(q.ChatID) + "/messages?$top=" + strconv.Itoa(q.Top)
+	if q.PageToken != "" {
+		if next, ok := decodeNext(q.PageToken); ok {
+			u = next
+		} else {
+			u += "&$skiptoken=" + url.QueryEscape(q.PageToken)
+		}
+	}
+	res, err := c.do(ctx, http.MethodGet, u)
 	if err != nil {
 		return domain.ChatMessagePage{}, err
 	}
@@ -82,9 +90,17 @@ func (c *HTTPTeams) Messages(ctx context.Context, q teams.MessageQuery) (domain.
 	}
 	items := make([]domain.ChatMessage, 0, len(raw.Value))
 	for _, g := range raw.Value {
-		items = append(items, domain.ChatMessage{ID: g.ID, ChatID: q.ChatID, Text: g.Body.Content, Created: g.Created})
+		m := g.toChatMessage(q.ChatID)
+		if m.System && !q.IncludeSystem {
+			continue
+		}
+		items = append(items, m)
 	}
-	return domain.ChatMessagePage{Limit: q.Top, Count: len(items), Items: items}, nil
+	p := domain.ChatMessagePage{Limit: q.Top, Count: len(items), Items: items}
+	if tok := encodeNext(raw.Next); tok != "" {
+		p.NextPage = &tok
+	}
+	return p, nil
 }
 
 func (c *HTTPTeams) Attachments(context.Context, string, string) ([]domain.Attachment, error) {
@@ -110,11 +126,36 @@ type graphMember struct {
 }
 type graphMsgList struct {
 	Value []graphChatMsg `json:"value"`
+	Next  string         `json:"@odata.nextLink"`
 }
 type graphChatMsg struct {
 	ID      string `json:"id"`
 	Created string `json:"createdDateTime"`
+	Type    string `json:"messageType"`
 	Body    struct {
 		Content string `json:"content"`
 	} `json:"body"`
+	From *struct {
+		User        *graphIdentity `json:"user"`
+		Application *graphIdentity `json:"application"`
+	} `json:"from"`
+}
+type graphIdentity struct {
+	DisplayName string `json:"displayName"`
+}
+
+// toChatMessage names the sender as the user, else the app (bots, webhooks).
+// Graph returns from=null for system events, which report as messageType
+// systemEventMessage or unknownFutureValue.
+func (g graphChatMsg) toChatMessage(chatID string) domain.ChatMessage {
+	m := domain.ChatMessage{ID: g.ID, ChatID: chatID, Text: g.Body.Content, Created: g.Created}
+	m.System = g.Type != "" && g.Type != "message"
+	if g.From != nil {
+		if g.From.User != nil {
+			m.From = g.From.User.DisplayName
+		} else if g.From.Application != nil {
+			m.From = g.From.Application.DisplayName
+		}
+	}
+	return m
 }

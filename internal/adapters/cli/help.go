@@ -82,6 +82,15 @@ Flags: --top (default 20, max 50) --page-token
 Output: JSON (default) or --human.
 `
 
+const teamsMessagesHelp = `m365 teams messages — read messages in a chat
+
+Required: CHAT_ID (from teams list or teams find)
+Flags: --top (default 20, max 50) --page-token --include-system
+Each item has from: the sender's display name, or the app name for bot posts.
+System events (member added, call ended) are skipped unless --include-system.
+Output: JSON (default) or --human.
+`
+
 const teamsFindHelp = `m365 teams find — find a chat by person or group
 
 Examples: teams find Ajay
