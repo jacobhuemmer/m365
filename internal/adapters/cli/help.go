@@ -88,6 +88,7 @@ Examples: teams find Ajay
           teams find --group NOC
 Flags: --group --top (default 10, max 20)
 Person query prefers 1:1. Matching yourself returns Notes (48:notes); Graph list omits it.
+Unique 1:1 hits are remembered so later --to skips a full scan.
 --group matches group topic/members.
 Scan ceiling 10 pages of 50 chats; incomplete=true if not finished.
 Empty list exit 0. Never sends.

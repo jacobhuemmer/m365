@@ -31,7 +31,7 @@ func runTeams(args []string, d Deps, format string) int {
 		if err := parseMixed(fsset, args); err != nil {
 			return fail(d, domain.Usage(err.Error()))
 		}
-		p, err := teams.List(ctx(), d.Teams, sess, *top, *page)
+		p, err := teams.ListMapped(ctx(), d.Teams, d.ChatMap, sess, *top, *page)
 		if err != nil {
 			return fail(d, err)
 		}
@@ -113,7 +113,7 @@ func teamsSend(args []string, d Deps, sess domain.Session, format string) int {
 	if err != nil {
 		return fail(d, err)
 	}
-	out, err := teams.Send(ctx(), d.Teams, sess, teams.SendInput{
+	out, err := teams.SendMapped(ctx(), d.Teams, d.ChatMap, sess, teams.SendInput{
 		ChatID: fsset.Arg(0), To: *to, Text: body, HTML: *html, MD: *formatmd == "md", DryRun: *dry, NoteToSelf: *note, Files: files,
 	})
 	if err != nil {

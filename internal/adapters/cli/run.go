@@ -31,6 +31,7 @@ type Deps struct {
 	MailClassifierError error
 	MailWatchState      mail.WatchStateStore
 	Teams               teams.Store
+	ChatMap             teams.ChatMap
 	Calendar            calendar.Store
 	Files               files.Store
 	Login               auth.LoginFn

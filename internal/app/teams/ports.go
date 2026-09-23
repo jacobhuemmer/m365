@@ -49,6 +49,10 @@ type Store interface {
 }
 
 func List(ctx context.Context, st Store, sess domain.Session, top int, page string) (domain.ChatPage, error) {
+	return ListMapped(ctx, st, nil, sess, top, page)
+}
+
+func ListMapped(ctx context.Context, st Store, m ChatMap, sess domain.Session, top int, page string) (domain.ChatPage, error) {
 	if err := auth.Require(sess, false, true); err != nil {
 		return domain.ChatPage{}, err
 	}
@@ -56,7 +60,12 @@ func List(ctx context.Context, st Store, sess domain.Session, top int, page stri
 	if err != nil {
 		return domain.ChatPage{}, err
 	}
-	return st.ListChats(ctx, n, page)
+	p, err := st.ListChats(ctx, n, page)
+	if err != nil {
+		return domain.ChatPage{}, err
+	}
+	rememberChats(m, sess.Account, p.Items)
+	return p, nil
 }
 
 func Get(ctx context.Context, st Store, sess domain.Session, id string) (domain.Chat, error) {
@@ -85,6 +94,10 @@ func Messages(ctx context.Context, st Store, sess domain.Session, q MessageQuery
 }
 
 func Send(ctx context.Context, st Store, sess domain.Session, in SendInput) (any, error) {
+	return SendMapped(ctx, st, nil, sess, in)
+}
+
+func SendMapped(ctx context.Context, st Store, m ChatMap, sess domain.Session, in SendInput) (any, error) {
 	if err := auth.Require(sess, false, true); err != nil {
 		return nil, err
 	}
@@ -102,7 +115,7 @@ func Send(ctx context.Context, st Store, sess domain.Session, in SendInput) (any
 		if err != nil {
 			return nil, err
 		}
-		r, err := Find(ctx, st, sess, q, 0)
+		r, err := FindMapped(ctx, st, m, sess, q, 0)
 		if err != nil {
 			return nil, err
 		}
