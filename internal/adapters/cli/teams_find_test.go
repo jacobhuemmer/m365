@@ -42,6 +42,13 @@ func TestTeamsFindAjay(t *testing.T) {
 		t.Fatal(errw.String())
 	}
 	out.Reset()
+	if c := Run([]string{"m365", "teams", "find", "user"}, d); c != 0 {
+		t.Fatal(errw.String())
+	}
+	if !strings.Contains(out.String(), "48:notes") {
+		t.Fatal(out.String())
+	}
+	out.Reset()
 	if c := Run([]string{"m365", "teams", "find", "--group", "NOC"}, d); c != 0 {
 		t.Fatal(errw.String())
 	}
@@ -55,7 +62,7 @@ func TestTeamsFindHelp(t *testing.T) {
 	d, out, _ := testDeps()
 	Run([]string{"m365", "teams", "find", "--help"}, d)
 	s := out.String()
-	for _, w := range []string{"Ajay", "--group NOC", "default 10", "max 20"} {
+	for _, w := range []string{"Ajay", "--group NOC", "default 10", "max 20", "48:notes"} {
 		if !strings.Contains(s, w) {
 			t.Fatal(s)
 		}

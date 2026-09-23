@@ -2,6 +2,7 @@ package graph
 
 import (
 	"context"
+	"strings"
 	"testing"
 )
 
@@ -38,5 +39,8 @@ func TestListChatsExpandMembersAndPage(t *testing.T) {
 	}
 	if !ok {
 		t.Fatalf("%+v", p2)
+	}
+	if p.NextPage == nil || !strings.HasPrefix(*p.NextPage, "p.") {
+		t.Fatalf("next_page must be opaque, got %v", p.NextPage)
 	}
 }

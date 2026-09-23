@@ -18,6 +18,7 @@ Do not dump the mailbox. Do not print secrets.
 Find a chat before notify.
 
   1:1: teams find Ajay
+  Yourself: teams find Mason   (Notes / 48:notes; list omits it)
   Group: teams find --group NOC
   Notify: teams send --to Ajay --text ping --dry-run
 

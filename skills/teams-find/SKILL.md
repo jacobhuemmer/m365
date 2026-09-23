@@ -8,6 +8,7 @@ description: Find a Teams 1:1 or group chat by person name or topic before sendi
 Find a chat before notify.
 
   1:1: teams find Ajay
+  Yourself: teams find Mason   (Notes / 48:notes; list omits it)
   Group: teams find --group NOC
   Notify: teams send --to Ajay --text ping --dry-run
 

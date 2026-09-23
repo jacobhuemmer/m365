@@ -86,7 +86,8 @@ const teamsFindHelp = `m365 teams find — find a chat by person or group
 Examples: teams find Ajay
           teams find --group NOC
 Flags: --group --top (default 10, max 20)
-Person query prefers 1:1. --group matches group topic/members.
+Person query prefers 1:1. Matching yourself returns Notes (48:notes); Graph list omits it.
+--group matches group topic/members.
 Scan ceiling 10 pages of 50 chats; incomplete=true if not finished.
 Empty list exit 0. Never sends.
 Output: JSON (default) or --human.
