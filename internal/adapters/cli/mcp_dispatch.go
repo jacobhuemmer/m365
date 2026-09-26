@@ -34,6 +34,9 @@ func FlagMapToArgs(ns, verb string, pos []string, flags map[string]any) ([]strin
 		case nil:
 		case bool:
 			if v {
+				if !boolFlags[name] {
+					return nil, domain.Usagef("flag %s does not take a boolean value", k)
+				}
 				out = append(out, name)
 			}
 		case string:
