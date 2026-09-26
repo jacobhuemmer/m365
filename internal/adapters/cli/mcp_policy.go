@@ -41,7 +41,37 @@ func (p MCPPolicy) check(in *runIn) error {
 	if in.WriteOptIn && isWrite(ns, in.Verb) && p.Allow != nil && !p.Allow[ns+"."+in.Verb] {
 		return domain.Usagef("%s.%s is not permitted by --allow", ns, in.Verb)
 	}
-	if !p.ExactRecipients || !isWrite(ns, in.Verb) || in.Verb != "send" {
+	if !p.ExactRecipients || !isWrite(ns, in.Verb) {
+		return nil
+	}
+	if ns == "mail" && in.Verb == "reply" {
+		if all, exists := in.Flags["all"]; exists && all != nil && all != false && all != "false" {
+			return domain.Usage("--all is not permitted with --exact-recipients")
+		}
+		return nil
+	}
+	if in.Verb != "send" {
+		return nil
+	}
+	if ns == "mail" {
+		for flag, value := range in.Flags {
+			switch flag {
+			case "to", "cc":
+				values, ok := recipientValues(value)
+				if !ok {
+					return domain.Usagef("--%s requires an exact email", flag)
+				}
+				for _, recipient := range values {
+					if !isEmail(recipient) {
+						return domain.Usagef("--%s requires an exact email", flag)
+					}
+				}
+			default:
+				if recipientShapedFlag(flag) {
+					return domain.Usagef("unknown recipient flag --%s", flag)
+				}
+			}
+		}
 		return nil
 	}
 	to, exists := in.Flags["to"]
@@ -69,6 +99,12 @@ func (p MCPPolicy) check(in *runIn) error {
 		in.Flags["exact-recipient"] = true
 	}
 	return nil
+}
+
+func recipientShapedFlag(flag string) bool {
+	return strings.Contains(flag, "recipient") || strings.Contains(flag, "bcc") ||
+		strings.HasPrefix(flag, "cc-") || strings.HasSuffix(flag, "-cc") ||
+		strings.HasPrefix(flag, "to-") || strings.HasSuffix(flag, "-to")
 }
 
 func recipientValues(value any) ([]string, bool) {
