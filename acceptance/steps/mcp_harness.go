@@ -45,7 +45,7 @@ func mcpDeps(teams bool) cli.Deps {
 	}
 }
 
-func startMCP(w *runtime.World, login, teams bool) error {
+func startMCP(w *runtime.World, login, teams bool, policies ...cli.MCPPolicy) error {
 	mcpMu.Lock()
 	defer mcpMu.Unlock()
 	if cur != nil && cur.cancel != nil {
@@ -59,7 +59,11 @@ func startMCP(w *runtime.World, login, teams bool) error {
 	}
 	ctx := context.Background()
 	t1, t2 := mcp.NewInMemoryTransports()
-	ss, err := cli.NewMCPServer(d).Connect(ctx, t1, nil)
+	policy := cli.MCPPolicy{}
+	if len(policies) > 0 {
+		policy = policies[0]
+	}
+	ss, err := cli.NewMCPServerWithPolicy(d, policy).Connect(ctx, t1, nil)
 	if err != nil {
 		return err
 	}

@@ -99,6 +99,7 @@ func teamsSend(args []string, d Deps, sess domain.Session, format string) int {
 	text := fsset.String("text", "", "")
 	textFile := fsset.String("text-file", "", "")
 	to := fsset.String("to", "", "")
+	exactRecipient := fsset.Bool("exact-recipient", false, "")
 	html := fsset.Bool("html", false, "")
 	formatmd := fsset.String("format", "", "")
 	dry := fsset.Bool("dry-run", false, "")
@@ -117,7 +118,7 @@ func teamsSend(args []string, d Deps, sess domain.Session, format string) int {
 		return fail(d, err)
 	}
 	out, err := teams.SendMapped(ctx(), d.Teams, d.ChatMap, sess, teams.SendInput{
-		ChatID: fsset.Arg(0), To: *to, Text: body, HTML: *html, MD: *formatmd == "md", DryRun: *dry, NoteToSelf: *note, Files: files,
+		ChatID: fsset.Arg(0), To: *to, Text: body, HTML: *html, MD: *formatmd == "md", DryRun: *dry, NoteToSelf: *note, ExactRecipient: *exactRecipient, Files: files,
 	})
 	if err != nil {
 		return fail(d, err)

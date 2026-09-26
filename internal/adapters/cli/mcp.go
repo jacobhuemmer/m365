@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"flag"
 	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -18,6 +19,7 @@ Verbs: serve
 serve: JSON-RPC on stdin/stdout. Tools: m365_status, m365_help, m365_run.
 Recipe topics: mail-search, teams-find, calendar, files, mail-write, teams-write (also MCP prompts).
 Writes through m365_run dry-run unless write_opt_in is true.
+serve flags: --read-only, --allow namespace.verb,..., --exact-recipients.
 Do not use --human. Login stays m365 auth login in a terminal.
 No session required for --help.
 `
@@ -36,6 +38,12 @@ type runIn struct {
 	WriteOptIn bool           `json:"write_opt_in,omitempty" jsonschema:"true to perform a real workload write"`
 }
 
+type MCPPolicy struct {
+	ReadOnly        bool
+	ExactRecipients bool
+	Allow           map[string]bool
+}
+
 func runMCP(args []string, d Deps, format string) int {
 	if len(args) == 0 || args[0] == "help" || args[0] == "--help" || args[0] == "-h" || hasHelp(args) {
 		return writeHelp(d.Stdout, mcpHelp)
@@ -46,7 +54,19 @@ func runMCP(args []string, d Deps, format string) int {
 	if format == "human" {
 		return fail(d, domain.Usage("mcp serve is JSON-RPC on stdio; do not use --human"))
 	}
-	if err := ServeMCP(d); err != nil {
+	fs := flag.NewFlagSet("mcp serve", flag.ContinueOnError)
+	fs.SetOutput(d.Stderr)
+	readOnly := fs.Bool("read-only", false, "")
+	allow := fs.String("allow", "", "")
+	exactRecipients := fs.Bool("exact-recipients", false, "")
+	if err := fs.Parse(args[1:]); err != nil || fs.NArg() != 0 {
+		return fail(d, domain.Usage("invalid mcp serve flags"))
+	}
+	policy, err := newMCPPolicy(*readOnly, *allow, *exactRecipients)
+	if err != nil {
+		return fail(d, err)
+	}
+	if err := NewMCPServerWithPolicy(d, policy).Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 		return fail(d, domain.Service(err.Error()))
 	}
 	return domain.ExitOK
@@ -57,6 +77,10 @@ func ServeMCP(d Deps) error {
 }
 
 func NewMCPServer(d Deps) *mcp.Server {
+	return NewMCPServerWithPolicy(d, MCPPolicy{})
+}
+
+func NewMCPServerWithPolicy(d Deps, policy MCPPolicy) *mcp.Server {
 	s := mcp.NewServer(&mcp.Implementation{Name: "m365", Version: version.Version}, nil)
 	mcp.AddTool(s, &mcp.Tool{
 		Name:        "m365_status",
@@ -72,6 +96,9 @@ func NewMCPServer(d Deps) *mcp.Server {
 		Name:        "m365_run",
 		Description: "Run one CLI namespace+verb with a flag map. Returns that command's JSON. Writes dry-run unless write_opt_in is true. Lookup and write examples: help topics mail-search, teams-find, calendar, files, mail-write, teams-write.",
 	}, func(_ context.Context, _ *mcp.CallToolRequest, in runIn) (*mcp.CallToolResult, any, error) {
+		if err := policy.check(&in); err != nil {
+			return toolErr(err), nil, nil
+		}
 		args, err := buildRunArgs(in.Namespace, in.Verb, in.Args, in.Flags, in.WriteOptIn)
 		if err != nil {
 			return toolErr(err), nil, nil

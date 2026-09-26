@@ -147,6 +147,17 @@ m365 mcp serve
 
 Stdio JSON-RPC. Three tools: `m365_status`, `m365_help`, `m365_run`. Six recipe prompts: `mail-search`, `teams-find`, `calendar`, `files`, `mail-write`, `teams-write`. Do not pass `--human`. Writes through `m365_run` stay dry-run unless `write_opt_in` is true.
 
+### Running under autonomous agents
+
+```sh
+m365 mcp serve --read-only
+m365 mcp serve --allow teams.send,mail.send --exact-recipients
+```
+
+`--read-only` rejects every `m365_run` call with `write_opt_in: true`, including calls to read verbs. `--allow` restricts real writes to the listed `namespace.verb` pairs; unlisted writes still preview without opt-in. Without `--allow`, the existing opt-in behavior is unchanged. Writes remain dry-run by default in every mode. `--exact-recipients` rejects name-based `--to` values for sends. Use an exact email address or Entra user ID for Teams `--to`, or a chat ID as the Teams positional argument (or `--to`). Mail `--to` requires an email address. Teams exact matching scans 1:1 chat members and fails if no exact match or more than one chat matches.
+
+To check the flags with an authenticated test account, call `m365_run` with `namespace=mail`, `verb=send`, and `flags={"to":"you@example.com","subject":"Test","body":"Test"}`. With `--read-only`, adding `write_opt_in=true` returns a usage error. With `--allow teams.send`, the same opt-in mail send returns a usage error; without opt-in it returns a dry-run preview. With `--allow mail.send`, opt-in permits the send. With `--exact-recipients`, a Teams send to a display name returns a usage error, while an exact email or chat ID can resolve and send when opted in. The automated acceptance scenarios use fake Graph data and do not send external messages.
+
 This repo has no `m365 skill` command. Copy `skills/<topic>/SKILL.md` into an agent skill root if you want files on disk. `skills/writing-style` is a voice guide for drafts that go out under your name; edit its examples to match how you write.
 
 ```text
