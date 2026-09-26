@@ -11,6 +11,11 @@ import (
 
 func FlagMapToArgs(ns, verb string, pos []string, flags map[string]any) ([]string, error) {
 	out := []string{"m365", ns, verb}
+	for _, arg := range pos {
+		if strings.HasPrefix(arg, "-") {
+			return nil, domain.Usagef("positional argument cannot be a flag: %q", arg)
+		}
+	}
 	out = append(out, pos...)
 	if len(flags) == 0 {
 		return out, nil
@@ -21,7 +26,7 @@ func FlagMapToArgs(ns, verb string, pos []string, flags map[string]any) ([]strin
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
-		if k == "" || strings.HasPrefix(k, "-") {
+		if !validMCPFlagKey(k) {
 			return nil, domain.Usagef("unknown flag %q", k)
 		}
 		name := "--" + k
@@ -58,6 +63,23 @@ func FlagMapToArgs(ns, verb string, pos []string, flags map[string]any) ([]strin
 		}
 	}
 	return out, nil
+}
+
+func validMCPFlagKey(k string) bool {
+	if k == "" || !lowerAlphaNum(k[0]) {
+		return false
+	}
+	for i := 1; i < len(k); i++ {
+		c := k[i]
+		if !lowerAlphaNum(c) && c != '-' {
+			return false
+		}
+	}
+	return true
+}
+
+func lowerAlphaNum(c byte) bool {
+	return c >= 'a' && c <= 'z' || c >= '0' && c <= '9'
 }
 
 func applyWriteGate(ns, verb string, flags map[string]any, optIn bool) map[string]any {

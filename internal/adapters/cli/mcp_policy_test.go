@@ -12,17 +12,28 @@ import (
 
 func TestMCPPolicyValidation(t *testing.T) {
 	for _, raw := range []string{"mail.list", "mail.send,", "send", "teams.nope"} {
-		if _, err := newMCPPolicy(false, raw, false); err == nil {
+		if _, err := newMCPPolicy(false, raw, false, true); err == nil {
 			t.Fatalf("accepted %q", raw)
 		}
 	}
-	p, err := newMCPPolicy(false, "teams.send, mail.send", true)
+	p, err := newMCPPolicy(false, "teams.send, mail.send", true, true)
 	if err != nil || !p.Allow["teams.send"] || !p.Allow["mail.send"] || !p.ExactRecipients {
 		t.Fatalf("policy %+v, %v", p, err)
 	}
 	d, _, _ := testDeps()
 	if code := Run([]string{"m365", "mcp", "serve", "--allow", "mail.list"}, d); code == 0 {
 		t.Fatal("serve accepted invalid allowlist")
+	}
+	empty, err := newMCPPolicy(false, "", false, true)
+	if err != nil || empty.Allow == nil || len(empty.Allow) != 0 {
+		t.Fatalf("empty allowlist should deny writes: %+v, %v", empty, err)
+	}
+	if err := empty.check(&runIn{Namespace: "mail", Verb: "send", WriteOptIn: true}); err == nil {
+		t.Fatal("empty allowlist permitted a real write")
+	}
+	absent, err := newMCPPolicy(false, "", false, false)
+	if err != nil || absent.Allow != nil {
+		t.Fatalf("absent allowlist changed default: %+v, %v", absent, err)
 	}
 }
 
@@ -121,5 +132,43 @@ func TestMCPExactRecipientDoesNotUseFuzzyMatch(t *testing.T) {
 	}
 	if !strings.Contains(toolText(t, res), "sent") {
 		t.Fatal(toolText(t, res))
+	}
+}
+
+func TestMCPPolicyRejectsFlagKeyInjection(t *testing.T) {
+	d, _, _ := testDeps()
+	loginAll(t, &d)
+	ctx := context.Background()
+	t1, t2 := mcp.NewInMemoryTransports()
+	ss, err := NewMCPServerWithPolicy(d, MCPPolicy{ReadOnly: true, ExactRecipients: true, Allow: map[string]bool{}}).Connect(ctx, t1, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ss.Close()
+	cs, err := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "1"}, nil).Connect(ctx, t2, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cs.Close()
+	for _, tc := range []struct {
+		name, namespace string
+		flags           map[string]any
+	}{
+		{"dry run override", "mail", map[string]any{"dry-run=false": true, "to": "x@example.com", "subject": "s", "body": "b"}},
+		{"exact recipient override", "teams", map[string]any{"to": "ajay@example.co", "text": "x", "exact-recipient=false": true}},
+		{"recipient smuggling", "mail", map[string]any{"to": "approved@example.com", "to=evil@example.com": true, "subject": "s", "body": "b"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := cs.CallTool(ctx, &mcp.CallToolParams{Name: "m365_run", Arguments: runIn{Namespace: tc.namespace, Verb: "send", Flags: tc.flags}})
+			if err != nil || !res.IsError || !strings.Contains(toolText(t, res), "unknown flag") {
+				t.Fatalf("injected key was not rejected: %v, %v", err, res)
+			}
+		})
+	}
+	if got := len(d.Mail.(graph.MailAPI).Memory.Sent); got != 0 {
+		t.Fatalf("mail sent despite rejection: %d", got)
+	}
+	if got := len(d.Teams.(graph.TeamsAPI).Memory.Sent); got != 0 {
+		t.Fatalf("teams message sent despite rejection: %d", got)
 	}
 }

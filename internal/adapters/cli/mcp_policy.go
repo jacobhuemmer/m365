@@ -10,9 +10,12 @@ import (
 
 var userIDPattern = regexp.MustCompile(`(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
-func newMCPPolicy(readOnly bool, rawAllow string, exactRecipients bool) (MCPPolicy, error) {
+func newMCPPolicy(readOnly bool, rawAllow string, exactRecipients, allowSet bool) (MCPPolicy, error) {
 	p := MCPPolicy{ReadOnly: readOnly, ExactRecipients: exactRecipients}
 	if rawAllow == "" {
+		if allowSet {
+			p.Allow = map[string]bool{}
+		}
 		return p, nil
 	}
 	p.Allow = map[string]bool{}

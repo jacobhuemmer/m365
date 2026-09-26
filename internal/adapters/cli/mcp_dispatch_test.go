@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"flag"
 	"reflect"
 	"testing"
 )
@@ -21,6 +22,34 @@ func TestFlagMapToArgs(t *testing.T) {
 	want = []string{"m365", "mail", "send", "--to", "a@b.c", "--to", "d@e.f"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("%v", got)
+	}
+}
+
+func TestParseMixedExactRecipientBool(t *testing.T) {
+	fs := flag.NewFlagSet("test", flag.ContinueOnError)
+	exact := fs.Bool("exact-recipient", false, "")
+	to := fs.String("to", "", "")
+	if err := parseMixed(fs, []string{"--exact-recipient", "recipient-id", "--to", "person@example.com"}); err != nil {
+		t.Fatal(err)
+	}
+	if !*exact || *to != "person@example.com" || !reflect.DeepEqual(fs.Args(), []string{"recipient-id"}) {
+		t.Fatalf("exact=%t to=%q args=%v", *exact, *to, fs.Args())
+	}
+}
+
+func TestFlagMapToArgsRejectsInjectedKeys(t *testing.T) {
+	for _, key := range []string{"dry-run=false", "exact-recipient=false", "to=evil@example.com", "to evil", "--to", "To", "to_"} {
+		t.Run(key, func(t *testing.T) {
+			if _, err := FlagMapToArgs("mail", "send", nil, map[string]any{key: true}); err == nil {
+				t.Fatal("accepted injected flag key")
+			}
+		})
+	}
+}
+
+func TestFlagMapToArgsRejectsPositionalFlag(t *testing.T) {
+	if _, err := FlagMapToArgs("mail", "send", []string{"--to=evil@example.com"}, map[string]any{"to": "approved@example.com"}); err == nil {
+		t.Fatal("accepted flag smuggled through positional arguments")
 	}
 }
 

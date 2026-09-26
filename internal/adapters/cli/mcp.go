@@ -62,7 +62,13 @@ func runMCP(args []string, d Deps, format string) int {
 	if err := fs.Parse(args[1:]); err != nil || fs.NArg() != 0 {
 		return fail(d, domain.Usage("invalid mcp serve flags"))
 	}
-	policy, err := newMCPPolicy(*readOnly, *allow, *exactRecipients)
+	allowSet := false
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == "allow" {
+			allowSet = true
+		}
+	})
+	policy, err := newMCPPolicy(*readOnly, *allow, *exactRecipients, allowSet)
 	if err != nil {
 		return fail(d, err)
 	}
