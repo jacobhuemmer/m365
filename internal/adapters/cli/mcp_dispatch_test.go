@@ -11,7 +11,7 @@ func TestFlagMapToArgs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"m365", "mail", "list", "--folder", "inbox", "--top", "10", "--unread"}
+	want := []string{"m365", "mail", "list", "--folder=inbox", "--top=10", "--unread"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("%v != %v", got, want)
 	}
@@ -19,7 +19,7 @@ func TestFlagMapToArgs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want = []string{"m365", "mail", "send", "--to", "a@b.c", "--to", "d@e.f"}
+	want = []string{"m365", "mail", "send", "--to=a@b.c", "--to=d@e.f"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("%v", got)
 	}

