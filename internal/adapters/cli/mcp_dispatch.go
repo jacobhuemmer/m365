@@ -11,6 +11,11 @@ import (
 
 func FlagMapToArgs(ns, verb string, pos []string, flags map[string]any) ([]string, error) {
 	out := []string{"m365", ns, verb}
+	for _, arg := range pos {
+		if strings.HasPrefix(arg, "-") {
+			return nil, domain.Usagef("positional argument cannot be a flag: %q", arg)
+		}
+	}
 	out = append(out, pos...)
 	if len(flags) == 0 {
 		return out, nil
@@ -21,7 +26,7 @@ func FlagMapToArgs(ns, verb string, pos []string, flags map[string]any) ([]strin
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
-		if k == "" || strings.HasPrefix(k, "-") {
+		if !validMCPFlagKey(k) {
 			return nil, domain.Usagef("unknown flag %q", k)
 		}
 		name := "--" + k
@@ -29,21 +34,24 @@ func FlagMapToArgs(ns, verb string, pos []string, flags map[string]any) ([]strin
 		case nil:
 		case bool:
 			if v {
+				if !boolFlags[name] {
+					return nil, domain.Usagef("flag %s does not take a boolean value", k)
+				}
 				out = append(out, name)
 			}
 		case string:
-			out = append(out, name, v)
+			out = append(out, name+"="+v)
 		case float64:
 			if v == float64(int64(v)) {
-				out = append(out, name, strconv.FormatInt(int64(v), 10))
+				out = append(out, name+"="+strconv.FormatInt(int64(v), 10))
 			} else {
-				out = append(out, name, strconv.FormatFloat(v, 'f', -1, 64))
+				out = append(out, name+"="+strconv.FormatFloat(v, 'f', -1, 64))
 			}
 		case json.Number:
-			out = append(out, name, v.String())
+			out = append(out, name+"="+v.String())
 		case []string:
 			for _, s := range v {
-				out = append(out, name, s)
+				out = append(out, name+"="+s)
 			}
 		case []any:
 			for _, e := range v {
@@ -51,13 +59,30 @@ func FlagMapToArgs(ns, verb string, pos []string, flags map[string]any) ([]strin
 				if !ok {
 					return nil, domain.Usagef("flag %s values must be strings", k)
 				}
-				out = append(out, name, s)
+				out = append(out, name+"="+s)
 			}
 		default:
 			return nil, domain.Usagef("unsupported flag type for %s", k)
 		}
 	}
 	return out, nil
+}
+
+func validMCPFlagKey(k string) bool {
+	if k == "" || !lowerAlphaNum(k[0]) {
+		return false
+	}
+	for i := 1; i < len(k); i++ {
+		c := k[i]
+		if !lowerAlphaNum(c) && c != '-' {
+			return false
+		}
+	}
+	return true
+}
+
+func lowerAlphaNum(c byte) bool {
+	return c >= 'a' && c <= 'z' || c >= '0' && c <= '9'
 }
 
 func applyWriteGate(ns, verb string, flags map[string]any, optIn bool) map[string]any {

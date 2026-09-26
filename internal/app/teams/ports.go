@@ -22,14 +22,15 @@ type MessageQuery struct {
 }
 
 type SendInput struct {
-	ChatID     string
-	To         string
-	Text       string
-	HTML       bool
-	MD         bool
-	DryRun     bool
-	NoteToSelf bool
-	Files      []domain.OutboundFile
+	ChatID         string
+	To             string
+	Text           string
+	HTML           bool
+	MD             bool
+	DryRun         bool
+	NoteToSelf     bool
+	ExactRecipient bool
+	Files          []domain.OutboundFile
 }
 
 type WatchQuery struct {
@@ -111,28 +112,36 @@ func SendMapped(ctx context.Context, st Store, m ChatMap, sess domain.Session, i
 		return nil, domain.Usage("use --to or a chat id, not both")
 	}
 	if in.To != "" {
-		q, err := ParseQuery(in.To, false)
-		if err != nil {
-			return nil, err
-		}
-		r, err := FindMapped(ctx, st, m, sess, q, 0)
-		if err != nil {
-			return nil, err
-		}
-		if r.Incomplete {
-			return nil, domain.Usage("chat search incomplete")
-		}
-		if r.Count == 0 {
-			return nil, domain.NotFound("no matching chat")
-		}
-		if r.Count > 1 {
-			ids := make([]string, 0, r.Count)
-			for _, c := range r.Items {
-				ids = append(ids, c.ID)
+		if in.ExactRecipient {
+			chat, err := findExactRecipient(ctx, st, sess, in.To)
+			if err != nil {
+				return nil, err
 			}
-			return nil, domain.Usagef("several matches (%s); pass a chat id", strings.Join(ids, ", "))
+			in.ChatID = chat.ID
+		} else {
+			q, err := ParseQuery(in.To, false)
+			if err != nil {
+				return nil, err
+			}
+			r, err := FindMapped(ctx, st, m, sess, q, 0)
+			if err != nil {
+				return nil, err
+			}
+			if r.Incomplete {
+				return nil, domain.Usage("chat search incomplete")
+			}
+			if r.Count == 0 {
+				return nil, domain.NotFound("no matching chat")
+			}
+			if r.Count > 1 {
+				ids := make([]string, 0, r.Count)
+				for _, c := range r.Items {
+					ids = append(ids, c.ID)
+				}
+				return nil, domain.Usagef("several matches (%s); pass a chat id", strings.Join(ids, ", "))
+			}
+			in.ChatID = r.Items[0].ID
 		}
-		in.ChatID = r.Items[0].ID
 	}
 	if in.ChatID == "" || in.Text == "" {
 		return nil, domain.Usage("chat id and text are required")
@@ -156,6 +165,48 @@ func SendMapped(ctx context.Context, st Store, m ChatMap, sess domain.Session, i
 		return nil, err
 	}
 	return map[string]any{"id": id, "sent": true}, nil
+}
+
+func findExactRecipient(ctx context.Context, st Store, sess domain.Session, recipient string) (domain.Chat, error) {
+	var found domain.Chat
+	page := ""
+	for i := 0; i < ScanMaxPages; i++ {
+		chats, err := st.ListChats(ctx, ScanPageSize, page)
+		if err != nil {
+			return domain.Chat{}, err
+		}
+		for _, chat := range chats.Items {
+			if !strings.EqualFold(chat.Type, "oneOnOne") {
+				continue
+			}
+			selfIdentified := false
+			for _, member := range chat.Members {
+				if sess.Account != "" && strings.EqualFold(member.Address, sess.Account) {
+					selfIdentified = true
+					break
+				}
+			}
+			for _, member := range chat.Members {
+				if sess.Account != "" && strings.EqualFold(member.Address, sess.Account) {
+					continue
+				}
+				if strings.EqualFold(member.Address, recipient) || selfIdentified && member.Address != "" && strings.EqualFold(member.ID, recipient) {
+					if found.ID != "" && found.ID != chat.ID {
+						return domain.Chat{}, domain.Usage("several exact recipient chats; pass a chat id")
+					}
+					found = chat
+				}
+			}
+		}
+		if chats.NextPage == nil || *chats.NextPage == "" {
+			if found.ID == "" {
+				return domain.Chat{}, domain.NotFound("no exact recipient chat")
+			}
+			return found, nil
+		}
+		page = *chats.NextPage
+	}
+	return domain.Chat{}, domain.Usage("chat search incomplete; pass a chat id")
 }
 
 func Watch(ctx context.Context, st Store, sess domain.Session, q WatchQuery) ([]domain.WatchEvent, error) {
