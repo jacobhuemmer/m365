@@ -78,6 +78,74 @@ func TestMCPExactRecipients(t *testing.T) {
 	}
 }
 
+func TestMCPExactRecipientsRejectsInvalidMailCC(t *testing.T) {
+	d, _, _ := testDeps()
+	loginAll(t, &d)
+	mem := d.Mail.(graph.MailAPI).Memory
+	ctx := context.Background()
+	t1, t2 := mcp.NewInMemoryTransports()
+	ss, err := NewMCPServerWithPolicy(d, MCPPolicy{ExactRecipients: true, Allow: map[string]bool{"mail.send": true}}).Connect(ctx, t1, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ss.Close()
+	cs, err := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "1"}, nil).Connect(ctx, t2, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cs.Close()
+	for _, cc := range []any{"someone", "copy@example.com extra", []any{"copy@example.com", "someone"}} {
+		res, err := cs.CallTool(ctx, &mcp.CallToolParams{Name: "m365_run", Arguments: runIn{
+			Namespace: "mail", Verb: "send", WriteOptIn: true,
+			Flags: map[string]any{"to": "approved@example.com", "cc": cc, "subject": "Synthetic", "body": "Test"},
+		}})
+		if err != nil || !res.IsError || !strings.Contains(toolText(t, res), `"class":"usage"`) {
+			t.Fatalf("invalid cc %v was not rejected as usage: %v, %v", cc, err, res)
+		}
+	}
+	if len(mem.Sent) != 0 {
+		t.Fatalf("sent with invalid cc: %d", len(mem.Sent))
+	}
+}
+
+func TestMCPExactRecipientsRejectsUnknownRecipientFlag(t *testing.T) {
+	p := MCPPolicy{ExactRecipients: true}
+	for _, flag := range []string{"bcc", "reply-to"} {
+		in := runIn{Namespace: "mail", Verb: "send", Flags: map[string]any{"to": "approved@example.com", flag: "other@example.com"}}
+		if err := p.check(&in); err == nil || domain.ClassOf(err) != domain.ClassUsage {
+			t.Fatalf("recipient flag %q bypassed policy: %v", flag, err)
+		}
+	}
+}
+
+func TestMCPExactRecipientsRejectsReplyAll(t *testing.T) {
+	d, _, _ := testDeps()
+	loginAll(t, &d)
+	mem := d.Mail.(graph.MailAPI).Memory
+	ctx := context.Background()
+	t1, t2 := mcp.NewInMemoryTransports()
+	ss, err := NewMCPServerWithPolicy(d, MCPPolicy{ExactRecipients: true, Allow: map[string]bool{"mail.reply": true}}).Connect(ctx, t1, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ss.Close()
+	cs, err := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "1"}, nil).Connect(ctx, t2, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cs.Close()
+	res, err := cs.CallTool(ctx, &mcp.CallToolParams{Name: "m365_run", Arguments: runIn{
+		Namespace: "mail", Verb: "reply", Args: []string{"msg-1"}, WriteOptIn: true,
+		Flags: map[string]any{"all": true, "body": "Synthetic reply"},
+	}})
+	if err != nil || !res.IsError || !strings.Contains(toolText(t, res), `"class":"usage"`) {
+		t.Fatalf("reply-all was not rejected as usage: %v, %v", err, res)
+	}
+	if len(mem.Sent) != 0 {
+		t.Fatalf("reply-all sent: %d", len(mem.Sent))
+	}
+}
+
 func TestMCPExactRecipientDoesNotUseFuzzyMatch(t *testing.T) {
 	d, _, _ := testDeps()
 	loginAll(t, &d)
