@@ -54,19 +54,26 @@ make install
 
 ## Sign in
 
-You need an Entra app registration that you are allowed to use (delegated, as yourself). Put the IDs in `~/.config/m365/.env`:
+You need an Entra app registration that you are allowed to use (delegated, as yourself). Create the configuration directory:
 
 ```sh
 mkdir -p ~/.config/m365
-cp .env.example ~/.config/m365/.env
 ```
 
-```
-M365_CLIENT_ID=...
-M365_TENANT_ID=...
+Create or update `~/.config/m365/config.json` with your app's IDs, preserving any existing settings:
+
+```json
+{
+  "client_id": "YOUR_CLIENT_ID",
+  "tenant_id": "YOUR_TENANT_ID"
+}
 ```
 
-You can export the same names instead of a file. Then, in a real terminal (browser login):
+If `XDG_CONFIG_HOME` is set, use `$XDG_CONFIG_HOME/m365/config.json` instead.
+
+Alternatively, export `M365_CLIENT_ID` and `M365_TENANT_ID` in your shell; these override the values in `config.json`. The CLI does not automatically load `.env` files.
+
+Then, in a real terminal (browser login):
 
 ```sh
 m365 auth login
