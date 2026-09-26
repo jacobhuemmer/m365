@@ -25,6 +25,23 @@ func TestFlagMapToArgs(t *testing.T) {
 	}
 }
 
+func TestFlagMapToArgsPreservesGlobalLookingValue(t *testing.T) {
+	args, err := buildRunArgs("mail", "send", nil, map[string]any{"cc": "--json"}, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, _, _, rest := peelGlobals(args)
+	fs := flag.NewFlagSet("mail send", flag.ContinueOnError)
+	cc := fs.String("cc", "", "")
+	dryRun := fs.Bool("dry-run", false, "")
+	if err := fs.Parse(rest[2:]); err != nil {
+		t.Fatal(err)
+	}
+	if *cc != "--json" || !*dryRun {
+		t.Fatalf("cc=%q dry-run=%t args=%v", *cc, *dryRun, rest)
+	}
+}
+
 func TestParseMixedExactRecipientBool(t *testing.T) {
 	fs := flag.NewFlagSet("test", flag.ContinueOnError)
 	exact := fs.Bool("exact-recipient", false, "")

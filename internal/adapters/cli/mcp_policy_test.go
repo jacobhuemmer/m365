@@ -180,7 +180,7 @@ func TestMCPReadOnlyDoesNotSendWhenFlagValueLooksGlobal(t *testing.T) {
 	loginAll(t, &d)
 	ctx := context.Background()
 	t1, t2 := mcp.NewInMemoryTransports()
-	ss, err := NewMCPServerWithPolicy(d, MCPPolicy{ReadOnly: true}).Connect(ctx, t1, nil)
+	ss, err := NewMCPServerWithPolicy(d, MCPPolicy{ReadOnly: true, Allow: map[string]bool{}}).Connect(ctx, t1, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -198,10 +198,19 @@ func TestMCPReadOnlyDoesNotSendWhenFlagValueLooksGlobal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(d.Mail.(graph.MailAPI).Memory.Sent) != 0 {
-		t.Fatal("mail sent without write opt-in")
-	}
-	if res.IsError || !strings.Contains(toolText(t, res), "dry_run") {
+	if res.IsError {
 		t.Fatalf("expected a dry-run preview: %s", toolText(t, res))
+	}
+	var preview struct {
+		DryRun bool `json:"dry_run"`
+	}
+	if err := json.Unmarshal([]byte(toolText(t, res)), &preview); err != nil {
+		t.Fatal(err)
+	}
+	if !preview.DryRun {
+		t.Fatalf("expected dry-run preview: %s", toolText(t, res))
+	}
+	if got := len(d.Mail.(graph.MailAPI).Memory.Sent); got != 0 {
+		t.Fatalf("mail sent without write opt-in: %d", got)
 	}
 }
