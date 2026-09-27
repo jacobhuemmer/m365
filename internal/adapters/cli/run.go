@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/masonhuemmer/m365/internal/app/auth"
@@ -64,6 +65,9 @@ func Run(args []string, d Deps) int {
 	}
 	if human && jsonOn {
 		return fail(d, domain.Usage("use only one of --json or --human"))
+	}
+	if jsonOn && slices.Contains(rest, "--preview") {
+		return fail(d, domain.Usage("use only one of --preview or --json"))
 	}
 	format := "json"
 	if human {
@@ -204,7 +208,7 @@ var boolFlags = map[string]bool{
 	"--all": true, "--include-system": true, "--help": true, "-h": true,
 	"--json": true, "--human": true, "--verbose": true, "--debug": true,
 	"--bodies": true, "--group": true, "--include-existing": true, "--classify": true,
-	"--version": true, "--note-to-self": true,
+	"--version": true, "--note-to-self": true, "--preview": true,
 }
 
 func parseMixed(fsset *flag.FlagSet, args []string) error {

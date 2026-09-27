@@ -102,6 +102,7 @@ func teamsSend(args []string, d Deps, sess domain.Session, format string) int {
 	html := fsset.Bool("html", false, "")
 	formatmd := fsset.String("format", "", "")
 	dry := fsset.Bool("dry-run", false, "")
+	preview := fsset.Bool("preview", false, "")
 	note := fsset.Bool("note-to-self", false, "")
 	var attach []string
 	fsset.Func("attach", "", func(s string) error { attach = append(attach, s); return nil })
@@ -117,10 +118,13 @@ func teamsSend(args []string, d Deps, sess domain.Session, format string) int {
 		return fail(d, err)
 	}
 	out, err := teams.SendMapped(ctx(), d.Teams, d.ChatMap, sess, teams.SendInput{
-		ChatID: fsset.Arg(0), To: *to, Text: body, HTML: *html, MD: *formatmd == "md", DryRun: *dry, NoteToSelf: *note, Files: files,
+		ChatID: fsset.Arg(0), To: *to, Text: body, HTML: *html, MD: *formatmd == "md", DryRun: *dry || *preview, NoteToSelf: *note, Files: files,
 	})
 	if err != nil {
 		return fail(d, err)
+	}
+	if *preview {
+		return writePreview(d, teamsPreviewHeaders(out, files), out)
 	}
 	return success(d, format, out)
 }

@@ -205,7 +205,7 @@
 ### Scaffold and tests for User Story 3 (MANDATORY)
 
 - [X] T043 [US3] SCAFFOLD: add `Text(content string, width int) string` returning `""` in internal/domain/msgbody/text.go, and `drawPreview(headers []string, body string, problems msgbody.Problems, width int) string` returning `""` and `termWidth(w io.Writer) int` returning `0` in internal/adapters/cli/preview.go; SCAFFOLD commit
-- [ ] T044 [P] [US3] Write RED table tests in internal/domain/msgbody/text_test.go for `Text`, covering every row of the "Body approximation" table in contracts/preview.md:
+- [X] T044 [P] [US3] Write RED table tests in internal/domain/msgbody/text_test.go for `Text`, covering every row of the "Body approximation" table in contracts/preview.md:
   - Paragraphs and `<br><br>` → a blank line.
   - `•` bullets and numbered lists.
   - Headings underlined with `=` (h1) or `-` (h2, h3).
@@ -213,38 +213,38 @@
   - `pre` indented 4 spaces and not wrapped.
   - `blockquote` → `> `; `hr` → `─`; entities decoded.
   - Word-wrap at `width`, splitting over-long words.
-- [ ] T045 [P] [US3] Write RED golden tests in internal/adapters/cli/preview_test.go:
+- [X] T045 [P] [US3] Write RED golden tests in internal/adapters/cli/preview_test.go:
   - `drawPreview` reproduces the contracts/preview.md golden example exactly at width 40.
   - Width is clamped to at least 20.
   - Run through `Run` with buffer stdout (width 80), compare against internal/adapters/cli/testdata/preview/{mail,mail-problems,reply,reply-all,teams,teams-to,teams-problems}.golden.
   - The header lines match the table in contracts/preview.md: Cc and Attachments are omitted when empty; the reply header is `Reply to message msg-1 (reply all)`; with `--to`, the Teams header is `To: Alice (chat chat-1)`.
   - `Memory.Sent` is empty in every case.
-- [ ] T046 [P] [US3] Write RED CLI tests in internal/adapters/cli/preview_flags_test.go:
+- [X] T046 [P] [US3] Write RED CLI tests in internal/adapters/cli/preview_flags_test.go:
   - `--preview --json` → exit 3 with message `use only one of --preview or --json`.
   - `--preview --human` and `--preview --dry-run` → the same box, exit 0.
   - A body with problems → problems listed after the box, exit 0.
   - `--help` for `mail send`, `mail reply` and `teams send` lists `--preview`.
-- [ ] T047 [P] [US3] Write a RED MCP test in internal/adapters/cli/mcp_preview_test.go: `m365_run` with flags `{"preview": true}` and with `{"preview": false}` → usage error, message `preview is a terminal flag`, hint `use dry-run; its JSON has rendered and format_problems`
-- [ ] T048 [P] [US3] Write Gherkin in features/mail/mail-preview.feature and features/teams/teams-preview.feature:
+- [X] T047 [P] [US3] Write a RED MCP test in internal/adapters/cli/mcp_preview_test.go: `m365_run` with flags `{"preview": true}` and with `{"preview": false}` → usage error, message `preview is a terminal flag`, hint `use dry-run; its JSON has rendered and format_problems`
+- [X] T048 [P] [US3] Write Gherkin in features/mail/mail-preview.feature and features/teams/teams-preview.feature:
   - `--preview` succeeds, `stdout contains "Reply to message msg-1"` / `stdout contains "Chat: chat-1"`, and `nothing was sent`.
   - `--preview --json` → `exit code 3`.
   - Append both files to acceptance/steps/new_features_test.go.
-- [ ] T049 [US3] Confirm every failure in T044–T048 is an assertion failure, with no compile errors, then RED commit with tests, goldens and features only
+- [X] T049 [US3] Confirm every failure in T044–T048 is an assertion failure, with no compile errors, then RED commit with tests, goldens and features only
 
 ### Implementation for User Story 3
 
-- [ ] T050 [US3] Implement `Text` in internal/domain/msgbody/text.go using the `x/net/html` tokenizer, keeping it under 250 lines
-- [ ] T051 [US3] Add `golang.org/x/term` (v0.46.0, or the newest with `go` directive ≤ 1.25.0) and record it in Notes. Implement internal/adapters/cli/preview.go:
+- [X] T050 [US3] Implement `Text` in internal/domain/msgbody/text.go using the `x/net/html` tokenizer, keeping it under 250 lines
+- [X] T051 [US3] Add `golang.org/x/term` (v0.46.0, or the newest with `go` directive ≤ 1.25.0) and record it in Notes. Implement internal/adapters/cli/preview.go:
   - `termWidth`: terminal columns when `w` is an `*os.File` that is a terminal, else 80; minimum 20.
   - `drawPreview`, drawn with `┌─┐│├┤└┘`.
   - Header builders for mail, reply and Teams, reading `chat_id`, `rendered` and `format_problems` from the dry-run payload.
   - No colour.
-- [ ] T052 [US3] Create internal/adapters/cli/bodyflags.go with the shared `--preview` handling (sets `DryRun`), and wire it into `mailSend` and `mailReply` in internal/adapters/cli/mail.go and `teamsSend` in internal/adapters/cli/teams.go. When `--preview` is set, write the box instead of calling `success`. Add only flag and call lines to mail.go (already 270 lines; refactor note in plan.md)
-- [ ] T053 [US3] In internal/adapters/cli/run.go, add `"--preview": true` to `boolFlags` and return the usage error `use only one of --preview or --json` when both appear, next to the existing `--json`/`--human` check
-- [ ] T054 [US3] In `buildRunArgs` in internal/adapters/cli/mcp_dispatch.go, reject a `preview` key in the flags map, whatever its value, with `&domain.Error{Class: domain.ClassUsage, Message: "preview is a terminal flag", Hint: "use dry-run; its JSON has rendered and format_problems"}`
-- [ ] T055 [US3] Add `--preview` (show the message as text; never sends; not with `--json`) to `mailSendHelp`, `mailReplyHelp` and `teamsSendHelp` in internal/adapters/cli/help.go
-- [ ] T056 [US3] Add the `stdout contains "<text>"` step to acceptance/steps/rendered_steps.go if no existing handler matches it
-- [ ] T057 [US3] Run `make unit` and `make acceptance`, then GREEN commit T050–T056
+- [X] T052 [US3] Create internal/adapters/cli/bodyflags.go with the shared `--preview` handling (sets `DryRun`), and wire it into `mailSend` and `mailReply` in internal/adapters/cli/mail.go and `teamsSend` in internal/adapters/cli/teams.go. When `--preview` is set, write the box instead of calling `success`. Add only flag and call lines to mail.go (already 270 lines; refactor note in plan.md)
+- [X] T053 [US3] In internal/adapters/cli/run.go, add `"--preview": true` to `boolFlags` and return the usage error `use only one of --preview or --json` when both appear, next to the existing `--json`/`--human` check
+- [X] T054 [US3] In `buildRunArgs` in internal/adapters/cli/mcp_dispatch.go, reject a `preview` key in the flags map, whatever its value, with `&domain.Error{Class: domain.ClassUsage, Message: "preview is a terminal flag", Hint: "use dry-run; its JSON has rendered and format_problems"}`
+- [X] T055 [US3] Add `--preview` (show the message as text; never sends; not with `--json`) to `mailSendHelp`, `mailReplyHelp` and `teamsSendHelp` in internal/adapters/cli/help.go
+- [X] T056 [US3] Add the `stdout contains "<text>"` step to acceptance/steps/rendered_steps.go if no existing handler matches it
+- [X] T057 [US3] Run `make unit` and `make acceptance`, then GREEN commit T050–T056
 
 **Checkpoint**: The preview works for all three commands; JSON and MCP paths are unchanged apart from the preview rejection.
 
@@ -331,8 +331,10 @@ No scaffold: these tests go through `Run`, and the `MD` field they use was added
   - New feature files carry a namespace prefix (`mail-rendered.feature`, `teams-rendered.feature`, and the same for format-check and preview). `cmd/acceptance-entrypoint-generator` names each generated test after the file's base name only, so `mail/rendered.feature` and `teams/rendered.feature` would collide.
   - T019: `redact()` (internal/adapters/cli/redact.go) also consumes the closing JSON quote after a token-like value, so any MCP output containing `access_token=…` is invalid JSON. This bug predates this feature (the raw `body` field is affected at 378698e) and is out of scope (FR-022 keeps redaction as is). T019 therefore checks that the secret is absent and that `rendered.content` starts with `<p>[redacted]`, without parsing the output. Recommend a separate ticket.
   - US1 GREEN also did two small pieces planned later: `msgbody.ModeFor(html, md)` selects the mode in the mail and teams app layer (planned in T062, so US4 is now CLI-only), and the JSON step already supports array indexes (planned in T041).
+  - T052: the `--preview` wiring is three lines per command (flag, `DryRun || preview`, `writePreview` call), so no `bodyflags.go` was created in US3; a one-line flag helper would be a wrapper that adds no behaviour (Constitution III). `bodyflags.go` is created in US4 for `bodyMode`.
 - Dependency versions (T037, T051):
   - `golang.org/x/net` v0.58.0 (T037). v0.59.0 would raise go.mod's `go` line to 1.26.0; v0.58.0 is the newest that keeps `go 1.25.0`. It brings `golang.org/x/sys` v0.41.0 → v0.47.0 (indirect).
+  - `golang.org/x/term` v0.45.0 (T051). v0.46.0 would raise the `go` line to 1.26.0.
 - Benchmark and binary size (T065, T066):
 - File-size notes (T069):
 - Quickstart outcomes (T070):

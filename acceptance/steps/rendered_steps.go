@@ -20,6 +20,13 @@ func registerRendered() {
 		}
 		return nil
 	})
+	runtime.Register("stdout contains", func(w *runtime.World, text string) error {
+		want := strings.Trim(strings.TrimSpace(strings.TrimPrefix(text, "stdout contains")), `"`)
+		if !strings.Contains(w.Out, want) {
+			w.T.Fatalf("stdout lacks %q:\n%s", want, w.Out)
+		}
+		return nil
+	})
 	runtime.Register("stdout JSON", func(w *runtime.World, text string) error {
 		m := reJSONStep.FindStringSubmatch(text)
 		if m == nil {
