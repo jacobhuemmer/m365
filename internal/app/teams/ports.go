@@ -147,6 +147,7 @@ func SendMapped(ctx context.Context, st Store, m ChatMap, sess domain.Session, i
 	if strings.TrimSpace(in.Rendered.Content) == "" {
 		return nil, domain.Usage("chat id and text are required")
 	}
+	problems := msgbody.Lint(in.Rendered.Content)
 	if in.DryRun {
 		atts := []map[string]any{}
 		for _, f := range in.Files {
@@ -154,12 +155,15 @@ func SendMapped(ctx context.Context, st Store, m ChatMap, sess domain.Session, i
 		}
 		out := map[string]any{
 			"dry_run": true, "chat_id": in.ChatID, "text": in.Text, "attachments": atts,
-			"rendered": in.Rendered, "format_problems": msgbody.Problems{},
+			"rendered": in.Rendered, "format_problems": problems,
 		}
 		if in.To != "" {
 			out["to"] = in.To
 		}
 		return out, nil
+	}
+	if err := problems.Err(); err != nil {
+		return nil, err
 	}
 	id, err := st.Send(ctx, in)
 	if err != nil {

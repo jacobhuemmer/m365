@@ -113,8 +113,12 @@ func Send(ctx context.Context, st Store, sess domain.Session, in SendInput) (any
 	if strings.TrimSpace(in.Rendered.Content) == "" {
 		return nil, domain.Usage("to, subject, and body are required")
 	}
+	problems := append(msgbody.LintSubject(in.Subject), msgbody.Lint(in.Rendered.Content)...)
 	if in.DryRun {
-		return dryPayload(in.To, in.Subject, in.Body, in.Files, in.Rendered), nil
+		return dryPayload(in.To, in.Subject, in.Body, in.Files, in.Rendered, problems), nil
+	}
+	if err := problems.Err(); err != nil {
+		return nil, err
 	}
 	id, err := st.Send(ctx, in)
 	if err != nil {
@@ -137,8 +141,12 @@ func Reply(ctx context.Context, st Store, sess domain.Session, in ReplyInput) (a
 	if strings.TrimSpace(in.Rendered.Content) == "" {
 		return nil, domain.Usage("message id and body are required")
 	}
+	problems := msgbody.Lint(in.Rendered.Content)
 	if in.DryRun {
-		return dryPayload(nil, "", in.Body, in.Files, in.Rendered), nil
+		return dryPayload(nil, "", in.Body, in.Files, in.Rendered, problems), nil
+	}
+	if err := problems.Err(); err != nil {
+		return nil, err
 	}
 	id, err := st.Reply(ctx, in)
 	if err != nil {
@@ -178,7 +186,7 @@ func Save(ctx context.Context, st Store, sess domain.Session, messageID, attach,
 	return dest, nil
 }
 
-func dryPayload(to []string, subject, body string, files []domain.OutboundFile, r msgbody.Rendered) map[string]any {
+func dryPayload(to []string, subject, body string, files []domain.OutboundFile, r msgbody.Rendered, problems msgbody.Problems) map[string]any {
 	atts := make([]map[string]any, 0, len(files))
 	for _, f := range files {
 		atts = append(atts, map[string]any{"name": f.Name, "size": f.Size})
@@ -190,6 +198,6 @@ func dryPayload(to []string, subject, body string, files []domain.OutboundFile, 
 		"body":            body,
 		"attachments":     atts,
 		"rendered":        r,
-		"format_problems": msgbody.Problems{},
+		"format_problems": problems,
 	}
 }

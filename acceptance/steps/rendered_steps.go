@@ -14,6 +14,12 @@ var reJSONStep = regexp.MustCompile(`^stdout JSON "([^"]+)" is (.+)$`)
 
 // registerRendered adds the steps used by the SDO-563 features.
 func registerRendered() {
+	runtime.Register("nothing was sent", func(w *runtime.World, _ string) error {
+		if w.Sent != 0 {
+			w.T.Fatalf("sent %d message(s), want none", w.Sent)
+		}
+		return nil
+	})
 	runtime.Register("stdout JSON", func(w *runtime.World, text string) error {
 		m := reJSONStep.FindStringSubmatch(text)
 		if m == nil {

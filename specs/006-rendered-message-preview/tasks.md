@@ -156,41 +156,41 @@
 ### Scaffold and tests for User Story 2 (MANDATORY)
 
 - [X] T029 [US2] SCAFFOLD: add `Lint(content string) Problems` in internal/domain/msgbody/lint_html.go and `LintSubject(subject string) Problems` in internal/domain/msgbody/lint_text.go, both returning `nil`; SCAFFOLD commit
-- [ ] T030 [P] [US2] Write RED table tests in internal/domain/msgbody/lint_html_test.go, one pass and one fail case per rule, asserting exact `Problems` (contracts/format-rules.md):
+- [X] T030 [P] [US2] Write RED table tests in internal/domain/msgbody/lint_html_test.go, one pass and one fail case per rule, asserting exact `Problems` (contracts/format-rules.md):
   - Rule 1: `<table>`, `<span>`, `<div>` → `tag-not-allowed`. Every allow-listed tag passes: "`p br h1 h2 h3 ul ol li pre code a strong b em i u s blockquote hr`".
   - Rule 2: `style`/`class` on any tag, and any attribute other than `href` on `a`, → `attribute-not-allowed`.
   - Rule 3: `broken-html`, with details `unclosed <p>`, `</em> closes <strong>` and `stray </p>`. `<br>`, `<br/>` and `<hr>` need no end tag.
   - Rule 6: `extra-blank-lines`, with details `empty <p>` and `3 <br> in a row`, including `<br> <br> <br>`. Exactly `<br><br>` passes.
   - Rule 7: `link-scheme` for `javascript:`, `data:`, a relative href and an empty href. `http`, `https` and `mailto` pass.
   - Tag and attribute names are compared case-insensitively.
-- [ ] T031 [P] [US2] Write RED table tests in internal/domain/msgbody/lint_text_test.go:
+- [X] T031 [P] [US2] Write RED table tests in internal/domain/msgbody/lint_text_test.go:
   - Rule 4 `leftover-markdown`: `**x**`, a line starting with `# `/`## `/`### `, `[l](u)` and `` `x` `` fail. A line starting with `- ` passes. The same text inside `<code>` or `<pre>` passes.
   - Rule 5 `literal-escape`: `\n`, `\t` and `\"` fail outside code and pass inside code.
   - Details are cut to 40 characters.
   - `LintSubject`: `**urgent**` → `leftover-markdown` with detail `subject: **urgent**`; `a\nb` → `newline-in-subject`.
   - Subject problems are listed before body problems.
-- [ ] T032 [P] [US2] Write the invariant test internal/domain/msgbody/clean_test.go over fixtures internal/domain/msgbody/testdata/clean/*.txt (plain) and *.md (markdown). Fixtures cover paragraphs, line breaks, whitespace-only lines, `<`/`&` in prose, lists, headings, links, inline and fenced code, and a line starting with `- `. For both `Mail` and `Teams`, `Lint(Render(...).Content)` must be empty. It passes against the scaffold; it guards the GREEN implementation
-- [ ] T033 [P] [US2] Write RED app tests in internal/app/mail/format_check_test.go and internal/app/teams/format_check_test.go:
+- [X] T032 [P] [US2] Write the invariant test internal/domain/msgbody/clean_test.go over fixtures internal/domain/msgbody/testdata/clean/*.txt (plain) and *.md (markdown). Fixtures cover paragraphs, line breaks, whitespace-only lines, `<`/`&` in prose, lists, headings, links, inline and fenced code, and a line starting with `- `. For both `Mail` and `Teams`, `Lint(Render(...).Content)` must be empty. It passes against the scaffold; it guards the GREEN implementation
+- [X] T033 [P] [US2] Write RED app tests in internal/app/mail/format_check_test.go and internal/app/teams/format_check_test.go:
   - An `--html` body `<p>hi` on dry-run → `format_problems` = `[{broken-html, unclosed <p>}]` and no error.
   - The same body sent for real → `*domain.Error` with class usage, message `1 format problem: broken-html: unclosed <p>` and the hint, and the store received nothing.
   - A mail subject `**urgent**` is blocked the same way.
-- [ ] T034 [P] [US2] Write RED CLI and MCP tests:
+- [X] T034 [P] [US2] Write RED CLI and MCP tests:
   - internal/adapters/cli/format_check_test.go: `mail send ... --html --body <p>hi` → exit 3, stderr exactly `{"class":"usage","message":"1 format problem: broken-html: unclosed <p>","hint":"run with --preview to see them"}`, `Memory.Sent` empty.
   - internal/adapters/cli/mcp_format_test.go: `m365_run` with write opt-in and `{"html":true,"body":"<p>hi"}` → `IsError` of the usage class, nothing sent. Without opt-in → dry-run JSON listing `broken-html`.
-- [ ] T035 [P] [US2] Write Gherkin in features/mail/mail-format-check.feature and features/teams/teams-format-check.feature:
+- [X] T035 [P] [US2] Write Gherkin in features/mail/mail-format-check.feature and features/teams/teams-format-check.feature:
   - A blocked send (`--html --body <p>hi`) → `exit code 3` and `nothing was sent`.
   - A dry-run → `stdout JSON "format_problems.0.rule" is "broken-html"`.
   - Append both files to the list in acceptance/steps/new_features_test.go.
-- [ ] T036 [US2] Confirm every failure in T030–T035 is an assertion failure, with no compile errors, then RED commit with tests, fixtures and features only
+- [X] T036 [US2] Confirm every failure in T030–T035 is an assertion failure, with no compile errors, then RED commit with tests, fixtures and features only
 
 ### Implementation for User Story 2
 
-- [ ] T037 [US2] Add `golang.org/x/net` (v0.59.0, or the newest version whose `go` directive ≤ 1.25.0) with `go get`. Confirm go.mod's `go 1.25.0` is unchanged, and record the version in Notes (research R13)
-- [ ] T038 [US2] Implement `Lint` and rules 1, 2, 3, 6 and 7 in internal/domain/msgbody/lint_html.go using `html.Tokenizer` with an explicit open-tag stack, not `html.Parse` (research R7). `Lint` also calls the text rules from lint_text.go
-- [ ] T039 [US2] Implement rules 4 and 5 over visible, unescaped text tokens outside `code`/`pre`, plus `LintSubject`, in internal/domain/msgbody/lint_text.go. Keep each file under 250 lines
-- [ ] T040 [US2] Wire linting into internal/app/mail/ports.go and internal/app/teams/ports.go in the order from research R8. Dry-run returns the problems; otherwise, if there are problems, return `problems.Err()` before calling the store. Subject linting applies to `mail send` only
-- [ ] T041 [US2] In acceptance/steps/rendered_steps.go, add the `nothing was sent` step (asserts `w.Sent == 0`) and array-index support in the dotted JSON path (`format_problems.0.rule`)
-- [ ] T042 [US2] Run `make unit` and `make acceptance`, then GREEN commit T037–T041
+- [X] T037 [US2] Add `golang.org/x/net` (v0.59.0, or the newest version whose `go` directive ≤ 1.25.0) with `go get`. Confirm go.mod's `go 1.25.0` is unchanged, and record the version in Notes (research R13)
+- [X] T038 [US2] Implement `Lint` and rules 1, 2, 3, 6 and 7 in internal/domain/msgbody/lint_html.go using `html.Tokenizer` with an explicit open-tag stack, not `html.Parse` (research R7). `Lint` also calls the text rules from lint_text.go
+- [X] T039 [US2] Implement rules 4 and 5 over visible, unescaped text tokens outside `code`/`pre`, plus `LintSubject`, in internal/domain/msgbody/lint_text.go. Keep each file under 250 lines
+- [X] T040 [US2] Wire linting into internal/app/mail/ports.go and internal/app/teams/ports.go in the order from research R8. Dry-run returns the problems; otherwise, if there are problems, return `problems.Err()` before calling the store. Subject linting applies to `mail send` only
+- [X] T041 [US2] In acceptance/steps/rendered_steps.go, add the `nothing was sent` step (asserts `w.Sent == 0`) and array-index support in the dotted JSON path (`format_problems.0.rule`)
+- [X] T042 [US2] Run `make unit` and `make acceptance`, then GREEN commit T037–T041
 
 **Checkpoint**: The MVP is complete. Dry-run is exact and badly formatted sends are blocked in the CLI and MCP.
 
@@ -332,6 +332,7 @@ No scaffold: these tests go through `Run`, and the `MD` field they use was added
   - T019: `redact()` (internal/adapters/cli/redact.go) also consumes the closing JSON quote after a token-like value, so any MCP output containing `access_token=…` is invalid JSON. This bug predates this feature (the raw `body` field is affected at 378698e) and is out of scope (FR-022 keeps redaction as is). T019 therefore checks that the secret is absent and that `rendered.content` starts with `<p>[redacted]`, without parsing the output. Recommend a separate ticket.
   - US1 GREEN also did two small pieces planned later: `msgbody.ModeFor(html, md)` selects the mode in the mail and teams app layer (planned in T062, so US4 is now CLI-only), and the JSON step already supports array indexes (planned in T041).
 - Dependency versions (T037, T051):
+  - `golang.org/x/net` v0.58.0 (T037). v0.59.0 would raise go.mod's `go` line to 1.26.0; v0.58.0 is the newest that keeps `go 1.25.0`. It brings `golang.org/x/sys` v0.41.0 → v0.47.0 (indirect).
 - Benchmark and binary size (T065, T066):
 - File-size notes (T069):
 - Quickstart outcomes (T070):
