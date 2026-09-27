@@ -22,8 +22,13 @@ go tool cover -func=build/crap/cover.out > build/crap/func.txt
 # Exactly the non-test files Go compiles on this platform (GoFiles), so a
 # file named like foo_testhelper.go is measured and build-tagged files
 # outside this build are not scored at 0% coverage.
-go list -f '{{$d := .Dir}}{{range .GoFiles}}{{$d}}/{{.}}{{"\n"}}{{end}}' ./cmd/... ./internal/... |
-  sed "s|^$PWD/||" > build/crap/files.txt
+# go list writes to a file first: in a pipeline its failure would be lost.
+go list -f '{{$d := .Dir}}{{range .GoFiles}}{{$d}}/{{.}}{{"\n"}}{{end}}' ./cmd/... ./internal/... > build/crap/list.txt
+sed "s|^$PWD/||" build/crap/list.txt > build/crap/files.txt
+if [ ! -s build/crap/files.txt ]; then
+  echo "crap: go list found no Go files" >&2
+  exit 1
+fi
 # Null-separated so a filename with a space stays one argument.
 tr '\n' '\0' < build/crap/files.txt | xargs -0 gocyclo > build/crap/cyclo.txt
 go build -o build/crap/crap-gate ./cmd/crap-gate
