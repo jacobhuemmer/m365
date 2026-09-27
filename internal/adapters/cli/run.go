@@ -139,7 +139,9 @@ func fail(d Deps, err error) int {
 	if de, ok := err.(*domain.Error); ok {
 		hint = de.Hint
 	}
-	_ = json.NewEncoder(d.Stderr).Encode(errObj{Class: cls, Message: redact(msg), Hint: redact(hint)})
+	enc := json.NewEncoder(d.Stderr)
+	enc.SetEscapeHTML(false)
+	_ = enc.Encode(errObj{Class: cls, Message: redact(msg), Hint: redact(hint)})
 	return code
 }
 
@@ -188,6 +190,7 @@ func readBody(flagVal, fileVal string, stdin io.Reader) (string, error) {
 func humanize(v any) string {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
 	enc.SetIndent("", "  ")
 	_ = enc.Encode(v)
 	return strings.TrimSpace(buf.String())
