@@ -3,7 +3,10 @@
 TOOLS_BIN := $(shell pwd)/.tools/bin
 # Run every target with the toolchain CI uses (go.mod's toolchain line),
 # whatever Go is installed. Override with GOTOOLCHAIN=local to test a newer Go.
-GOTOOLCHAIN ?= $(shell sed -n 's/^toolchain //p' go.mod)
+# An unset or empty GOTOOLCHAIN gets the pin, as in install-tools.sh.
+ifeq ($(strip $(GOTOOLCHAIN)),)
+GOTOOLCHAIN := $(shell sed -n 's/^toolchain //p' go.mod)
+endif
 export GOTOOLCHAIN
 PKGS := $(shell go list ./... | grep -v '/acceptance/generated')
 
