@@ -24,6 +24,7 @@ go tool cover -func=build/crap/cover.out > build/crap/func.txt
 # outside this build are not scored at 0% coverage.
 go list -f '{{$d := .Dir}}{{range .GoFiles}}{{$d}}/{{.}}{{"\n"}}{{end}}' ./cmd/... ./internal/... |
   sed "s|^$PWD/||" > build/crap/files.txt
-xargs gocyclo < build/crap/files.txt > build/crap/cyclo.txt
+# Null-separated so a filename with a space stays one argument.
+tr '\n' '\0' < build/crap/files.txt | xargs -0 gocyclo > build/crap/cyclo.txt
 go build -o build/crap/crap-gate ./cmd/crap-gate
 build/crap/crap-gate -module "$(go list -m)" -cover build/crap/func.txt -cyclo build/crap/cyclo.txt -baseline scripts/crap-baseline.txt "$@"

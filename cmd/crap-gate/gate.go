@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -28,6 +29,14 @@ type violation struct {
 	Score, Baseline float64
 }
 
+// Lines are matched by structure, not split on spaces, so a file path
+// may contain spaces: `go tool cover -func` prints "path:line:<tab>name
+// <tab>pct%", gocyclo prints "complexity pkg name path:line:col".
+var (
+	coverLine = regexp.MustCompile(`^(.+):(\d+):\s+\S+\s+([\d.]+)%$`)
+	cycloLine = regexp.MustCompile(`^(\d+) (\S+) (\S+) (.+):(\d+):(\d+)$`)
+)
+
 // crapScore is complexity² × (1 − coverage)³ + complexity, rounded up to
 // 0.1: rounding never hides a crossing of the threshold or of a baseline
 // entry. The epsilon keeps exact values (110) from rounding up.
@@ -42,22 +51,19 @@ func parseCover(r io.Reader, module string) (map[string]float64, error) {
 	out := map[string]float64{}
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {
-		fields := strings.Fields(sc.Text())
-		if len(fields) == 0 || fields[0] == "total:" {
+		text := strings.TrimSpace(sc.Text())
+		if text == "" || strings.HasPrefix(text, "total:") {
 			continue
 		}
-		if len(fields) < 3 || !strings.HasSuffix(fields[len(fields)-1], "%") {
+		m := coverLine.FindStringSubmatch(text)
+		if m == nil {
 			return nil, fmt.Errorf("cover: malformed line %q", sc.Text())
 		}
-		file, line, ok := splitPos(strings.TrimPrefix(fields[0], module+"/"))
-		if !ok {
-			return nil, fmt.Errorf("cover: malformed position in %q", sc.Text())
-		}
-		pct, err := strconv.ParseFloat(strings.TrimSuffix(fields[len(fields)-1], "%"), 64)
+		pct, err := strconv.ParseFloat(m[3], 64)
 		if err != nil {
 			return nil, fmt.Errorf("cover: %w", err)
 		}
-		out[file+":"+line] = pct / 100
+		out[strings.TrimPrefix(m[1], module+"/")+":"+m[2]] = pct / 100
 	}
 	return out, sc.Err()
 }
@@ -67,37 +73,36 @@ func parseCover(r io.Reader, module string) (map[string]float64, error) {
 // uncovered.
 func parseCyclo(r io.Reader, cover map[string]float64) ([]fn, error) {
 	var out []fn
+	var lines []int
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {
-		fields := strings.Fields(sc.Text())
-		if len(fields) == 0 {
+		text := strings.TrimSpace(sc.Text())
+		if text == "" {
 			continue
 		}
-		if len(fields) != 4 {
+		m := cycloLine.FindStringSubmatch(text)
+		if m == nil {
 			return nil, fmt.Errorf("gocyclo: malformed line %q", sc.Text())
 		}
-		c, err := strconv.Atoi(fields[0])
-		if err != nil {
-			return nil, fmt.Errorf("gocyclo: %w", err)
-		}
-		file, line, ok := splitPos(fields[3])
-		if !ok {
-			return nil, fmt.Errorf("gocyclo: malformed position in %q", sc.Text())
-		}
-		cov := cover[file+":"+line]
-		out = append(out, fn{File: file, Name: fields[2], Complexity: c, Coverage: cov, Score: crapScore(c, cov)})
+		c, _ := strconv.Atoi(m[1])    // the pattern matched digits
+		line, _ := strconv.Atoi(m[5]) // the pattern matched digits
+		file := m[4]
+		cov := cover[file+":"+m[5]]
+		out = append(out, fn{File: file, Name: m[3], Complexity: c, Coverage: cov, Score: crapScore(c, cov)})
+		lines = append(lines, line)
 	}
 	if err := sc.Err(); err != nil {
 		return nil, err
 	}
-	numberSameNames(out)
+	numberSameNames(out, lines)
 	return out, nil
 }
 
 // numberSameNames gives functions that share a file and name (several
-// init funcs) distinct keys: the highest score keeps the name, the rest
-// get #2, #3 and so on, so a new one can't reuse another's entry.
-func numberSameNames(fns []fn) {
+// init funcs) distinct keys by position in the file: the first keeps the
+// name, the rest get #2, #3 and so on. Position, not score, so a rising
+// function can't swap numbers with one that dropped.
+func numberSameNames(fns []fn, lines []int) {
 	groups := map[string][]int{}
 	for i, f := range fns {
 		groups[f.key()] = append(groups[f.key()], i)
@@ -106,23 +111,11 @@ func numberSameNames(fns []fn) {
 		if len(idx) < 2 {
 			continue
 		}
-		sort.SliceStable(idx, func(a, b int) bool { return fns[idx[a]].Score > fns[idx[b]].Score })
+		sort.SliceStable(idx, func(a, b int) bool { return lines[idx[a]] < lines[idx[b]] })
 		for n, i := range idx[1:] {
 			fns[i].Name = fmt.Sprintf("%s#%d", fns[i].Name, n+2)
 		}
 	}
-}
-
-// splitPos splits "file:line" or "file:line:col" into file and line.
-func splitPos(pos string) (file, line string, ok bool) {
-	parts := strings.Split(pos, ":")
-	if len(parts) < 2 || parts[0] == "" {
-		return "", "", false
-	}
-	if _, err := strconv.Atoi(parts[1]); err != nil {
-		return "", "", false
-	}
-	return parts[0], parts[1], true
 }
 
 // parseBaseline reads "score file name" lines; # starts a comment.
