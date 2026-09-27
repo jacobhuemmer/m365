@@ -8,7 +8,7 @@ import (
 )
 
 // Every JSON the CLI writes leaves <, > and & as-is, like normal stdout,
-// instead of <, > and &.
+// instead of \u003c, \u003e and \u0026.
 
 func TestStderrErrorKeepsHTMLCharacters(t *testing.T) {
 	d, _, errw := testDeps()
