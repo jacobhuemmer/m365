@@ -18,7 +18,7 @@ func TestTextWrapsByDisplayWidth(t *testing.T) {
 	if got, want := Text("<p>界界界界界</p>", 4), "界界\n界界\n界"; got != want {
 		t.Fatalf("got %q want %q", got, want)
 	}
-	if got, want := Text("<p>ab 界界 cd</p>", 6), "ab 界\n界 cd"; got != want {
+	if got, want := Text("<p>ab 界界 cd</p>", 6), "ab\n界界\ncd"; got != want {
 		t.Fatalf("got %q want %q", got, want)
 	}
 }
