@@ -13,7 +13,6 @@ import (
 	"github.com/masonhuemmer/m365/internal/app/mail"
 	"github.com/masonhuemmer/m365/internal/app/teams"
 	"github.com/masonhuemmer/m365/internal/domain"
-	"github.com/masonhuemmer/m365/internal/domain/msgbody"
 )
 
 func (c *HTTPClient) doJSON(ctx context.Context, method, path string, payload any) error {
@@ -37,10 +36,6 @@ func (c *HTTPClient) doJSON(ctx context.Context, method, path string, payload an
 }
 
 func (c *HTTPClient) Send(ctx context.Context, in mail.SendInput) (string, error) {
-	ctype := "Text"
-	if in.HTML {
-		ctype = "HTML"
-	}
 	to := make([]map[string]any, 0, len(in.To))
 	for _, a := range in.To {
 		to = append(to, map[string]any{"emailAddress": map[string]string{"address": a}})
@@ -55,7 +50,7 @@ func (c *HTTPClient) Send(ctx context.Context, in mail.SendInput) (string, error
 	}
 	msg := map[string]any{
 		"subject":      in.Subject,
-		"body":         map[string]string{"contentType": ctype, "content": in.Body},
+		"body":         map[string]string{"contentType": "HTML", "content": in.Rendered.Content},
 		"toRecipients": to,
 	}
 	if len(cc) > 0 {
@@ -77,12 +72,7 @@ func (c *HTTPClient) Reply(ctx context.Context, in mail.ReplyInput) (string, err
 	}
 	// Graph renders comment as HTML above the quoted thread. message.body
 	// would replace the whole reply and drop the thread.
-	mode := msgbody.Plain
-	if in.HTML {
-		mode = msgbody.HTML
-	}
-	comment := msgbody.Render(mode, msgbody.Mail, in.Body).Content
-	if err := c.doJSON(ctx, http.MethodPost, path, map[string]any{"comment": comment}); err != nil {
+	if err := c.doJSON(ctx, http.MethodPost, path, map[string]any{"comment": in.Rendered.Content}); err != nil {
 		return "", err
 	}
 	return "sent", nil
@@ -102,16 +92,8 @@ func (c *HTTPClient) Download(ctx context.Context, messageID, attach string) ([]
 }
 
 func (c *HTTPTeams) Send(ctx context.Context, in teams.SendInput) (string, error) {
-	// Teams collapses newlines in contentType text, so plain text goes out as HTML too.
-	mode := msgbody.Plain
-	switch {
-	case in.HTML:
-		mode = msgbody.HTML
-	case in.MD:
-		mode = msgbody.Markdown
-	}
-	content := msgbody.Render(mode, msgbody.Mail, in.Text).Content
-	body := map[string]any{"body": map[string]string{"contentType": "html", "content": content}}
+	// The app layer renders the body; send it exactly as dry-run showed it.
+	body := map[string]any{"body": map[string]string{"contentType": "html", "content": in.Rendered.Content}}
 	if err := c.doJSON(ctx, http.MethodPost, "/me/chats/"+url.PathEscape(in.ChatID)+"/messages", body); err != nil {
 		return "", err
 	}

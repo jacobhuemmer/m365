@@ -19,6 +19,7 @@ func init() {
 }
 
 func RegisterAll() {
+	registerRendered()
 	runtime.Register("the CLI is available", func(w *runtime.World, _ string) error {
 		w.T.Helper()
 		return nil
@@ -45,7 +46,7 @@ func RegisterAll() {
 			errw.Reset()
 		}
 		code := cli.Run(append([]string{"m365"}, parts...), d)
-		w.Code, w.Out, w.Err = code, out.String(), errw.String()
+		w.Code, w.Out, w.Err, w.Sent = code, out.String(), errw.String(), len(mem.Sent)
 		return nil
 	})
 	runtime.Register("the command succeeds", func(w *runtime.World, _ string) error {

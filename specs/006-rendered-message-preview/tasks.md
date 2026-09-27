@@ -106,42 +106,42 @@
 - [X] T014 [US1] SCAFFOLD, then SCAFFOLD commit:
   - Add `Rendered msgbody.Rendered` to `mail.SendInput`, `mail.ReplyInput` (internal/app/mail/ports.go) and `teams.SendInput` (internal/app/teams/ports.go), plus `MD bool` on the two mail inputs. Nothing reads or sets them yet.
   - Add `World.Sent int` and `Matches(text string) bool` returning `false` in acceptance/runtime/runtime.go.
-- [ ] T015 [P] [US1] Write RED tests in internal/app/mail/rendered_test.go (new file; do not edit the locked send_test.go):
+- [X] T015 [P] [US1] Write RED tests in internal/app/mail/rendered_test.go (new file; do not edit the locked send_test.go):
   - `Send` and `Reply` dry-runs return `rendered` = `msgbody.Rendered{ContentType: "html", Content: "<p>b</p>"}` for body `b`, and `format_problems` = empty `msgbody.Problems`. Existing keys `dry_run to subject body attachments` stay unchanged.
   - A real send passes a store input whose `Rendered` equals the dry-run value.
   - A body of `"   "` gives the same usage error as a missing body (research R8).
-- [ ] T016 [P] [US1] Write RED tests in internal/app/teams/rendered_test.go:
+- [X] T016 [P] [US1] Write RED tests in internal/app/teams/rendered_test.go:
   - `SendMapped` dry-run returns `rendered` with `"<p>a<br><br>b</p>"` for text `"a\n\nb"`.
   - The same holds on the `--to Alice` path.
   - A real send's store input has the identical `Rendered`.
   - Whitespace-only text is a usage error.
-- [ ] T017 [P] [US1] Write RED parity tests in internal/adapters/graph/rendered_parity_test.go. For `mail send`, `mail reply` and `teams send` × plain / markdown / html modes:
+- [X] T017 [P] [US1] Write RED parity tests in internal/adapters/graph/rendered_parity_test.go. For `mail send`, `mail reply` and `teams send` × plain / markdown / html modes:
   - Call the app use case with `DryRun: true`, then with `DryRun: false` against an `HTTPClient`/`HTTPTeams` backed by `captureJSONServer`.
   - Assert `rendered.content` equals `message.body.content` (with `contentType == "HTML"`), the `comment` string (and no `message` key), or `body.content` (with `contentType == "html"`), respectively.
   - In the same RED commit, apply the T003(b)-approved edits to internal/adapters/graph/httpsend_test.go.
-- [ ] T018 [P] [US1] Write RED CLI tests in internal/adapters/cli/rendered_test.go:
+- [X] T018 [P] [US1] Write RED CLI tests in internal/adapters/cli/rendered_test.go:
   - `mail send --to user@example.com --subject t --body b --dry-run`, `mail reply msg-1 --body b --dry-run` and `teams send chat-1 --text b --dry-run` print JSON with `rendered` = `{"content_type":"html","content":"<p>b</p>"}` and `format_problems` = `[]`.
   - Without `--dry-run`, `Memory.Sent[0]`'s `Rendered.Content` is `<p>b</p>`.
-- [ ] T019 [P] [US1] Write a RED test in internal/adapters/cli/mcp_rendered_test.go: `m365_run` for `mail send`, without write opt-in and with body `access_token=abc123`, returns dry-run JSON whose `rendered.content` is exactly `<p>[redacted]` and contains no `abc123` (FR-022, SC-008). Redaction consumes up to the next `"`, so the closing `</p>` is swallowed; that is existing redaction behaviour and stays
-- [ ] T020 [P] [US1] Write Gherkin in features/mail/mail-rendered.feature and features/teams/teams-rendered.feature. Scenarios run a dry-run with single-token bodies (the `I run` step splits on spaces) and assert `stdout JSON "rendered.content" is "<p>b</p>"` and `stdout JSON "format_problems" is []`
-- [ ] T021 [P] [US1] Write RED guard test acceptance/steps/new_features_test.go. It parses each file in a list (start with features/mail/mail-rendered.feature and features/teams/teams-rendered.feature; US2 and US3 append theirs) using `runtime.Parse`, and fails naming any step for which `runtime.Matches(text)` is false (research R9)
-- [ ] T022 [US1] Confirm every failure in T015–T021 is an assertion failure, with no compile errors, then RED commit with tests and features only
+- [X] T019 [P] [US1] Write a RED test in internal/adapters/cli/mcp_rendered_test.go: `m365_run` for `mail send`, without write opt-in and with body `access_token=abc123`, returns dry-run JSON whose `rendered.content` is exactly `<p>[redacted]` and contains no `abc123` (FR-022, SC-008). Redaction consumes up to the next `"`, so the closing `</p>` is swallowed; that is existing redaction behaviour and stays
+- [X] T020 [P] [US1] Write Gherkin in features/mail/mail-rendered.feature and features/teams/teams-rendered.feature. Scenarios run a dry-run with single-token bodies (the `I run` step splits on spaces) and assert `stdout JSON "rendered.content" is "<p>b</p>"` and `stdout JSON "format_problems" is []`
+- [X] T021 [P] [US1] Write RED guard test acceptance/steps/new_features_test.go. It parses each file in a list (start with features/mail/mail-rendered.feature and features/teams/teams-rendered.feature; US2 and US3 append theirs) using `runtime.Parse`, and fails naming any step for which `runtime.Matches(text)` is false (research R9)
+- [X] T022 [US1] Confirm every failure in T015–T021 is an assertion failure, with no compile errors, then RED commit with tests and features only
 
 ### Implementation for User Story 1
 
-- [ ] T023 [US1] Implement `Matches` in acceptance/runtime/runtime.go using the same prefix rule as `dispatch`. `dispatch` behaviour stays unchanged (SDO-566 is separate)
-- [ ] T024 [US1] In internal/app/mail/ports.go:
+- [X] T023 [US1] Implement `Matches` in acceptance/runtime/runtime.go using the same prefix rule as `dispatch`. `dispatch` behaviour stays unchanged (SDO-566 is separate)
+- [X] T024 [US1] In internal/app/mail/ports.go:
   - After `ValidateOutbound`, set `Rendered = msgbody.Render(mode, msgbody.Mail, body)`. An empty `Rendered.Content` is the existing missing-body usage error.
   - Add `rendered` and `format_problems` (`msgbody.Problems{}`) to `dryPayload`.
   - Pass `Rendered` to the store.
-- [ ] T025 [US1] In internal/app/teams/ports.go, render with target `msgbody.Teams` after `--to` resolution and `ValidateOutbound`, and add `rendered` and `format_problems` to the dry-run map. Keep the file under 250 lines
-- [ ] T026 [US1] In internal/adapters/graph/httpsend.go:
+- [X] T025 [US1] In internal/app/teams/ports.go, render with target `msgbody.Teams` after `--to` resolution and `ValidateOutbound`, and add `rendered` and `format_problems` to the dry-run map. Keep the file under 250 lines
+- [X] T026 [US1] In internal/adapters/graph/httpsend.go:
   - Mail sends `{"contentType":"HTML","content":in.Rendered.Content}`.
   - Reply sends `{"comment": in.Rendered.Content}`.
   - Teams sends `{"contentType":"html","content":in.Rendered.Content}`.
   - Remove the `msgbody.Render` calls from T012 and the `HTML`/`MD` branching.
-- [ ] T027 [US1] In acceptance/steps/rendered_steps.go, add the handler `stdout JSON "<dotted.path>" is <json>` (exact JSON value comparison). Set `w.Sent` from the memory adapter in the `I run` handler in acceptance/steps/registry.go
-- [ ] T028 [US1] Run `make unit` and `make acceptance`, then GREEN commit T023–T027
+- [X] T027 [US1] In acceptance/steps/rendered_steps.go, add the handler `stdout JSON "<dotted.path>" is <json>` (exact JSON value comparison). Set `w.Sent` from the memory adapter in the `I run` handler in acceptance/steps/registry.go
+- [X] T028 [US1] Run `make unit` and `make acceptance`, then GREEN commit T023–T027
 
 **Checkpoint**: Parity holds for all 9 command × mode pairs; existing suites green.
 
@@ -330,6 +330,7 @@ No scaffold: these tests go through `Run`, and the `MD` field they use was added
 - Deviations found during implementation:
   - New feature files carry a namespace prefix (`mail-rendered.feature`, `teams-rendered.feature`, and the same for format-check and preview). `cmd/acceptance-entrypoint-generator` names each generated test after the file's base name only, so `mail/rendered.feature` and `teams/rendered.feature` would collide.
   - T019: `redact()` (internal/adapters/cli/redact.go) also consumes the closing JSON quote after a token-like value, so any MCP output containing `access_token=…` is invalid JSON. This bug predates this feature (the raw `body` field is affected at 378698e) and is out of scope (FR-022 keeps redaction as is). T019 therefore checks that the secret is absent and that `rendered.content` starts with `<p>[redacted]`, without parsing the output. Recommend a separate ticket.
+  - US1 GREEN also did two small pieces planned later: `msgbody.ModeFor(html, md)` selects the mode in the mail and teams app layer (planned in T062, so US4 is now CLI-only), and the JSON step already supports array indexes (planned in T041).
 - Dependency versions (T037, T051):
 - Benchmark and binary size (T065, T066):
 - File-size notes (T069):

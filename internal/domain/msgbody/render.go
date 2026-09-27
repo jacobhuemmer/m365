@@ -32,6 +32,17 @@ type block struct {
 	para bool
 }
 
+// ModeFor picks the mode from the --html and --format md flags.
+func ModeFor(html, md bool) Mode {
+	switch {
+	case html:
+		return HTML
+	case md:
+		return Markdown
+	}
+	return Plain
+}
+
 // Render turns the caller's body into the HTML a send delivers.
 func Render(mode Mode, target Target, src string) Rendered {
 	content := src
