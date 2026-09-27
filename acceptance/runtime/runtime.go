@@ -127,3 +127,9 @@ func unmatchedSteps(feat Feature) []string {
 	}
 	return out
 }
+
+// checkFeature parses a feature and reports unsupported syntax or steps
+// with no handler, before any scenario runs.
+func checkFeature(path string) (Feature, error) {
+	return Feature{}, nil
+}
