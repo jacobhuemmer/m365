@@ -7,7 +7,8 @@ cd "$(dirname "$0")/.."
 EXPECTED_GO="1.25.0"
 # Ask Go for the parsed version: comments, CRLF and spacing don't matter,
 # and a malformed go.mod fails here instead of passing.
-actual="$(go list -m -f '{{.GoVersion}}')"
+# GOFLAGS is cleared so -modfile cannot point the checks at another file.
+actual="$(GOFLAGS= go list -m -f '{{.GoVersion}}')"
 if [ "$actual" != "$EXPECTED_GO" ]; then
   echo "gomod: go.mod's go line is $actual, expected $EXPECTED_GO." >&2
   echo "gomod: a dependency upgrade probably raised it. Pin an older version, or change EXPECTED_GO in scripts/gomod.sh on purpose." >&2
@@ -16,7 +17,7 @@ fi
 # -diff prints the changes tidy would make and exits nonzero; it never
 # edits files. A nonzero exit with no diff means tidy itself failed
 # (cache, network, toolchain), which is not the same as "not tidy".
-if diff="$(go mod tidy -diff)"; then
+if diff="$(GOFLAGS= go mod tidy -diff)"; then
   echo "gomod: ok"
   exit 0
 fi
