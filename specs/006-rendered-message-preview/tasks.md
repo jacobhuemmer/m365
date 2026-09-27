@@ -103,7 +103,7 @@
 
 ### Scaffold and tests for User Story 1 (MANDATORY)
 
-- [ ] T014 [US1] SCAFFOLD, then SCAFFOLD commit:
+- [X] T014 [US1] SCAFFOLD, then SCAFFOLD commit:
   - Add `Rendered msgbody.Rendered` to `mail.SendInput`, `mail.ReplyInput` (internal/app/mail/ports.go) and `teams.SendInput` (internal/app/teams/ports.go), plus `MD bool` on the two mail inputs. Nothing reads or sets them yet.
   - Add `World.Sent int` and `Matches(text string) bool` returning `false` in acceptance/runtime/runtime.go.
 - [ ] T015 [P] [US1] Write RED tests in internal/app/mail/rendered_test.go (new file; do not edit the locked send_test.go):
@@ -123,8 +123,8 @@
   - `mail send --to user@example.com --subject t --body b --dry-run`, `mail reply msg-1 --body b --dry-run` and `teams send chat-1 --text b --dry-run` print JSON with `rendered` = `{"content_type":"html","content":"<p>b</p>"}` and `format_problems` = `[]`.
   - Without `--dry-run`, `Memory.Sent[0]`'s `Rendered.Content` is `<p>b</p>`.
 - [ ] T019 [P] [US1] Write a RED test in internal/adapters/cli/mcp_rendered_test.go: `m365_run` for `mail send`, without write opt-in and with body `access_token=abc123`, returns dry-run JSON whose `rendered.content` is exactly `<p>[redacted]` and contains no `abc123` (FR-022, SC-008). Redaction consumes up to the next `"`, so the closing `</p>` is swallowed; that is existing redaction behaviour and stays
-- [ ] T020 [P] [US1] Write Gherkin in features/mail/rendered.feature and features/teams/rendered.feature. Scenarios run a dry-run with single-token bodies (the `I run` step splits on spaces) and assert `stdout JSON "rendered.content" is "<p>b</p>"` and `stdout JSON "format_problems" is []`
-- [ ] T021 [P] [US1] Write RED guard test acceptance/steps/new_features_test.go. It parses each file in a list (start with features/mail/rendered.feature and features/teams/rendered.feature; US2 and US3 append theirs) using `runtime.Parse`, and fails naming any step for which `runtime.Matches(text)` is false (research R9)
+- [ ] T020 [P] [US1] Write Gherkin in features/mail/mail-rendered.feature and features/teams/teams-rendered.feature. Scenarios run a dry-run with single-token bodies (the `I run` step splits on spaces) and assert `stdout JSON "rendered.content" is "<p>b</p>"` and `stdout JSON "format_problems" is []`
+- [ ] T021 [P] [US1] Write RED guard test acceptance/steps/new_features_test.go. It parses each file in a list (start with features/mail/mail-rendered.feature and features/teams/teams-rendered.feature; US2 and US3 append theirs) using `runtime.Parse`, and fails naming any step for which `runtime.Matches(text)` is false (research R9)
 - [ ] T022 [US1] Confirm every failure in T015–T021 is an assertion failure, with no compile errors, then RED commit with tests and features only
 
 ### Implementation for User Story 1
@@ -177,7 +177,7 @@
 - [ ] T034 [P] [US2] Write RED CLI and MCP tests:
   - internal/adapters/cli/format_check_test.go: `mail send ... --html --body <p>hi` → exit 3, stderr exactly `{"class":"usage","message":"1 format problem: broken-html: unclosed <p>","hint":"run with --preview to see them"}`, `Memory.Sent` empty.
   - internal/adapters/cli/mcp_format_test.go: `m365_run` with write opt-in and `{"html":true,"body":"<p>hi"}` → `IsError` of the usage class, nothing sent. Without opt-in → dry-run JSON listing `broken-html`.
-- [ ] T035 [P] [US2] Write Gherkin in features/mail/format-check.feature and features/teams/format-check.feature:
+- [ ] T035 [P] [US2] Write Gherkin in features/mail/mail-format-check.feature and features/teams/teams-format-check.feature:
   - A blocked send (`--html --body <p>hi`) → `exit code 3` and `nothing was sent`.
   - A dry-run → `stdout JSON "format_problems.0.rule" is "broken-html"`.
   - Append both files to the list in acceptance/steps/new_features_test.go.
@@ -225,7 +225,7 @@
   - A body with problems → problems listed after the box, exit 0.
   - `--help` for `mail send`, `mail reply` and `teams send` lists `--preview`.
 - [ ] T047 [P] [US3] Write a RED MCP test in internal/adapters/cli/mcp_preview_test.go: `m365_run` with flags `{"preview": true}` and with `{"preview": false}` → usage error, message `preview is a terminal flag`, hint `use dry-run; its JSON has rendered and format_problems`
-- [ ] T048 [P] [US3] Write Gherkin in features/mail/preview.feature and features/teams/preview.feature:
+- [ ] T048 [P] [US3] Write Gherkin in features/mail/mail-preview.feature and features/teams/teams-preview.feature:
   - `--preview` succeeds, `stdout contains "Reply to message msg-1"` / `stdout contains "Chat: chat-1"`, and `nothing was sent`.
   - `--preview --json` → `exit code 3`.
   - Append both files to acceptance/steps/new_features_test.go.
@@ -327,6 +327,9 @@ No scaffold: these tests go through `Run`, and the `MD` field they use was added
 - Tests affected by HTML mail, and locked-test approval (T003):
   - Scratch run (mail sent as `contentType: HTML` with `plainTextToHTML`, then `git restore`): `go test ./...` had no failures, so item (c) names no tests.
   - Approval: 2026-09-27, the user chose "Approve all" for (a), (b), (c: none) and (d) in the session prompt.
+- Deviations found during implementation:
+  - New feature files carry a namespace prefix (`mail-rendered.feature`, `teams-rendered.feature`, and the same for format-check and preview). `cmd/acceptance-entrypoint-generator` names each generated test after the file's base name only, so `mail/rendered.feature` and `teams/rendered.feature` would collide.
+  - T019: `redact()` (internal/adapters/cli/redact.go) also consumes the closing JSON quote after a token-like value, so any MCP output containing `access_token=…` is invalid JSON. This bug predates this feature (the raw `body` field is affected at 378698e) and is out of scope (FR-022 keeps redaction as is). T019 therefore checks that the secret is absent and that `rendered.content` starts with `<p>[redacted]`, without parsing the output. Recommend a separate ticket.
 - Dependency versions (T037, T051):
 - Benchmark and binary size (T065, T066):
 - File-size notes (T069):
