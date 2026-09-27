@@ -260,12 +260,12 @@ No scaffold: these tests go through `Run`, and the `MD` field they use was added
 
 ### Tests for User Story 4 (MANDATORY)
 
-- [ ] T058 [P] [US4] Write RED CLI tests in internal/adapters/cli/format_md_test.go:
+- [X] T058 [P] [US4] Write RED CLI tests in internal/adapters/cli/format_md_test.go:
   - `mail send --format md --body-file testdata/md/basic.md --dry-run` and `mail reply msg-1 --format md --body-file testdata/md/basic.md --dry-run` → exact `rendered.content` for internal/adapters/cli/testdata/md/basic.md, and `format_problems` = `[]`.
   - `--format html` on each of the three commands → exit 3, message `unsupported --format "html"; only md`.
   - `--html --format md` → exit 3, message `use --html or --format md, not both`.
   - `--help` for all three commands lists `--format md`.
-- [ ] T059 [P] [US4] Write RED app tests in internal/app/mail/format_md_test.go: with `MD: true`, `Send` and `Reply` render with `msgbody.Markdown` for the `Mail` target
+- [X] T059 [P] [US4] Write RED app tests in internal/app/mail/format_md_test.go: with `MD: true`, `Send` and `Reply` render with `msgbody.Markdown` for the `Mail` target
 - [ ] T060 [US4] Confirm every failure in T058–T059 is an assertion failure, with no compile errors, then RED commit with tests and fixtures only
 
 ### Implementation for User Story 4
@@ -332,6 +332,7 @@ No scaffold: these tests go through `Run`, and the `MD` field they use was added
   - T019: `redact()` (internal/adapters/cli/redact.go) also consumes the closing JSON quote after a token-like value, so any MCP output containing `access_token=…` is invalid JSON. This bug predates this feature (the raw `body` field is affected at 378698e) and is out of scope (FR-022 keeps redaction as is). T019 therefore checks that the secret is absent and that `rendered.content` starts with `<p>[redacted]`, without parsing the output. Recommend a separate ticket.
   - US1 GREEN also did two small pieces planned later: `msgbody.ModeFor(html, md)` selects the mode in the mail and teams app layer (planned in T062, so US4 is now CLI-only), and the JSON step already supports array indexes (planned in T041).
   - T052: the `--preview` wiring is three lines per command (flag, `DryRun || preview`, `writePreview` call), so no `bodyflags.go` was created in US3; a one-line flag helper would be a wrapper that adds no behaviour (Constitution III). `bodyflags.go` is created in US4 for `bodyMode`.
+  - T059: not written as a separate test. The app-layer markdown path it describes (`MD: true` → `msgbody.Markdown` for `Mail`) was implemented in US1 and is already locked by the markdown cases of `TestMailSendDryRunMatchesPayload` and `TestMailReplyDryRunMatchesComment` (T017); a new test would pass on arrival and add nothing.
 - Dependency versions (T037, T051):
   - `golang.org/x/net` v0.58.0 (T037). v0.59.0 would raise go.mod's `go` line to 1.26.0; v0.58.0 is the newest that keeps `go 1.25.0`. It brings `golang.org/x/sys` v0.41.0 → v0.47.0 (indirect).
   - `golang.org/x/term` v0.45.0 (T051). v0.46.0 would raise the `go` line to 1.26.0.
