@@ -14,11 +14,29 @@ mkdir -p build/acceptance/ir build/acceptance/dry
 list=build/acceptance/features.tsv
 go run ./cmd/acceptance-entrypoint-generator -list > "$list"
 tab=$(printf '\t')
+findings=0
+flagged=0
 while IFS="$tab" read -r name f; do
   gherkin-parser "$f" "build/acceptance/ir/${name}.json"
   if command -v gherkin-ir-dry-checker >/dev/null 2>&1; then
-    gherkin-ir-dry-checker "build/acceptance/ir/${name}.json" "build/acceptance/dry/${name}.json" || true
+    # The checker exits 0 with findings; a crash (bad IR, I/O) fails here.
+    dry="build/acceptance/dry/${name}.json"
+    gherkin-ir-dry-checker "build/acceptance/ir/${name}.json" "$dry"
+    # Findings are advisory wording hints (the constitution's optional
+    # dry-check), so they are shown, not failed.
+    n=$(sed -n 's/.*"findings": \([0-9][0-9]*\).*/\1/p' "$dry" | head -n 1)
+    if [ -z "$n" ]; then
+      echo "dry-check: no findings count in $dry (empty or unreadable report)" >&2
+      exit 1
+    fi
+    if [ "$n" -gt 0 ]; then
+      findings=$((findings + n))
+      flagged=$((flagged + 1))
+    fi
   fi
 done < "$list"
+if [ "$findings" -gt 0 ]; then
+  echo "dry-check: $findings advisory finding(s) in $flagged feature(s); reports in build/acceptance/dry/" >&2
+fi
 go run ./cmd/acceptance-entrypoint-generator
 go test ./acceptance/generated
