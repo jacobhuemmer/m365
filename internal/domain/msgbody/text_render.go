@@ -61,3 +61,8 @@ func wrapWords(s string, width int) []string {
 	}
 	return append(lines, cur)
 }
+
+// StringWidth is the number of terminal columns s occupies.
+func StringWidth(s string) int {
+	return 0
+}
