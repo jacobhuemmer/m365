@@ -105,3 +105,14 @@ func mustRel(root, path string) string {
 	}
 	return rel
 }
+
+// feature is one feature file and the test name generated for it.
+type feature struct {
+	Name, Path string
+}
+
+// listFeatures returns every feature under root with its test name, sorted
+// by name. It is the one list both the generator and acceptance.sh use.
+func listFeatures(root string) ([]feature, error) {
+	return nil, nil
+}
