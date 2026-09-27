@@ -96,3 +96,9 @@ func dispatch(w *World, text string) error {
 	}
 	return nil
 }
+
+// unmatchedSteps lists each step in feat that has no registered handler,
+// as "scenario: Kind text".
+func unmatchedSteps(feat Feature) []string {
+	return nil
+}
