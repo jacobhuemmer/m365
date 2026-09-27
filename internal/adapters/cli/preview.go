@@ -5,7 +5,7 @@ import (
 	"io"
 	"os"
 	"strings"
-	"unicode/utf8"
+	"unicode"
 
 	"golang.org/x/term"
 
@@ -33,8 +33,8 @@ func drawPreview(headers []string, body string, problems msgbody.Problems, width
 	rule := strings.Repeat("─", width-2)
 	var b strings.Builder
 	row := func(s string) {
-		for _, piece := range chunk(s, inner) {
-			b.WriteString("│ " + piece + strings.Repeat(" ", inner-utf8.RuneCountInString(piece)) + " │\n")
+		for _, piece := range chunk(visible(s), inner) {
+			b.WriteString("│ " + piece + strings.Repeat(" ", inner-msgbody.StringWidth(piece)) + " │\n")
 		}
 	}
 	b.WriteString("┌" + rule + "┐\n")
@@ -53,25 +53,41 @@ func drawPreview(headers []string, body string, problems msgbody.Problems, width
 		}
 		fmt.Fprintf(&b, "%d %s:\n", len(problems), noun)
 		for _, p := range problems {
-			b.WriteString("- " + p.Rule + ": " + p.Detail + "\n")
+			b.WriteString("- " + visible(p.Rule+": "+p.Detail) + "\n")
 		}
 	}
 	return b.String()
 }
 
-// chunk splits a line into pieces of at most n characters; the box never
-// grows past its width, even for an unwrapped code line.
+// chunk splits a line into pieces of at most n terminal columns; the box
+// never grows past its width, even for an unwrapped code line.
 func chunk(s string, n int) []string {
-	r := []rune(s)
-	if len(r) <= n {
-		return []string{s}
-	}
 	var out []string
-	for len(r) > n {
-		out = append(out, string(r[:n]))
-		r = r[n:]
+	for msgbody.StringWidth(s) > n {
+		head, rest := msgbody.SplitWidth(s, n)
+		out = append(out, head)
+		s = rest
 	}
-	return append(out, string(r))
+	return append(out, s)
+}
+
+// visible shows control characters as escapes (ESC as \x1b) so message
+// text cannot recolour or rewrite the terminal; a tab becomes a space.
+func visible(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r == '\t':
+			b.WriteByte(' ')
+		case unicode.IsControl(r) && r < 0x100:
+			fmt.Fprintf(&b, `\x%02x`, r)
+		case unicode.IsControl(r):
+			fmt.Fprintf(&b, `\u%04x`, r)
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 // termWidth is the terminal's column count, or 80 when w is not a terminal.

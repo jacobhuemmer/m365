@@ -55,6 +55,7 @@ type textWriter struct {
 	quote        int
 	pre          bool
 	href         string
+	inLink       bool
 	labelStart   int
 	headingLevel int
 }
@@ -116,6 +117,7 @@ func (t *textWriter) start(name string, attrs []html.Attribute) {
 			}
 		}
 		t.writeSpace()
+		t.inLink = true
 		t.labelStart = t.line.Len()
 	}
 }
@@ -131,7 +133,7 @@ func (t *textWriter) end(name string) {
 			if t.headingLevel == 1 {
 				ch = "="
 			}
-			w := min(utf8.RuneCountInString(t.cur[n-1].text), t.width)
+			w := min(StringWidth(t.cur[n-1].text), t.width)
 			t.cur = append(t.cur, textLine{text: strings.Repeat(ch, w), first: t.first})
 		}
 		t.flushBlock()
@@ -157,6 +159,10 @@ func (t *textWriter) end(name string) {
 		}
 		t.first, t.rest = t.base(), t.base()
 	case "a":
+		if !t.inLink {
+			return
+		}
+		t.inLink = false
 		if label := t.line.String()[t.labelStart:]; t.href != "" && label != t.href {
 			t.line.WriteString(" (" + t.href + ")")
 		}
@@ -199,6 +205,10 @@ func (t *textWriter) endLine(force bool) {
 	}
 	t.line.Reset()
 	t.space = false
+	// A link label that spans a line break continues on the new line.
+	if t.inLink {
+		t.labelStart = 0
+	}
 }
 
 func (t *textWriter) flushBlock() {

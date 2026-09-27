@@ -42,6 +42,10 @@ type linter struct {
 	codeDepth int
 	lineStart bool
 	brRun     int
+	// Visible text is collected across inline tags and checked per line,
+	// so markdown split by a tag (**bo<strong>ld</strong>**) is still seen.
+	pending      strings.Builder
+	pendingStart bool
 }
 
 // Lint checks a rendered body against the format rules
@@ -52,6 +56,7 @@ func Lint(content string) Problems {
 	for {
 		switch tt := z.Next(); tt {
 		case html.ErrorToken:
+			l.flushText()
 			l.endBreaks()
 			for _, o := range l.stack {
 				l.add(RuleBrokenHTML, "unclosed <"+o.name+">")
@@ -83,6 +88,9 @@ func (l *linter) start(tok html.Token, selfClosing bool) {
 		}
 		l.add(RuleAttributeNotAllowed, a.Key+" on <"+name+">")
 	}
+	if lineTags[name] || name == "code" {
+		l.flushText()
+	}
 	if name == "br" {
 		l.brRun++
 		l.lineStart = true
@@ -103,12 +111,18 @@ func (l *linter) start(tok html.Token, selfClosing bool) {
 }
 
 func (l *linter) end(name string) {
+	if lineTags[name] || name == "code" {
+		l.flushText()
+	}
 	l.endBreaks()
 	i := len(l.stack) - 1
 	for i >= 0 && l.stack[i].name != name {
 		i--
 	}
 	if i < 0 {
+		if !allowedTags[name] {
+			l.add(RuleTagNotAllowed, "</"+name+">")
+		}
 		l.add(RuleBrokenHTML, "stray </"+name+">")
 		return
 	}
@@ -131,14 +145,30 @@ func (l *linter) end(name string) {
 
 func (l *linter) text(s string) {
 	if strings.TrimSpace(s) == "" {
+		if l.pending.Len() > 0 {
+			l.pending.WriteString(s)
+		}
 		return
 	}
 	l.endBreaks()
 	l.markContent()
 	if l.codeDepth == 0 {
-		l.out = append(l.out, textProblems(s, l.lineStart, "")...)
+		if l.pending.Len() == 0 {
+			l.pendingStart = l.lineStart
+		}
+		l.pending.WriteString(s)
 	}
 	l.lineStart = strings.HasSuffix(s, "\n")
+}
+
+// flushText checks the visible text collected since the last line break,
+// block tag or code boundary.
+func (l *linter) flushText() {
+	if l.pending.Len() == 0 {
+		return
+	}
+	l.out = append(l.out, textProblems(l.pending.String(), l.pendingStart, "")...)
+	l.pending.Reset()
 }
 
 // markContent records that every open element holds something visible.
