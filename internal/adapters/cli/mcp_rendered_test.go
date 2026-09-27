@@ -2,15 +2,15 @@ package cli
 
 import (
 	"context"
-	"strings"
+	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// FR-022: MCP secret redaction still covers the rendered body. The
-// existing redaction also consumes the closing JSON quote, so the output
-// is checked for the secret and the redacted rendered content, not parsed.
+// FR-022: MCP secret redaction still covers the rendered body, and the
+// output stays valid JSON (#14).
 func TestMCPRedactsRenderedContent(t *testing.T) {
 	d, _, _ := testDeps()
 	loginAll(t, &d)
@@ -25,10 +25,15 @@ func TestMCPRedactsRenderedContent(t *testing.T) {
 		t.Fatal(err, toolText(t, res))
 	}
 	text := toolText(t, res)
-	if strings.Contains(text, "abc123") {
-		t.Fatalf("secret leaked: %s", text)
+	var out struct {
+		Body     string            `json:"body"`
+		Rendered map[string]string `json:"rendered"`
 	}
-	if !strings.Contains(text, `"rendered":{"content_type":"html","content":"<p>[redacted]`) {
-		t.Fatalf("rendered content not redacted in place: %s", text)
+	if err := json.Unmarshal([]byte(text), &out); err != nil {
+		t.Fatalf("MCP output is not JSON: %v\n%s", err, text)
+	}
+	want := map[string]string{"content_type": "html", "content": "<p>[redacted]</p>"}
+	if out.Body != "[redacted]" || !reflect.DeepEqual(out.Rendered, want) {
+		t.Fatalf("body %q rendered %v, want [redacted] and %v", out.Body, out.Rendered, want)
 	}
 }
