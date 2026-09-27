@@ -11,12 +11,13 @@ const secretNames = `access_token|refresh_token|authorization_code|client_secret
 
 var (
 	// The optional quote after the name catches quoted keys
-	// ("access_token":"x"). A quoted value is taken whole with its quotes;
-	// an unquoted one never takes a closing quote that belongs to the
+	// ("access_token":"x"). A quoted value is taken whole with its quotes,
+	// or to the end of the line when the closing quote is missing; an
+	// unquoted one never takes a closing quote that belongs to the
 	// surrounding text. A value starting with '<' is taken whole
 	// (access_token=<abc>); otherwise it stops at '<' so HTML survives.
 	secretRE = regexp.MustCompile(`(?i)(?:bearer\s+[A-Za-z0-9._\-]+|(?:` + secretNames + `)["']?\s*[:=]\s*` +
-		`(?:"[^"\n]*"|'[^'\n]*'|["']?(?:<[^"'\s,}\]]+|[^"'\s,}\]<]+)))`)
+		`(?:"[^"\n]*"?|'[^'\n]*'?|(?:<[^"'\s,}\]]+|[^"'\s,}\]<]+)))`)
 	secretKeyRE  = regexp.MustCompile(`(?i)^(?:` + secretNames + `)$`)
 	jsonStringRE = regexp.MustCompile(`"(?:[^"\\]|\\.)*"`)
 	jsonColonRE  = regexp.MustCompile(`^\s*:\s*$`)
