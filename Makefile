@@ -8,7 +8,8 @@ ifeq ($(strip $(GOTOOLCHAIN)),)
 GOTOOLCHAIN := $(shell sed -n 's/^toolchain //p' go.mod)
 endif
 export GOTOOLCHAIN
-PKGS := $(shell go list ./... | grep -v '/acceptance/generated')
+# $(shell) does not see exported variables, so pass the toolchain explicitly.
+PKGS := $(shell GOTOOLCHAIN=$(GOTOOLCHAIN) go list ./... | grep -v '/acceptance/generated')
 
 fmt:
 	@test -z "$$(gofmt -l . | grep -v /acceptance/generated/)"
