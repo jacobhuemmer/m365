@@ -25,7 +25,11 @@ while IFS="$tab" read -r name f; do
     # Findings are advisory wording hints (the constitution's optional
     # dry-check), so they are shown, not failed.
     n=$(sed -n 's/.*"findings": \([0-9][0-9]*\).*/\1/p' "$dry" | head -n 1)
-    if [ "${n:-0}" -gt 0 ]; then
+    if [ -z "$n" ]; then
+      echo "dry-check: no findings count in $dry (empty or unreadable report)" >&2
+      exit 1
+    fi
+    if [ "$n" -gt 0 ]; then
       findings=$((findings + n))
       flagged=$((flagged + 1))
     fi
