@@ -6,6 +6,8 @@
 #   Principle: Engineering Constraints - quality gates must block, and
 #     the complexity/CRAP gate fails on CRAP > 15 unless justified
 #     (specs/001-m365-cli/plan.md).
+#   Recorded as: EX-EC-001 in specs/001-m365-cli/plan.md (Complexity
+#     Tracking).
 #   Rationale: these functions predate a working gate (crap.sh always
 #     passed until now); fixing all of them first is a large refactor.
 #   Scope: exactly the entries below, each at no more than its score.
@@ -26,24 +28,24 @@
 42.0 internal/adapters/chatmap/memory.go (*Memory).Remember
 40.9 internal/app/mail/watch.go Watch
 40.0 internal/adapters/graph/fake.go NewFakeServer
-39.6 internal/adapters/graph/memory_cal.go (*Memory).ListEvents
+39.7 internal/adapters/graph/memory_cal.go (*Memory).ListEvents
 35.5 internal/adapters/cli/teams.go runTeams
-31.6 internal/adapters/cli/files.go runFiles
+31.7 internal/adapters/cli/files.go runFiles
 30.0 internal/app/files/ports.go CreateFolder
 30.0 internal/adapters/graph/memory.go (*Memory).DownloadChat
 30.0 internal/adapters/graph/memory.go (*Memory).TeamAttachments
 30.0 internal/adapters/cli/files.go filesMove
 30.0 internal/adapters/cli/calendar.go calendarUpdate
 29.3 internal/app/teams/find.go FindMapped
-28.2 internal/adapters/cli/calendar.go runCalendar
+28.3 internal/adapters/cli/calendar.go runCalendar
 27.2 internal/app/calendar/when.go parseDay
 27.0 internal/app/teams/ports.go Save
-26.3 internal/adapters/graph/refresh.go (*Refresher).Token
+26.4 internal/adapters/graph/refresh.go (*Refresher).Token
 25.6 internal/adapters/cli/calendar.go calendarTZ
 24.4 internal/adapters/graph/httpwatch.go (*HTTPTeams).Watch
-24.1 internal/app/teams/ports.go SendMapped
-22.5 internal/adapters/cli/mcp_dispatch.go FlagMapToArgs
-21.5 internal/adapters/cli/run.go Run
+24.2 internal/app/teams/ports.go SendMapped
+22.6 internal/adapters/cli/mcp_dispatch.go FlagMapToArgs
+21.6 internal/adapters/cli/run.go Run
 20.0 internal/app/teams/ports.go ListAttachments
 20.0 internal/app/files/ports.go Delete
 20.0 internal/adapters/keychain/keyring.go (Keyring).Get
@@ -59,7 +61,9 @@
 19.0 internal/adapters/cli/teams.go teamsWatch
 17.6 internal/app/calendar/free.go parseHours
 16.8 internal/adapters/jev/client.go (*Client).Classify
-16.4 internal/adapters/cli/auth.go runAuth
-16.0 internal/domain/msgbody/text.go (*textWriter).end
+16.5 internal/adapters/cli/auth.go runAuth
+16.1 internal/domain/msgbody/text.go (*textWriter).end
 15.3 internal/app/calendar/when.go parseUntil
 15.2 internal/adapters/graph/fakecal.go denyWorkload
+15.1 internal/domain/msgbody/text.go (*textWriter).start
+15.1 internal/adapters/jev/client.go mapResponse

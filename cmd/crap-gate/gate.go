@@ -28,10 +28,12 @@ type violation struct {
 	Score, Baseline float64
 }
 
-// crapScore is complexity² × (1 − coverage)³ + complexity, to 0.1.
+// crapScore is complexity² × (1 − coverage)³ + complexity, rounded up to
+// 0.1: rounding never hides a crossing of the threshold or of a baseline
+// entry. The epsilon keeps exact values (110) from rounding up.
 func crapScore(complexity int, coverage float64) float64 {
 	c := float64(complexity)
-	return math.Round((c*c*math.Pow(1-coverage, 3)+c)*10) / 10
+	return math.Ceil((c*c*math.Pow(1-coverage, 3)+c)*10-1e-9) / 10
 }
 
 // parseCover reads `go tool cover -func` output into coverage by
@@ -85,7 +87,30 @@ func parseCyclo(r io.Reader, cover map[string]float64) ([]fn, error) {
 		cov := cover[file+":"+line]
 		out = append(out, fn{File: file, Name: fields[2], Complexity: c, Coverage: cov, Score: crapScore(c, cov)})
 	}
-	return out, sc.Err()
+	if err := sc.Err(); err != nil {
+		return nil, err
+	}
+	numberSameNames(out)
+	return out, nil
+}
+
+// numberSameNames gives functions that share a file and name (several
+// init funcs) distinct keys: the highest score keeps the name, the rest
+// get #2, #3 and so on, so a new one can't reuse another's entry.
+func numberSameNames(fns []fn) {
+	groups := map[string][]int{}
+	for i, f := range fns {
+		groups[f.key()] = append(groups[f.key()], i)
+	}
+	for _, idx := range groups {
+		if len(idx) < 2 {
+			continue
+		}
+		sort.SliceStable(idx, func(a, b int) bool { return fns[idx[a]].Score > fns[idx[b]].Score })
+		for n, i := range idx[1:] {
+			fns[i].Name = fmt.Sprintf("%s#%d", fns[i].Name, n+2)
+		}
+	}
 }
 
 // splitPos splits "file:line" or "file:line:col" into file and line.
@@ -116,6 +141,9 @@ func parseBaseline(r io.Reader) (map[string]float64, error) {
 		score, err := strconv.ParseFloat(fields[0], 64)
 		if err != nil {
 			return nil, fmt.Errorf("baseline: %w", err)
+		}
+		if math.IsNaN(score) || math.IsInf(score, 0) || score < 0 {
+			return nil, fmt.Errorf("baseline: score must be a finite number >= 0 in %q", line)
 		}
 		out[fields[1]+" "+fields[2]] = score
 	}

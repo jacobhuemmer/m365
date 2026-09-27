@@ -19,6 +19,11 @@ if ! go test -coverpkg=./internal/...,./cmd/... -coverprofile=build/crap/cover.o
   exit 1
 fi
 go tool cover -func=build/crap/cover.out > build/crap/func.txt
-gocyclo -ignore '_test' cmd internal > build/crap/cyclo.txt
+# Exactly the non-test files Go compiles on this platform (GoFiles), so a
+# file named like foo_testhelper.go is measured and build-tagged files
+# outside this build are not scored at 0% coverage.
+go list -f '{{$d := .Dir}}{{range .GoFiles}}{{$d}}/{{.}}{{"\n"}}{{end}}' ./cmd/... ./internal/... |
+  sed "s|^$PWD/||" > build/crap/files.txt
+xargs gocyclo < build/crap/files.txt > build/crap/cyclo.txt
 go build -o build/crap/crap-gate ./cmd/crap-gate
 build/crap/crap-gate -module "$(go list -m)" -cover build/crap/func.txt -cyclo build/crap/cyclo.txt -baseline scripts/crap-baseline.txt "$@"
