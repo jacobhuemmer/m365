@@ -17,3 +17,21 @@ jobs:
         run: sh scripts/install-tools.sh
       - name: Verify
         run: make verify
+
+  # Early warning: the same gates on the newest stable Go, so a new Go
+  # release that breaks a tool shows up here before anyone's laptop.
+  # Non-blocking; the verify job above is the gate.
+  verify-latest-go:
+    runs-on: macos-latest
+    continue-on-error: true
+    env:
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Install tools
+        run: sh scripts/install-tools.sh
+      - name: Verify
+        run: make verify

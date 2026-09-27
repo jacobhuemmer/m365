@@ -1,7 +1,15 @@
 .PHONY: fmt vet unit race coverage gosec govulncheck acceptance acceptance-mutation crap verify install
 
 TOOLS_BIN := $(shell pwd)/.tools/bin
-PKGS := $(shell go list ./... | grep -v '/acceptance/generated')
+# Run every target with the toolchain CI uses (go.mod's toolchain line),
+# whatever Go is installed. Override with GOTOOLCHAIN=local to test a newer Go.
+# An unset or empty GOTOOLCHAIN gets the pin, as in install-tools.sh.
+ifeq ($(strip $(GOTOOLCHAIN)),)
+GOTOOLCHAIN := $(shell sed -n 's/^toolchain //p' go.mod)
+endif
+export GOTOOLCHAIN
+# $(shell) does not see exported variables, so pass the toolchain explicitly.
+PKGS := $(shell GOTOOLCHAIN=$(GOTOOLCHAIN) go list ./... | grep -v '/acceptance/generated')
 
 fmt:
 	@test -z "$$(gofmt -l . | grep -v /acceptance/generated/)"
