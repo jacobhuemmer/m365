@@ -144,8 +144,10 @@ gosec:                # gosec ./...
 govulncheck:          # govulncheck ./...
 acceptance:           # scripts/acceptance.sh
 acceptance-mutation:  # scripts/acceptance-mutation.sh
-crap:                 # scripts/crap.sh — CRAP > 15 fails unless justified
-verify: fmt vet unit race coverage gosec govulncheck acceptance crap
+crap:                 # scripts/crap.sh — CRAP > 15 fails unless in the baseline (EX-EC-001)
+gomod:                # scripts/gomod.sh — go.mod go line unchanged, go mod tidy clean
+filesize:             # scripts/filesize.sh — over 250 lines needs a note, over 500 fails
+verify: gomod filesize fmt vet unit race coverage gosec govulncheck acceptance crap
 ```
 
 CI MUST run `make verify`. Do not add Jenkins/GitHub workflow files in this plan.
