@@ -35,9 +35,12 @@ type feature struct {
 }
 
 // generate writes one acceptance test per feature under root into outDir.
-// The new set is written to a staging folder first; only when every file
-// is written are the old generated tests removed and the new ones moved
-// in. A name clash is an error and leaves outDir untouched.
+// The new set is written to a hidden staging folder inside outDir (same
+// filesystem, so the moves are plain renames; Go ignores dot folders);
+// only when every file is written are the old generated tests removed and
+// the new ones moved in. A name clash is an error and leaves outDir
+// untouched. A failure after that returns an error, which stops
+// acceptance.sh, and the next run rebuilds the folder.
 func generate(root, outDir string) error {
 	features, err := listFeatures(root)
 	if err != nil {
@@ -46,7 +49,7 @@ func generate(root, outDir string) error {
 	if err := os.MkdirAll(outDir, 0o750); err != nil {
 		return err
 	}
-	stage, err := os.MkdirTemp(filepath.Dir(outDir), ".acceptance-generated-*")
+	stage, err := os.MkdirTemp(outDir, ".staging-*")
 	if err != nil {
 		return err
 	}
