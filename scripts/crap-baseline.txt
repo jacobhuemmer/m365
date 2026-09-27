@@ -21,7 +21,6 @@
 156.0 internal/adapters/graph/oauth_loopback.go LoginPKCE
 154.9 internal/app/calendar/ports.go Update
 90.0 internal/adapters/graph/memory_cal.go (*Memory).UpdateEvent
-73.1 internal/adapters/cli/mail.go runMail
 63.0 internal/adapters/graph/fakecal.go handleCalendarFiles
 42.0 internal/adapters/graph/oauth_loopback.go fetchMe
 42.0 internal/adapters/graph/memory_files.go (*Memory).Move
