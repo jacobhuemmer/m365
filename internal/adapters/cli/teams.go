@@ -109,6 +109,10 @@ func teamsSend(args []string, d Deps, sess domain.Session, format string) int {
 	if err := parseMixed(fsset, args); err != nil {
 		return fail(d, domain.Usage(err.Error()))
 	}
+	md, err := markdownFlag(*html, *formatmd)
+	if err != nil {
+		return fail(d, err)
+	}
 	body, err := readBody(*text, *textFile, d.Stdin)
 	if err != nil {
 		return fail(d, err)
@@ -118,7 +122,7 @@ func teamsSend(args []string, d Deps, sess domain.Session, format string) int {
 		return fail(d, err)
 	}
 	out, err := teams.SendMapped(ctx(), d.Teams, d.ChatMap, sess, teams.SendInput{
-		ChatID: fsset.Arg(0), To: *to, Text: body, HTML: *html, MD: *formatmd == "md", DryRun: *dry || *preview, NoteToSelf: *note, Files: files,
+		ChatID: fsset.Arg(0), To: *to, Text: body, HTML: *html, MD: md, DryRun: *dry || *preview, NoteToSelf: *note, Files: files,
 	})
 	if err != nil {
 		return fail(d, err)

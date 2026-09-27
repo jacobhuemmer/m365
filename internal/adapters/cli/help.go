@@ -61,7 +61,10 @@ The cursor is committed only after the complete delta round is emitted.
 const mailSendHelp = `m365 mail send — send mail
 
 Required: --to --subject --body or --body-file
-Optional: --cc --attach (repeatable) --html --dry-run --preview --note-to-self
+Optional: --cc --attach (repeatable) --html --format md --dry-run --preview --note-to-self
+Plain text keeps paragraphs and line breaks (sent as HTML).
+--format md converts a markdown subset to HTML: # / ## / ### headings, **bold**, - / * / 1. lists, [label](url), inline code in backticks, fenced code.
+--html sends the body as HTML unchanged. Not both.
 --preview shows the message as text in a box and never sends; not with --json.
 --note-to-self sends to the signed-in mailbox (default subject Note to self). Do not combine with --to.
 Attachment caps: 10 MiB per file, 10 files. --top N/A.
@@ -71,7 +74,8 @@ Output modes: --json (default) --human
 const mailReplyHelp = `m365 mail reply — reply to a message
 
 Required: MESSAGE_ID --body or --body-file
-Optional: --all --attach (repeatable) --html --dry-run --preview
+Optional: --all --attach (repeatable) --html --format md --dry-run --preview
+--format md converts a markdown subset to HTML: # / ## / ### headings, **bold**, - / * / 1. lists, [label](url), inline code in backticks, fenced code.
 --preview shows the message as text in a box and never sends; not with --json.
 Plain text keeps paragraphs and line breaks. --html sends the body as HTML unchanged.
 Both go in the Graph reply comment, so the quoted thread stays below.
@@ -115,7 +119,7 @@ Optional: --attach (repeatable) --html --format md --dry-run --preview --note-to
 --preview shows the message as text in a box and never sends; not with --json.
 --note-to-self posts to Teams Notes (48:notes). Do not combine with --to or a chat id.
 Plain text keeps paragraphs and line breaks (sent as HTML).
---format md converts a markdown subset to HTML. --html posts the body as HTML already.
+--format md converts a markdown subset to HTML (headings, **bold**, lists, links, inline code in backticks, fenced code). --html posts the body as HTML already. Not both.
 --to and chat id together exit 3. Attachment caps: 10 MiB per file, 10 files.
 Output modes: --json (default) --human
 `

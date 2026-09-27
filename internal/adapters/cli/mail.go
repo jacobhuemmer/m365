@@ -169,6 +169,7 @@ func mailSend(args []string, d Deps, sess domain.Session, format string) int {
 	body := fsset.String("body", "", "")
 	bodyFile := fsset.String("body-file", "", "")
 	html := fsset.Bool("html", false, "")
+	formatmd := fsset.String("format", "", "")
 	dry := fsset.Bool("dry-run", false, "")
 	preview := fsset.Bool("preview", false, "")
 	note := fsset.Bool("note-to-self", false, "")
@@ -179,6 +180,10 @@ func mailSend(args []string, d Deps, sess domain.Session, format string) int {
 	if err := parseMixed(fsset, args); err != nil {
 		return fail(d, domain.Usage(err.Error()))
 	}
+	md, err := markdownFlag(*html, *formatmd)
+	if err != nil {
+		return fail(d, err)
+	}
 	b, err := readBody(*body, *bodyFile, d.Stdin)
 	if err != nil {
 		return fail(d, err)
@@ -188,7 +193,7 @@ func mailSend(args []string, d Deps, sess domain.Session, format string) int {
 		return fail(d, err)
 	}
 	out, err := mail.Send(ctx(), d.Mail, sess, mail.SendInput{
-		To: to, CC: cc, Subject: *subject, Body: b, HTML: *html, DryRun: *dry || *preview, NoteToSelf: *note, Files: files,
+		To: to, CC: cc, Subject: *subject, Body: b, HTML: *html, MD: md, DryRun: *dry || *preview, NoteToSelf: *note, Files: files,
 	})
 	if err != nil {
 		return fail(d, err)
@@ -206,6 +211,7 @@ func mailReply(args []string, d Deps, sess domain.Session, format string) int {
 	bodyFile := fsset.String("body-file", "", "")
 	all := fsset.Bool("all", false, "")
 	html := fsset.Bool("html", false, "")
+	formatmd := fsset.String("format", "", "")
 	dry := fsset.Bool("dry-run", false, "")
 	preview := fsset.Bool("preview", false, "")
 	var attach []string
@@ -214,6 +220,10 @@ func mailReply(args []string, d Deps, sess domain.Session, format string) int {
 		return fail(d, domain.Usage(err.Error()))
 	}
 	id := fsset.Arg(0)
+	md, err := markdownFlag(*html, *formatmd)
+	if err != nil {
+		return fail(d, err)
+	}
 	b, err := readBody(*body, *bodyFile, d.Stdin)
 	if err != nil {
 		return fail(d, err)
@@ -223,7 +233,7 @@ func mailReply(args []string, d Deps, sess domain.Session, format string) int {
 		return fail(d, err)
 	}
 	out, err := mail.Reply(ctx(), d.Mail, sess, mail.ReplyInput{
-		ID: id, Body: b, All: *all, HTML: *html, DryRun: *dry || *preview, Files: files,
+		ID: id, Body: b, All: *all, HTML: *html, MD: md, DryRun: *dry || *preview, Files: files,
 	})
 	if err != nil {
 		return fail(d, err)

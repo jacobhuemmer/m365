@@ -266,14 +266,14 @@ No scaffold: these tests go through `Run`, and the `MD` field they use was added
   - `--html --format md` → exit 3, message `use --html or --format md, not both`.
   - `--help` for all three commands lists `--format md`.
 - [X] T059 [P] [US4] Write RED app tests in internal/app/mail/format_md_test.go: with `MD: true`, `Send` and `Reply` render with `msgbody.Markdown` for the `Mail` target
-- [ ] T060 [US4] Confirm every failure in T058–T059 is an assertion failure, with no compile errors, then RED commit with tests and fixtures only
+- [X] T060 [US4] Confirm every failure in T058–T059 is an assertion failure, with no compile errors, then RED commit with tests and fixtures only
 
 ### Implementation for User Story 4
 
-- [ ] T061 [US4] Add `bodyMode(html bool, format string) (msgbody.Mode, error)` in internal/adapters/cli/bodyflags.go, returning the two usage errors above (research R6)
-- [ ] T062 [US4] Add a `--format` flag to `mailSend` and `mailReply` in internal/adapters/cli/mail.go, and use `bodyMode` there and in `teamsSend` in internal/adapters/cli/teams.go. Set `MD` on the app inputs, and select the mode in internal/app/mail/ports.go
-- [ ] T063 [US4] Add `--format md` (markdown subset: headings, bold, lists, links, inline code, fenced code) to `mailSendHelp` and `mailReplyHelp` in internal/adapters/cli/help.go, and mention inline code in `teamsSendHelp`
-- [ ] T064 [US4] Run `make unit`, then GREEN commit T061–T063
+- [X] T061 [US4] Add `bodyMode(html bool, format string) (msgbody.Mode, error)` in internal/adapters/cli/bodyflags.go, returning the two usage errors above (research R6)
+- [X] T062 [US4] Add a `--format` flag to `mailSend` and `mailReply` in internal/adapters/cli/mail.go, and use `bodyMode` there and in `teamsSend` in internal/adapters/cli/teams.go. Set `MD` on the app inputs, and select the mode in internal/app/mail/ports.go
+- [X] T063 [US4] Add `--format md` (markdown subset: headings, bold, lists, links, inline code, fenced code) to `mailSendHelp` and `mailReplyHelp` in internal/adapters/cli/help.go, and mention inline code in `teamsSendHelp`
+- [X] T064 [US4] Run `make unit`, then GREEN commit T061–T063
 
 **Checkpoint**: The three body modes behave the same on all three commands.
 
@@ -333,6 +333,7 @@ No scaffold: these tests go through `Run`, and the `MD` field they use was added
   - US1 GREEN also did two small pieces planned later: `msgbody.ModeFor(html, md)` selects the mode in the mail and teams app layer (planned in T062, so US4 is now CLI-only), and the JSON step already supports array indexes (planned in T041).
   - T052: the `--preview` wiring is three lines per command (flag, `DryRun || preview`, `writePreview` call), so no `bodyflags.go` was created in US3; a one-line flag helper would be a wrapper that adds no behaviour (Constitution III). `bodyflags.go` is created in US4 for `bodyMode`.
   - T059: not written as a separate test. The app-layer markdown path it describes (`MD: true` → `msgbody.Markdown` for `Mail`) was implemented in US1 and is already locked by the markdown cases of `TestMailSendDryRunMatchesPayload` and `TestMailReplyDryRunMatchesComment` (T017); a new test would pass on arrival and add nothing.
+  - T061: the helper is `markdownFlag(html bool, format string) (bool, error)` rather than `bodyMode(...) (msgbody.Mode, error)`. The app inputs carry `HTML`/`MD` and the app layer picks the mode with `msgbody.ModeFor` (US1), so returning a `Mode` from the CLI would only be converted back. Same two usage errors.
 - Dependency versions (T037, T051):
   - `golang.org/x/net` v0.58.0 (T037). v0.59.0 would raise go.mod's `go` line to 1.26.0; v0.58.0 is the newest that keeps `go 1.25.0`. It brings `golang.org/x/sys` v0.41.0 → v0.47.0 (indirect).
   - `golang.org/x/term` v0.45.0 (T051). v0.46.0 would raise the `go` line to 1.26.0.
