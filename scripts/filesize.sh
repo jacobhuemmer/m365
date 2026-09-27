@@ -7,11 +7,26 @@ cd "$(dirname "$0")/.."
 # file that is now 250 lines or fewer, or gone, is stale and must go.
 notes_file=specs/001-m365-cli/plan.md
 mkdir -p build/filesize
-go list -f '{{$d := .Dir}}{{range .GoFiles}}{{$d}}/{{.}}{{"\n"}}{{end}}' ./... |
-  sed "s|^$PWD/||" | sort > build/filesize/files.txt
-awk '/^### File-size notes/{on=1; next} on && /^#/{on=0} on && /^- `[^`]*\.go`/{
-  sub(/^- `/, ""); sub(/`.*/, ""); print }' "$notes_file" | sort > build/filesize/notes.txt
+# go list writes to a file first: in a pipeline its failure would be lost.
+go list -f '{{$d := .Dir}}{{range .GoFiles}}{{$d}}/{{.}}{{"\n"}}{{end}}' ./... > build/filesize/list.txt
+sed "s|^$PWD/||" build/filesize/list.txt | sort > build/filesize/files.txt
+if [ ! -s build/filesize/files.txt ]; then
+  echo "filesize: go list found no Go files" >&2
+  exit 1
+fi
 fail=0
+# A note is "- `path`: reason"; the reason must not be empty.
+awk '/^### File-size notes/{on=1; next} on && /^#/{on=0} on && /^- `[^`]*\.go`/{
+  line=$0; sub(/^- `/, "", line); path=line; sub(/`.*/, "", path)
+  reason=line; sub(/^[^`]*`:?[ \t]*/, "", reason); print path "\t" reason }' "$notes_file" > build/filesize/entries.tsv
+tab=$(printf '\t')
+while IFS="$tab" read -r f reason; do
+  if [ -z "$reason" ]; then
+    echo "filesize: note for $f in $notes_file has no reason; say how to split it" >&2
+    fail=1
+  fi
+done < build/filesize/entries.tsv
+cut -f1 build/filesize/entries.tsv | sort > build/filesize/notes.txt
 while IFS= read -r f; do
   n=$(wc -l < "$f" | tr -d ' ')
   if [ "$n" -gt 500 ]; then
