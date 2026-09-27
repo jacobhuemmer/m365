@@ -77,10 +77,11 @@ func (c *HTTPClient) Reply(ctx context.Context, in mail.ReplyInput) (string, err
 	}
 	// Graph renders comment as HTML above the quoted thread. message.body
 	// would replace the whole reply and drop the thread.
-	comment := in.Body
-	if !in.HTML {
-		comment = msgbody.PlainTextToHTML(in.Body)
+	mode := msgbody.Plain
+	if in.HTML {
+		mode = msgbody.HTML
 	}
+	comment := msgbody.Render(mode, msgbody.Mail, in.Body).Content
 	if err := c.doJSON(ctx, http.MethodPost, path, map[string]any{"comment": comment}); err != nil {
 		return "", err
 	}
@@ -102,13 +103,14 @@ func (c *HTTPClient) Download(ctx context.Context, messageID, attach string) ([]
 
 func (c *HTTPTeams) Send(ctx context.Context, in teams.SendInput) (string, error) {
 	// Teams collapses newlines in contentType text, so plain text goes out as HTML too.
-	content := msgbody.PlainTextToHTML(in.Text)
+	mode := msgbody.Plain
 	switch {
 	case in.HTML:
-		content = in.Text
+		mode = msgbody.HTML
 	case in.MD:
-		content = msgbody.MDSubsetToHTML(in.Text)
+		mode = msgbody.Markdown
 	}
+	content := msgbody.Render(mode, msgbody.Mail, in.Text).Content
 	body := map[string]any{"body": map[string]string{"contentType": "html", "content": content}}
 	if err := c.doJSON(ctx, http.MethodPost, "/me/chats/"+url.PathEscape(in.ChatID)+"/messages", body); err != nil {
 		return "", err
