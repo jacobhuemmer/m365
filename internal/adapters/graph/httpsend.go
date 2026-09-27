@@ -13,6 +13,7 @@ import (
 	"github.com/masonhuemmer/m365/internal/app/mail"
 	"github.com/masonhuemmer/m365/internal/app/teams"
 	"github.com/masonhuemmer/m365/internal/domain"
+	"github.com/masonhuemmer/m365/internal/domain/msgbody"
 )
 
 func (c *HTTPClient) doJSON(ctx context.Context, method, path string, payload any) error {
@@ -78,7 +79,7 @@ func (c *HTTPClient) Reply(ctx context.Context, in mail.ReplyInput) (string, err
 	// would replace the whole reply and drop the thread.
 	comment := in.Body
 	if !in.HTML {
-		comment = plainTextToHTML(in.Body)
+		comment = msgbody.PlainTextToHTML(in.Body)
 	}
 	if err := c.doJSON(ctx, http.MethodPost, path, map[string]any{"comment": comment}); err != nil {
 		return "", err
@@ -101,12 +102,12 @@ func (c *HTTPClient) Download(ctx context.Context, messageID, attach string) ([]
 
 func (c *HTTPTeams) Send(ctx context.Context, in teams.SendInput) (string, error) {
 	// Teams collapses newlines in contentType text, so plain text goes out as HTML too.
-	content := plainTextToHTML(in.Text)
+	content := msgbody.PlainTextToHTML(in.Text)
 	switch {
 	case in.HTML:
 		content = in.Text
 	case in.MD:
-		content = mdSubsetToHTML(in.Text)
+		content = msgbody.MDSubsetToHTML(in.Text)
 	}
 	body := map[string]any{"body": map[string]string{"contentType": "html", "content": content}}
 	if err := c.doJSON(ctx, http.MethodPost, "/me/chats/"+url.PathEscape(in.ChatID)+"/messages", body); err != nil {

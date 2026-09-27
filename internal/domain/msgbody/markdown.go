@@ -1,4 +1,4 @@
-package graph
+package msgbody
 
 import (
 	"html"
@@ -12,11 +12,11 @@ var (
 	reBold = regexp.MustCompile(`\*\*([^*]+)\*\*`)
 )
 
-// mdSubsetToHTML converts a documented markdown subset to HTML.
+// MDSubsetToHTML converts a documented markdown subset to HTML.
 // Headings (# / ## / ###), bold (**text**), lists (- / * / 1.), links,
 // fenced code, and blank-line paragraphs. Tables, images, and raw HTML
 // are left as-is. Not a full markdown implementation.
-func mdSubsetToHTML(src string) string {
+func MDSubsetToHTML(src string) string {
 	src = strings.ReplaceAll(src, "\r\n", "\n")
 	src = strings.TrimRight(src, "\n")
 	if src == "" {
@@ -61,10 +61,10 @@ func mdSubsetToHTML(src string) string {
 	return b.String()
 }
 
-// plainTextToHTML escapes plain text and keeps its layout: blank lines
+// PlainTextToHTML escapes plain text and keeps its layout: blank lines
 // become paragraphs and single newlines become <br>. Outlook reply comments
 // and Teams messages otherwise collapse newlines into one line.
-func plainTextToHTML(src string) string {
+func PlainTextToHTML(src string) string {
 	src = strings.ReplaceAll(src, "\r\n", "\n")
 	var b strings.Builder
 	for _, block := range strings.Split(src, "\n\n") {
