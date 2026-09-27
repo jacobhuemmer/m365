@@ -42,4 +42,4 @@ stderr (one line, existing schema):
 
 One problem uses `1 format problem: …`. Exit 3. Nothing is sent. Through MCP the same error is returned as `IsError`.
 
-The CLI's existing error writer escapes HTML characters, so on the wire `<p>` appears as `\u003cp\u003e`; the decoded message is exactly as shown. Dry-run stdout does not escape them.
+`<`, `>` and `&` are written literally in errors, as in dry-run stdout (#18).

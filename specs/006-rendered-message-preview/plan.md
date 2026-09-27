@@ -91,12 +91,11 @@ internal/adapters/cli/run.go             # boolFlags += --preview; --preview + -
 internal/adapters/cli/mcp_dispatch.go    # reject `preview` flag at MCP boundary
 internal/adapters/cli/help.go            # --preview and --format md in three help texts
 internal/adapters/cli/testdata/preview/*.golden
-acceptance/runtime/runtime.go            # World.Sent; exported Matches(text) (dispatch unchanged)
+acceptance/runtime/runtime.go            # World.Sent (the step-match guard became SDO-566, #19)
 acceptance/steps/rendered_steps.go       # new step handlers
-acceptance/steps/new_features_test.go    # every step in the new features matches a handler
-features/{mail,teams}/{mail,teams}-rendered.feature  # namespace prefix: the acceptance generator names tests by file base name
-features/{mail,teams}/{mail,teams}-format-check.feature
-features/{mail,teams}/{mail,teams}-preview.feature
+features/{mail,teams}/rendered.feature  # tests named by path (#17), e.g. mail_rendered
+features/{mail,teams}/format-check.feature
+features/{mail,teams}/preview.feature
 ```
 
 **Structure Decision**: Same single module. One new core package; changes elsewhere are confined to mail/teams app use cases, the Graph send adapter, CLI wiring, MCP dispatch, and the acceptance harness.

@@ -334,6 +334,12 @@ No scaffold: these tests go through `Run`, and the `MD` field they use was added
   - T052: the `--preview` wiring is three lines per command (flag, `DryRun || preview`, `writePreview` call), so no `bodyflags.go` was created in US3; a one-line flag helper would be a wrapper that adds no behaviour (Constitution III). `bodyflags.go` is created in US4 for `bodyMode`.
   - T059: not written as a separate test. The app-layer markdown path it describes (`MD: true` → `msgbody.Markdown` for `Mail`) was implemented in US1 and is already locked by the markdown cases of `TestMailSendDryRunMatchesPayload` and `TestMailReplyDryRunMatchesComment` (T017); a new test would pass on arrival and add nothing.
   - T061: the helper is `markdownFlag(html bool, format string) (bool, error)` rather than `bodyMode(...) (msgbody.Mode, error)`. The app inputs carry `HTML`/`MD` and the app layer picks the mode with `msgbody.ModeFor` (US1), so returning a `Mode` from the CLI would only be converted back. Same two usage errors.
+- After merging `main` (#14–#19) into this branch (`ef9ca92`), before opening the PR:
+  - T019's redaction bug is fixed on `main` (#14): MCP output stays valid JSON. T019 now parses the output and checks `body` and `rendered` exactly (owner-approved change to a locked test, `53384f5`).
+  - The gosec crash (Baseline) is fixed on `main` (#15): tools and targets use go.mod's toolchain, gosec v2.29.0. `make verify` runs as one command.
+  - The stderr `\u003c` escaping (T070, scenario 4) is gone on `main` (#18); quickstart and format-rules.md now show literal `<p>`.
+  - The temporary step-match guard (T014 `Matches`, T021 `new_features_test.go`, T023) is removed: `main`'s runner fails on any unmatched step (SDO-566, #19). The namespace prefix on the six feature files is removed too: the generator names tests by path (#17). `bcc07ef`.
+  - `TestHumanOutputKeepsHTMLCharacters` (#18) predates this feature's dry-run fields; its expected `--human` output gained `format_problems` and `rendered` (owner-approved change to a locked test, in the merge commit).
 - Dependency versions (T037, T051):
   - `golang.org/x/net` v0.58.0 (T037). v0.59.0 would raise go.mod's `go` line to 1.26.0; v0.58.0 is the newest that keeps `go 1.25.0`. It brings `golang.org/x/sys` v0.41.0 → v0.47.0 (indirect).
   - `golang.org/x/term` v0.45.0 (T051). v0.46.0 would raise the `go` line to 1.26.0.
