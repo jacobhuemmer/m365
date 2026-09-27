@@ -24,3 +24,15 @@ func TestParsersAcceptPathsWithSpaces(t *testing.T) {
 		t.Fatalf("fns %+v want %+v", fns, want)
 	}
 }
+
+// The baseline can record a path with spaces: the score is the first
+// field and the function name the last; the file is everything between.
+func TestParseBaselineAcceptsPathsWithSpaces(t *testing.T) {
+	got, err := parseBaseline(strings.NewReader("20.0 internal/a b.go F\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := map[string]float64{"internal/a b.go F": 20}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v want %v", got, want)
+	}
+}
