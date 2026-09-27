@@ -45,9 +45,9 @@ Replace the local m365 command surface with a Go 1.25+ CLI module. `cmd/m365` is
 - [x] **Engineering Constraints. PASS.** Clean architecture as above. Makefile named targets: `fmt`, `vet`, `unit`, `race`, `coverage`, `gosec`, `govulncheck`, `acceptance`, `acceptance-mutation`, `crap`, aggregated by `verify`. Exception process: written human approval. Bug fixes do not include surrounding refactors. Top-N/paging visible.
 - [x] **Development Workflow & Quality Gates. PASS.** Specify (done) → Constitution Check (this section) → RED commit → GREEN commit → optional REFACTOR → review citing principles → completion only when named gates pass.
 
-v1 MCP absence is not a violation. The only written exception is EX-I-001 (Complexity Tracking).
+v1 MCP absence is not a violation. Written exceptions: EX-I-001 and EX-EC-001 (Complexity Tracking).
 
-**Post-design re-check (after Phase 1): PASS.** `research.md`, `data-model.md`, `contracts/`, and `quickstart.md` keep Graph/OAuth/keychain at adapters, domain entities free of SDK fields, fake Graph as the CI boundary, and SC-014 measurement on fakes. Token store: Keychain-with-0600-fallback (T126). Exception EX-I-001 remains the only waiver.
+**Post-design re-check (after Phase 1): PASS.** `research.md`, `data-model.md`, `contracts/`, and `quickstart.md` keep Graph/OAuth/keychain at adapters, domain entities free of SDK fields, fake Graph as the CI boundary, and SC-014 measurement on fakes. Token store: Keychain-with-0600-fallback (T126). Exception EX-I-001 was then the only waiver; EX-EC-001 (CRAP baseline) was added on 2026-09-27.
 
 ## Project Structure
 
@@ -190,3 +190,11 @@ Production token store: T099 — `internal/adapters/keychain/keyring.go` via `gi
 - **Scope**: Git checkpoints T097–T119 only (US1–US10). Does not waive writing RED tests, locking tests, or separate RED then GREEN commits for later work.
 - **Retirement**: Phase 14+ and any new slice (including T124–T126) MUST use a RED commit then a GREEN commit. This exception MUST NOT be cited as precedent.
 - **Human approval**: 2026-09-16, analyze remediation (C1).
+
+### EX-EC-001 — CRAP baseline for functions that predate a working gate
+
+- **Principle**: Engineering Constraints — quality gates MUST block; the complexity/CRAP gate fails on CRAP > 15 unless justified (`crap:` target above).
+- **Rationale**: `scripts/crap.sh` never failed until PR #22 (`gocyclo … || true`). When a real gate was turned on, 49 existing functions scored over 15. Fixing all of them first is a large refactor outside any feature.
+- **Scope**: Exactly the entries in `scripts/crap-baseline.txt`, each at no more than its recorded score. The gate fails on any other function over 15 and on any baselined score that rises.
+- **Retirement**: Fix a function when a change touches it. The gate fails when an entry is stale (its function now scores 15 or less, or is gone), so the list only shrinks. This exception MUST NOT be cited as precedent for new functions.
+- **Human approval**: 2026-09-27, the owner chose "Ratchet baseline" for the CRAP gate (session answer before PR #22).
