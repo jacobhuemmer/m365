@@ -113,7 +113,6 @@ func (l *linter) start(tok html.Token, selfClosing bool) {
 		return
 	}
 	l.endBreaks()
-	l.markContent()
 	if lineTags[name] {
 		l.lineStart = true
 	}
@@ -202,7 +201,8 @@ func (l *linter) flushText() {
 	l.pending.Reset()
 }
 
-// markContent records that every open element holds something visible.
+// markContent records that every open element holds visible text. Only
+// text counts: an empty inline element (<strong></strong>) does not.
 func (l *linter) markContent() {
 	for i := range l.stack {
 		l.stack[i].content = true

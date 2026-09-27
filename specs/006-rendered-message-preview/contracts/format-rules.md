@@ -20,6 +20,8 @@ Elements: `p br h1 h2 h3 ul ol li pre code a strong b em i u s blockquote hr`. V
 
 A line starting with `- ` is not a problem. Text excerpts in details are cut to 40 characters.
 
+Counting: `leftover-markdown` is reported once per match. `literal-escape` is reported once per sequence kind (`\n`, `\t`, `\"`) per block of visible text, since these usually come from a body that was escaped as a whole. The send is blocked either way. Rule 6's "no non-whitespace content" means no visible text: an empty inline element such as `<strong></strong>` does not count as content.
+
 Not flagged (known client limits): Teams web leading space after `<br>`; `<pre>` flattening and `<hr>` gap on Teams for iOS.
 
 ## Subject rules (`mail send` only)
