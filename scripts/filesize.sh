@@ -1,15 +1,16 @@
 #!/bin/sh
 set -eu
 cd "$(dirname "$0")/.."
-# Constitution II: a source file over 250 lines needs a refactoring note in
+# Constitution II: a Go file (source or test) over 250 lines needs a refactoring note in
 # the plan; over 500 it must be split. Notes are the "- `path`: ..." lines
 # under "### File-size notes" in specs/001-m365-cli/plan.md. A note for a
 # file that is now 250 lines or fewer, or gone, is stale and must go.
 notes_file=specs/001-m365-cli/plan.md
 mkdir -p build/filesize
 # go list writes to a file first: in a pipeline its failure would be lost.
-go list -f '{{$d := .Dir}}{{range .GoFiles}}{{$d}}/{{.}}{{"\n"}}{{end}}' ./... > build/filesize/list.txt
-sed "s|^$PWD/||" build/filesize/list.txt | sort > build/filesize/files.txt
+# Source and test files alike (owner's decision); generated tests excluded.
+go list -f '{{$d := .Dir}}{{range .GoFiles}}{{$d}}/{{.}}{{"\n"}}{{end}}{{range .TestGoFiles}}{{$d}}/{{.}}{{"\n"}}{{end}}{{range .XTestGoFiles}}{{$d}}/{{.}}{{"\n"}}{{end}}' ./... > build/filesize/list.txt
+sed "s|^$PWD/||" build/filesize/list.txt | grep -v '^acceptance/generated/' | sort > build/filesize/files.txt
 if [ ! -s build/filesize/files.txt ]; then
   echo "filesize: go list found no Go files" >&2
   exit 1
@@ -18,10 +19,10 @@ fail=0
 # A note is "- `path`: reason"; the reason must not be empty.
 awk '/^### File-size notes/{on=1; next} on && /^#/{on=0} on && /^- `[^`]*\.go`/{
   line=$0; sub(/^- `/, "", line); path=line; sub(/`.*/, "", path)
-  reason=line; sub(/^[^`]*`:?[ \t]*/, "", reason); print path "\t" reason }' "$notes_file" > build/filesize/entries.tsv
+  reason=line; sub(/^[^`]*`[: \t]*/, "", reason); print path "\t" reason }' "$notes_file" > build/filesize/entries.tsv
 tab=$(printf '\t')
 while IFS="$tab" read -r f reason; do
-  if [ -z "$reason" ]; then
+  if ! printf '%s' "$reason" | grep -q '[[:alnum:]]'; then
     echo "filesize: note for $f in $notes_file has no reason; say how to split it" >&2
     fail=1
   fi
