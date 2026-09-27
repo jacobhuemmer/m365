@@ -29,43 +29,58 @@ func TestAcceptance_%s(t *testing.T) {
 }
 `
 
-// generate writes one acceptance test per feature file under root into
-// outDir. Names come from the feature's path under root (cli/help.feature
-// -> cli_help), so features with the same file name in different folders
-// both run. Stale generated tests are removed first; two features that map
-// to the same name are an error and nothing is written.
+// feature is one feature file and the test name generated for it.
+type feature struct {
+	Name, Path string
+}
+
+// generate writes one acceptance test per feature under root into outDir.
+// The new set is written to a staging folder first; only when every file
+// is written are the old generated tests removed and the new ones moved
+// in. A name clash is an error and leaves outDir untouched.
 func generate(root, outDir string) error {
-	names, err := featureNames(root)
+	features, err := listFeatures(root)
 	if err != nil {
 		return err
 	}
 	if err := os.MkdirAll(outDir, 0o750); err != nil {
 		return err
 	}
-	if err := removeGenerated(outDir); err != nil {
+	stage, err := os.MkdirTemp(filepath.Dir(outDir), ".acceptance-generated-*")
+	if err != nil {
 		return err
 	}
-	keys := make([]string, 0, len(names))
-	for name := range names {
-		keys = append(keys, name)
-	}
-	sort.Strings(keys)
-	for _, name := range keys {
-		rel, err := filepath.Rel(outDir, names[name])
+	defer os.RemoveAll(stage)
+	for _, f := range features {
+		rel, err := filepath.Rel(outDir, f.Path)
 		if err != nil {
 			return err
 		}
-		src := fmt.Sprintf(testTemplate, name, filepath.ToSlash(rel))
-		if err := os.WriteFile(filepath.Join(outDir, name+generatedSuffix), []byte(src), 0o600); err != nil {
+		src := fmt.Sprintf(testTemplate, f.Name, filepath.ToSlash(rel))
+		if err := os.WriteFile(filepath.Join(stage, f.Name+generatedSuffix), []byte(src), 0o600); err != nil {
+			return err
+		}
+	}
+	if err := removeGenerated(outDir); err != nil {
+		return err
+	}
+	for _, f := range features {
+		name := f.Name + generatedSuffix
+		if err := os.Rename(filepath.Join(stage, name), filepath.Join(outDir, name)); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// featureNames maps each test name to its feature file, failing on a clash.
-func featureNames(root string) (map[string]string, error) {
-	names := map[string]string{}
+// listFeatures returns every feature under root with its test name, sorted
+// by name. It is the one list both the generator and acceptance.sh use.
+// Names come from the path under root (cli/help.feature -> cli_help); two
+// features whose names match ignoring case are an error, because their
+// files would collide on a case-insensitive disk.
+func listFeatures(root string) ([]feature, error) {
+	var out []feature
+	seen := map[string]string{}
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".feature") {
 			return err
@@ -74,15 +89,21 @@ func featureNames(root string) (map[string]string, error) {
 		if err != nil {
 			return err
 		}
-		name := nonIdent.ReplaceAllString(strings.TrimSuffix(filepath.ToSlash(rel), ".feature"), "_")
-		if prev, ok := names[name]; ok {
-			return fmt.Errorf("features %s and %s both map to test name %s; rename one",
-				filepath.ToSlash(mustRel(root, prev)), filepath.ToSlash(rel), name)
+		rel = filepath.ToSlash(rel)
+		name := nonIdent.ReplaceAllString(strings.TrimSuffix(rel, ".feature"), "_")
+		key := strings.ToLower(name)
+		if prev, ok := seen[key]; ok {
+			return fmt.Errorf("features %s and %s both map to test name %s (ignoring case); rename one", prev, rel, name)
 		}
-		names[name] = path
+		seen[key] = rel
+		out = append(out, feature{Name: name, Path: path})
 		return nil
 	})
-	return names, err
+	if err != nil {
+		return nil, err
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return out, nil
 }
 
 func removeGenerated(outDir string) error {
@@ -96,23 +117,4 @@ func removeGenerated(outDir string) error {
 		}
 	}
 	return nil
-}
-
-func mustRel(root, path string) string {
-	rel, err := filepath.Rel(root, path)
-	if err != nil {
-		return path
-	}
-	return rel
-}
-
-// feature is one feature file and the test name generated for it.
-type feature struct {
-	Name, Path string
-}
-
-// listFeatures returns every feature under root with its test name, sorted
-// by name. It is the one list both the generator and acceptance.sh use.
-func listFeatures(root string) ([]feature, error) {
-	return nil, nil
 }
