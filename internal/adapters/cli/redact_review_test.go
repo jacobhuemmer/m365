@@ -9,7 +9,7 @@ func TestRedactReviewFindings(t *testing.T) {
 		in   string
 		want string
 	}{
-		{"json embedded in a string value", `{"body":"{\"access_token\":\"xyz\"}"}`, `{"body":"{\"[redacted]}"}`},
+		{"json embedded in a string value", `{"body":"{\"access_token\":\"xyz\"}"}`, `{"body":"{\"access_token\":\"[redacted]\"}"}`},
 		{"json line followed by plain text", "{\"access_token\":\"xyz\"}\nstatus", "{\"access_token\":\"[redacted]\"}\nstatus"},
 		{"plain value in angle brackets", `access_token=<abc>`, `[redacted]`},
 		{"json inside a plain log line", `status {"access_token":"xyz"}`, `status {"[redacted]}`},
