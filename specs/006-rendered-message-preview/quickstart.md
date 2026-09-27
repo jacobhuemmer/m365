@@ -46,7 +46,7 @@ go build -o /tmp/m365 ./cmd/m365
 
 4. **Blocked send**
    `/tmp/m365 mail send --to a@example.com --subject Hi --html --body '<p>hi'`
-   → exit 3; stderr `{"class":"usage","message":"1 format problem: broken-html: unclosed <p>","hint":"run with --preview to see them"}`; nothing sent.
+   → exit 3; stderr `{"class":"usage","message":"1 format problem: broken-html: unclosed \u003cp\u003e","hint":"run with --preview to see them"}` (the error writer escapes `<` and `>`; the decoded message reads `unclosed <p>`); nothing sent.
    Same command with `--dry-run` → exit 0, `format_problems` lists `broken-html`.
 
 5. **Subject check**

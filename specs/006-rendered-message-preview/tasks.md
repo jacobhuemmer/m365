@@ -281,15 +281,15 @@ No scaffold: these tests go through `Run`, and the `MD` field they use was added
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T065 [P] Write the RED test `TestLargeBodyDeadline` (256 KiB synthetic markdown body: Render + Lint + Text finish within 1 s) and `BenchmarkRenderLintText` in internal/domain/msgbody/perf_test.go. Run `go test -bench BenchmarkRenderLintText ./internal/domain/msgbody` and record ns/op in Notes. A result of 100 ms or more is a defect and blocks completion (Constitution VI)
-- [ ] T066 [P] Build the branch binary (`go build -o /tmp/m365-new ./cmd/m365 && stat -f %z /tmp/m365-new`), compare it with the T002 baseline, and record both in Notes. Growth over 1.5 MiB is a defect and blocks completion (Constitution VI)
-- [ ] T067 [P] Additive docs:
+- [X] T065 [P] Write the RED test `TestLargeBodyDeadline` (256 KiB synthetic markdown body: Render + Lint + Text finish within 1 s) and `BenchmarkRenderLintText` in internal/domain/msgbody/perf_test.go. Run `go test -bench BenchmarkRenderLintText ./internal/domain/msgbody` and record ns/op in Notes. A result of 100 ms or more is a defect and blocks completion (Constitution VI)
+- [X] T066 [P] Build the branch binary (`go build -o /tmp/m365-new ./cmd/m365 && stat -f %z /tmp/m365-new`), compare it with the T002 baseline, and record both in Notes. Growth over 1.5 MiB is a defect and blocks completion (Constitution VI)
+- [X] T067 [P] Additive docs:
   - docs/m365.md: add `--format md` and `--preview` to the `mail send` and `mail reply` rows, `--preview` to the `teams send` row, and a sentence that dry-run JSON includes `rendered` and `format_problems` and that problems block a real send.
   - README.md: one line on `--preview` and on format problems blocking a send.
-- [ ] T068 [P] In internal/adapters/cli/mcp_write_recipes.go, add text only: inline code in the md subset, and "a send with format problems fails with a usage error; dry-run shows `rendered` and `format_problems`". Run the locked recipe tests (`go test ./internal/adapters/cli -run Recipe`) to confirm they still pass
-- [ ] T069 Check file sizes with `wc -l` on every touched .go file. Split any new file over 250 lines; record a note in Notes for internal/adapters/cli/mail.go (pre-existing 270). A REFACTOR commit is allowed only while the suite is green
-- [ ] T070 Run the manual scenarios 1–8 in specs/006-rendered-message-preview/quickstart.md with `M365_FAKE=1`, and record the outcomes in Notes
-- [ ] T071 Run `make verify` (fmt, vet, unit, race, coverage, gosec, govulncheck, acceptance, crap). All gates must pass; record the result in Notes
+- [X] T068 [P] In internal/adapters/cli/mcp_write_recipes.go, add text only: inline code in the md subset, and "a send with format problems fails with a usage error; dry-run shows `rendered` and `format_problems`". Run the locked recipe tests (`go test ./internal/adapters/cli -run Recipe`) to confirm they still pass
+- [X] T069 Check file sizes with `wc -l` on every touched .go file. Split any new file over 250 lines; record a note in Notes for internal/adapters/cli/mail.go (pre-existing 270). A REFACTOR commit is allowed only while the suite is green
+- [X] T070 Run the manual scenarios 1–8 in specs/006-rendered-message-preview/quickstart.md with `M365_FAKE=1`, and record the outcomes in Notes
+- [X] T071 Run `make verify` (fmt, vet, unit, race, coverage, gosec, govulncheck, acceptance, crap). All gates must pass; record the result in Notes
 
 ---
 
@@ -338,6 +338,8 @@ No scaffold: these tests go through `Run`, and the `MD` field they use was added
   - `golang.org/x/net` v0.58.0 (T037). v0.59.0 would raise go.mod's `go` line to 1.26.0; v0.58.0 is the newest that keeps `go 1.25.0`. It brings `golang.org/x/sys` v0.41.0 → v0.47.0 (indirect).
   - `golang.org/x/term` v0.45.0 (T051). v0.46.0 would raise the `go` line to 1.26.0.
 - Benchmark and binary size (T065, T066):
-- File-size notes (T069):
-- Quickstart outcomes (T070):
-- `make verify` result (T071):
+  - `BenchmarkRenderLintText` (256 KiB markdown, Render + Lint + Text, Apple Silicon, `-benchtime 20x`): 15,619,581 ns/op ≈ 15.6 ms (target < 100 ms). `TestLargeBodyDeadline`: 0.04 s.
+  - Binary: 14,454,050 bytes vs 14,263,618 at 378698e, +190,432 bytes (≈ 186 KiB; limit 1.5 MiB).
+- File-size notes (T069): every touched or new .go file is under 250 lines except internal/adapters/cli/mail.go, 288 lines (270 at 378698e; +18 for the `--format` and `--preview` flags). It is under 500; per the plan's refactoring note, splitting it is left to a separate change.
+- Quickstart outcomes (T070), `M365_FAKE=1` with state in a scratch dir: scenarios 1–7 match. Scenario 4's stderr shows `\u003cp\u003e` for `<p>` because the existing error writer escapes HTML; the decoded message matches, and the contract and quickstart now say so. Scenario 8 (MCP) is covered by `TestMCPBlockedSendIsUsageError`, `TestMCPRejectsPreview` and `TestMCPRedactsRenderedContent`.
+- `make verify` result (T071): fmt, vet, unit, race, coverage, govulncheck ("No vulnerabilities found"), acceptance and crap pass as make targets. gosec passes with 0 issues when built and run with `GOTOOLCHAIN=go1.26.6`; the `.tools/bin/gosec` built by Go 1.27.1 still crashes before analysing (pre-existing, see Baseline), so `make verify` as a single command stops at gosec.
