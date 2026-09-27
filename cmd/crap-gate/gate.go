@@ -127,10 +127,13 @@ func parseBaseline(r io.Reader) (map[string]float64, error) {
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
+		// score, then the file (which may contain spaces), then the name.
 		fields := strings.Fields(line)
-		if len(fields) != 3 {
+		if len(fields) < 3 {
 			return nil, fmt.Errorf("baseline: malformed line %q", line)
 		}
+		file := strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(line, fields[0]), fields[len(fields)-1]))
+		fields = []string{fields[0], file, fields[len(fields)-1]}
 		score, err := strconv.ParseFloat(fields[0], 64)
 		if err != nil {
 			return nil, fmt.Errorf("baseline: %w", err)
