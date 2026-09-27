@@ -6,6 +6,7 @@ import (
 
 	"github.com/masonhuemmer/m365/internal/app/auth"
 	"github.com/masonhuemmer/m365/internal/domain"
+	"github.com/masonhuemmer/m365/internal/domain/msgbody"
 )
 
 type ListQuery struct {
@@ -21,9 +22,12 @@ type SendInput struct {
 	Subject    string
 	Body       string
 	HTML       bool
+	MD         bool
 	DryRun     bool
 	NoteToSelf bool
 	Files      []domain.OutboundFile
+	// Rendered is the delivered body, set by Send. Stores send it as-is.
+	Rendered msgbody.Rendered
 }
 
 type ReplyInput struct {
@@ -31,8 +35,11 @@ type ReplyInput struct {
 	Body   string
 	All    bool
 	HTML   bool
+	MD     bool
 	DryRun bool
 	Files  []domain.OutboundFile
+	// Rendered is the delivered comment, set by Reply. Stores send it as-is.
+	Rendered msgbody.Rendered
 }
 
 type Store interface {

@@ -50,18 +50,18 @@
 
 ### Refactor and scaffold
 
-- [ ] T004 REFACTOR, no behaviour change:
+- [X] T004 REFACTOR, no behaviour change:
   - `git mv internal/adapters/graph/mdhtml.go internal/domain/msgbody/markdown.go`.
   - `git mv internal/adapters/graph/mdhtml_test.go internal/domain/msgbody/markdown_test.go`, applying only T003(a).
   - Export `PlainTextToHTML` and `MDSubsetToHTML`, and call them from internal/adapters/graph/httpsend.go.
   - Run `make unit` (green), then REFACTOR commit.
-- [ ] T005 SCAFFOLD, then SCAFFOLD commit:
+- [X] T005 SCAFFOLD, then SCAFFOLD commit:
   - internal/domain/msgbody/render.go: `Mode` (`Plain`, `Markdown`, `HTML`), `Target` (`Mail`, `Teams`), `Rendered{ContentType string \`json:"content_type"\`; Content string \`json:"content"\`}`, and `Render` returning `Rendered{}`.
   - internal/domain/msgbody/problem.go: `Problem{Rule, Detail}` (JSON `rule`, `detail`), `Problems`, the rule-id constants `tag-not-allowed attribute-not-allowed broken-html leftover-markdown literal-escape extra-blank-lines link-scheme newline-in-subject`, and `Err()` returning `nil`.
 
 ### Tests (RED)
 
-- [ ] T006 [P] Write RED exact-output table tests in internal/domain/msgbody/render_test.go for `Render(mode, target, src) Rendered`. Every result has `ContentType == "html"`. Cases:
+- [X] T006 [P] Write RED exact-output table tests in internal/domain/msgbody/render_test.go for `Render(mode, target, src) Rendered`. Every result has `ContentType == "html"`. Cases:
   - Plain/Mail: `"a\n\nb\nc"` → `"<p>a</p>\n<p>b<br>c</p>"`.
   - Plain/Teams: the same input → `"<p>a<br><br>b<br>c</p>"`.
   - Plain: `"a\n \n\t\nb"` → two paragraphs, not `<br>` runs (research R4).
@@ -71,25 +71,25 @@
   - Markdown escaping: `"a <b> & c"` → `"<p>a &lt;b&gt; &amp; c</p>"`; raw HTML shows literally (FR-006).
   - Markdown/Teams: adjacent paragraphs merge into one `<p>` joined by `<br><br>`, while a list or heading between them stays a separate block (FR-007, research R5).
   - HTML mode: returned byte-for-byte for both targets.
-- [ ] T007 [P] Write RED tests in internal/domain/msgbody/problem_test.go for `Problems` (marshals `[]`, never `null`, when empty) and `Problems.Err()`:
+- [X] T007 [P] Write RED tests in internal/domain/msgbody/problem_test.go for `Problems` (marshals `[]`, never `null`, when empty) and `Problems.Err()`:
   - `Class` is `usage`.
   - Message for one problem: `1 format problem: broken-html: unclosed <p>`.
   - Message for two: `2 format problems: broken-html: unclosed <p>; leftover-markdown: **bold**`.
   - Hint: `run with --preview to see them` (contracts/format-rules.md "Blocked send error").
-- [ ] T008 Run `go test ./internal/domain/msgbody/...` and confirm every failure is an assertion failure, with no compile or import errors. RED commit containing only T006–T007
+- [X] T008 Run `go test ./internal/domain/msgbody/...` and confirm every failure is an assertion failure, with no compile or import errors. RED commit containing only T006–T007
 
 ### Implementation (GREEN)
 
-- [ ] T009 Implement `Render` in internal/domain/msgbody/render.go. Paragraph layout depends on the target only (data-model.md)
-- [ ] T010 Split internal/domain/msgbody/markdown.go into plain.go (plain text → blocks, whitespace-only lines treated as blank) and markdown.go:
+- [X] T009 Implement `Render` in internal/domain/msgbody/render.go. Paragraph layout depends on the target only (data-model.md)
+- [X] T010 Split internal/domain/msgbody/markdown.go into plain.go (plain text → blocks, whitespace-only lines treated as blank) and markdown.go:
   - Escape `<` and `&` outside code.
   - Convert inline code.
   - Return blocks so render.go can join Teams paragraphs.
   - Keep `PlainTextToHTML` and `MDSubsetToHTML` exported with their current signatures; the moved locked tests call them.
   - Keep each file under 250 lines. Imports: stdlib only.
-- [ ] T011 Implement `Problems` JSON (empty → `[]`) and `Err()` returning `*domain.Error` in internal/domain/msgbody/problem.go
-- [ ] T012 In internal/adapters/graph/httpsend.go, call `msgbody.Render(mode, msgbody.Mail, text)` for mail reply **and** Teams. The Mail target reproduces today's `<p>` blocks, and the locked adapter inputs contain no `<`, `&` or backticks, so every locked test passes unchanged. Keep the adapter's "`--html` wins" choice until US1. **No test edits**
-- [ ] T013 Run `make unit`, then GREEN commit T009–T012
+- [X] T011 Implement `Problems` JSON (empty → `[]`) and `Err()` returning `*domain.Error` in internal/domain/msgbody/problem.go
+- [X] T012 In internal/adapters/graph/httpsend.go, call `msgbody.Render(mode, msgbody.Mail, text)` for mail reply **and** Teams. The Mail target reproduces today's `<p>` blocks, and the locked adapter inputs contain no `<`, `&` or backticks, so every locked test passes unchanged. Keep the adapter's "`--html` wins" choice until US1. **No test edits**
+- [X] T013 Run `make unit`, then GREEN commit T009–T012
 
 **Checkpoint**: `msgbody` renders both targets; `make unit` green; no user-visible behaviour change yet.
 

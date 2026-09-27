@@ -12,6 +12,8 @@ type World struct {
 	Code int
 	Out  string
 	Err  string
+	// Sent counts messages the last command delivered to the fake store.
+	Sent int
 }
 
 type Step struct {
@@ -86,6 +88,11 @@ func RunFeature(t *testing.T, path string) {
 			}
 		})
 	}
+}
+
+// Matches reports whether a step text has a registered handler.
+func Matches(text string) bool {
+	return false
 }
 
 func dispatch(w *World, text string) error {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/masonhuemmer/m365/internal/app/auth"
 	"github.com/masonhuemmer/m365/internal/domain"
+	"github.com/masonhuemmer/m365/internal/domain/msgbody"
 )
 
 type ListQuery struct {
@@ -30,6 +31,8 @@ type SendInput struct {
 	DryRun     bool
 	NoteToSelf bool
 	Files      []domain.OutboundFile
+	// Rendered is the delivered body, set by SendMapped. Stores send it as-is.
+	Rendered msgbody.Rendered
 }
 
 type WatchQuery struct {
