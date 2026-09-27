@@ -96,16 +96,6 @@ func RunFeature(t *testing.T, path string) {
 	}
 }
 
-// Matches reports whether a step text has a registered handler.
-func Matches(text string) bool {
-	for _, h := range handlers {
-		if strings.HasPrefix(text, h.prefix) || text == h.prefix {
-			return true
-		}
-	}
-	return false
-}
-
 func dispatch(w *World, text string) error {
 	if h, ok := handlerFor(text); ok {
 		return h(w, text)
