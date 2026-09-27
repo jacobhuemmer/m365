@@ -20,7 +20,7 @@ var (
 		`(?:"[^"\n]*"?|'[^'\n]*'?|(?:<[^"'\s,}\]]+|[^"'\s,}\]<]+)))`)
 	secretKeyRE  = regexp.MustCompile(`(?i)^(?:` + secretNames + `)$`)
 	jsonStringRE = regexp.MustCompile(`"(?:[^"\\]|\\.)*"`)
-	jsonColonRE  = regexp.MustCompile(`^\s*:\s*$`)
+	jsonColonRE  = regexp.MustCompile(`^\s*:\s*`)
 )
 
 // redact removes secrets from text written to stderr or MCP. JSON is
@@ -63,31 +63,54 @@ func isJSONLine(s string) bool {
 	return (strings.HasPrefix(t, "{") || strings.HasPrefix(t, "[")) && json.Valid([]byte(t))
 }
 
-// redactJSONStrings rewrites only the string literals that hold a secret,
-// or that are the value of a secret-named key; all other bytes are kept.
+// redactJSONStrings rewrites only what holds a secret: the whole value
+// after a secret-named key (any JSON type becomes "[redacted]"), and any
+// other string literal whose text contains a secret. Every other byte is
+// kept, so unchanged output is byte-identical.
 func redactJSONStrings(s string) string {
 	var b strings.Builder
-	last, prevEnd := 0, -1
-	prev := ""
-	for _, m := range jsonStringRE.FindAllStringIndex(s, -1) {
+	last, pos := 0, 0
+	for {
+		m := jsonStringRE.FindStringIndex(s[pos:])
+		if m == nil {
+			break
+		}
+		start, end := pos+m[0], pos+m[1]
+		pos = end
 		var v string
-		if err := json.Unmarshal([]byte(s[m[0]:m[1]]), &v); err != nil {
+		if err := json.Unmarshal([]byte(s[start:end]), &v); err != nil {
 			continue
 		}
-		out := redactValue(v)
-		if prevEnd >= 0 && secretKeyRE.MatchString(prev) && jsonColonRE.MatchString(s[prevEnd:m[0]]) {
-			out = "[redacted]"
+		if secretKeyRE.MatchString(v) {
+			if c := jsonColonRE.FindStringIndex(s[end:]); c != nil {
+				valStart := end + c[1]
+				if n := jsonValueLen(s[valStart:]); n > 0 {
+					b.WriteString(s[last:valStart])
+					b.WriteString(`"[redacted]"`)
+					last, pos = valStart+n, valStart+n
+					continue
+				}
+			}
 		}
-		prev, prevEnd = v, m[1]
-		if out == v {
-			continue
+		if out := redactValue(v); out != v {
+			b.WriteString(s[last:start])
+			b.WriteString(jsonQuote(out))
+			last = end
 		}
-		b.WriteString(s[last:m[0]])
-		b.WriteString(jsonQuote(out))
-		last = m[1]
 	}
 	b.WriteString(s[last:])
 	return b.String()
+}
+
+// jsonValueLen is the byte length of the JSON value at the start of s,
+// or 0 if there is none.
+func jsonValueLen(s string) int {
+	dec := json.NewDecoder(strings.NewReader(s))
+	var raw json.RawMessage
+	if err := dec.Decode(&raw); err != nil {
+		return 0
+	}
+	return int(dec.InputOffset())
 }
 
 // redactValue redacts one decoded string value. A value that is itself
