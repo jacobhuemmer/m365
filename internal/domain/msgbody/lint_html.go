@@ -49,10 +49,18 @@ type linter struct {
 	pendingStart bool
 	// tok counts tokens; each problem records the token where it starts
 	// (pendingTok for buffered text) so Lint can return document order.
-	tok        int
-	pendingTok int
-	seqs       []int
+	tok   int
+	brTok int
+	segs  []textSeg
+	seqs  []position
 }
+
+// position orders problems: the token where a problem starts, then the
+// byte offset within buffered text.
+type position struct{ tok, off int }
+
+// textSeg maps a byte offset in the pending text to its source token.
+type textSeg struct{ off, tok int }
 
 // Lint checks a rendered body against the format rules
 // (contracts/format-rules.md) and lists problems in document order.
@@ -81,8 +89,12 @@ func Lint(content string) Problems {
 }
 
 func (l *linter) add(rule, detail string) {
+	l.addAt(position{tok: l.tok}, rule, detail)
+}
+
+func (l *linter) addAt(pos position, rule, detail string) {
 	l.out = append(l.out, Problem{Rule: rule, Detail: detail})
-	l.seqs = append(l.seqs, l.tok)
+	l.seqs = append(l.seqs, pos)
 }
 
 // ordered returns the problems sorted by the token where each starts;
@@ -92,7 +104,10 @@ func (l *linter) ordered() Problems {
 	for i := range idx {
 		idx[i] = i
 	}
-	sort.SliceStable(idx, func(a, b int) bool { return l.seqs[idx[a]] < l.seqs[idx[b]] })
+	sort.SliceStable(idx, func(a, b int) bool {
+		pa, pb := l.seqs[idx[a]], l.seqs[idx[b]]
+		return pa.tok < pb.tok || (pa.tok == pb.tok && pa.off < pb.off)
+	})
 	out := make(Problems, 0, len(l.out))
 	for _, i := range idx {
 		out = append(out, l.out[i])
@@ -116,6 +131,9 @@ func (l *linter) start(tok html.Token, selfClosing bool) {
 		l.flushText()
 	}
 	if name == "br" {
+		if l.brRun == 0 {
+			l.brTok = l.tok
+		}
 		l.brRun++
 		l.lineStart = true
 		return
@@ -170,6 +188,7 @@ func (l *linter) end(name string) {
 func (l *linter) text(s string) {
 	if strings.TrimSpace(s) == "" {
 		if l.pending.Len() > 0 {
+			l.segs = append(l.segs, textSeg{off: l.pending.Len(), tok: l.tok})
 			l.pending.WriteString(s)
 		}
 		// A newline-only token still starts a new line for the heading rule.
@@ -183,8 +202,8 @@ func (l *linter) text(s string) {
 	if l.codeDepth == 0 {
 		if l.pending.Len() == 0 {
 			l.pendingStart = l.lineStart
-			l.pendingTok = l.tok
 		}
+		l.segs = append(l.segs, textSeg{off: l.pending.Len(), tok: l.tok})
 		l.pending.WriteString(s)
 	}
 	l.lineStart = strings.HasSuffix(s, "\n")
@@ -196,10 +215,16 @@ func (l *linter) flushText() {
 	if l.pending.Len() == 0 {
 		return
 	}
-	for _, p := range textProblems(l.pending.String(), l.pendingStart, "") {
-		l.out = append(l.out, p)
-		l.seqs = append(l.seqs, l.pendingTok)
+	for _, p := range locatedTextProblems(l.pending.String(), l.pendingStart, "") {
+		tok := l.segs[0].tok
+		for _, sg := range l.segs {
+			if sg.off <= p.off {
+				tok = sg.tok
+			}
+		}
+		l.addAt(position{tok: tok, off: p.off}, p.Rule, p.Detail)
 	}
+	l.segs = nil
 	l.pending.Reset()
 }
 
@@ -213,7 +238,7 @@ func (l *linter) markContent() {
 // endBreaks closes a run of <br>; three or more read as stray blank lines.
 func (l *linter) endBreaks() {
 	if l.brRun >= 3 {
-		l.add(RuleExtraBlankLines, fmt.Sprintf("%d <br> in a row", l.brRun))
+		l.addAt(position{tok: l.brTok}, RuleExtraBlankLines, fmt.Sprintf("%d <br> in a row", l.brRun))
 	}
 	l.brRun = 0
 }

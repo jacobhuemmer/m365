@@ -29,22 +29,40 @@ func LintSubject(subject string) Problems {
 // whether s begins a line, for the markdown-heading check.
 func textProblems(s string, lineStart bool, prefix string) Problems {
 	var out Problems
-	add := func(rule, detail string) {
-		out = append(out, Problem{Rule: rule, Detail: prefix + detail})
+	for _, lp := range locatedTextProblems(s, lineStart, prefix) {
+		out = append(out, lp.Problem)
 	}
+	return out
+}
+
+// locatedProblem is a problem with the byte offset in the text where it
+// starts, so the linter can place it at the token it came from.
+type locatedProblem struct {
+	Problem
+	off int
+}
+
+func locatedTextProblems(s string, lineStart bool, prefix string) []locatedProblem {
+	var out []locatedProblem
+	add := func(off int, rule, detail string) {
+		out = append(out, locatedProblem{Problem{Rule: rule, Detail: prefix + detail}, off})
+	}
+	lineOff := 0
 	for i, line := range strings.Split(s, "\n") {
-		if (i > 0 || lineStart) && reLeftHeading.MatchString(strings.TrimLeft(line, " \t")) {
-			add(RuleLeftoverMarkdown, cut(strings.TrimSpace(line)))
+		trimmed := strings.TrimLeft(line, " \t")
+		if (i > 0 || lineStart) && reLeftHeading.MatchString(trimmed) {
+			add(lineOff+len(line)-len(trimmed), RuleLeftoverMarkdown, cut(strings.TrimSpace(line)))
 		}
 		for _, re := range []*regexp.Regexp{reLeftBold, reLeftLink, reLeftCode} {
-			for _, m := range re.FindAllString(line, -1) {
-				add(RuleLeftoverMarkdown, cut(m))
+			for _, m := range re.FindAllStringIndex(line, -1) {
+				add(lineOff+m[0], RuleLeftoverMarkdown, cut(line[m[0]:m[1]]))
 			}
 		}
+		lineOff += len(line) + 1
 	}
 	for _, seq := range literalEscape {
-		if strings.Contains(s, seq) {
-			add(RuleLiteralEscape, seq+` in "`+cut(strings.TrimSpace(s))+`"`)
+		if at := strings.Index(s, seq); at >= 0 {
+			add(at, RuleLiteralEscape, seq+` in "`+cut(strings.TrimSpace(s))+`"`)
 		}
 	}
 	return out
