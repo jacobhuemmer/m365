@@ -6,6 +6,7 @@ import (
 
 	"github.com/masonhuemmer/m365/internal/app/auth"
 	"github.com/masonhuemmer/m365/internal/domain"
+	"github.com/masonhuemmer/m365/internal/domain/msgbody"
 )
 
 type ListQuery struct {
@@ -30,6 +31,8 @@ type SendInput struct {
 	DryRun     bool
 	NoteToSelf bool
 	Files      []domain.OutboundFile
+	// Rendered is the delivered body, set by SendMapped. Stores send it as-is.
+	Rendered msgbody.Rendered
 }
 
 type WatchQuery struct {
@@ -140,16 +143,27 @@ func SendMapped(ctx context.Context, st Store, m ChatMap, sess domain.Session, i
 	if err := domain.ValidateOutbound(in.Files); err != nil {
 		return nil, err
 	}
+	in.Rendered = msgbody.Render(msgbody.ModeFor(in.HTML, in.MD), msgbody.Teams, in.Text)
+	if strings.TrimSpace(in.Rendered.Content) == "" {
+		return nil, domain.Usage("chat id and text are required")
+	}
+	problems := msgbody.Lint(in.Rendered.Content)
 	if in.DryRun {
 		atts := []map[string]any{}
 		for _, f := range in.Files {
 			atts = append(atts, map[string]any{"name": f.Name, "size": f.Size})
 		}
-		out := map[string]any{"dry_run": true, "chat_id": in.ChatID, "text": in.Text, "attachments": atts}
+		out := map[string]any{
+			"dry_run": true, "chat_id": in.ChatID, "text": in.Text, "attachments": atts,
+			"rendered": in.Rendered, "format_problems": problems,
+		}
 		if in.To != "" {
 			out["to"] = in.To
 		}
 		return out, nil
+	}
+	if err := problems.Err(); err != nil {
+		return nil, err
 	}
 	id, err := st.Send(ctx, in)
 	if err != nil {

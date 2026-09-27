@@ -115,5 +115,8 @@ func buildRunArgs(ns, verb string, pos []string, flags map[string]any, optIn boo
 	if err := rejectStdinFiles(flags); err != nil {
 		return nil, err
 	}
+	if _, ok := flags["preview"]; ok {
+		return nil, &domain.Error{Class: domain.ClassUsage, Message: "preview is a terminal flag", Hint: "use dry-run; its JSON has rendered and format_problems"}
+	}
 	return FlagMapToArgs(ns, verb, pos, applyWriteGate(ns, verb, flags, optIn))
 }

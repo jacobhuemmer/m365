@@ -1,4 +1,4 @@
-package graph
+package msgbody
 
 import (
 	"html"
@@ -10,44 +10,50 @@ import (
 var (
 	reLink = regexp.MustCompile(`\[([^\]]+)\]\(([^)]+)\)`)
 	reBold = regexp.MustCompile(`\*\*([^*]+)\*\*`)
+	reCode = regexp.MustCompile("`([^`]+)`")
 )
 
-// mdSubsetToHTML converts a documented markdown subset to HTML.
+// MDSubsetToHTML converts a documented markdown subset to HTML.
 // Headings (# / ## / ###), bold (**text**), lists (- / * / 1.), links,
-// fenced code, and blank-line paragraphs. Tables, images, and raw HTML
-// are left as-is. Not a full markdown implementation.
-func mdSubsetToHTML(src string) string {
+// inline and fenced code, and blank-line paragraphs. Text outside code is
+// escaped, so raw HTML shows literally. Tables and images are left as
+// text. Not a full markdown implementation.
+func MDSubsetToHTML(src string) string {
+	return joinBlocks(mdBlocks(src), Mail)
+}
+
+func mdBlocks(src string) []block {
 	src = strings.ReplaceAll(src, "\r\n", "\n")
 	src = strings.TrimRight(src, "\n")
-	if src == "" {
-		return ""
+	if strings.TrimSpace(src) == "" {
+		return nil
 	}
 	lines := strings.Split(src, "\n")
-	var b strings.Builder
+	var out []block
 	for i := 0; i < len(lines); {
 		line := lines[i]
 		if isFence(line) {
 			body, next := consumeFence(lines, i)
-			writeBlock(&b, "<pre><code>"+html.EscapeString(body)+"</code></pre>")
+			out = append(out, block{html: "<pre><code>" + html.EscapeString(body) + "</code></pre>"})
 			i = next
 			continue
 		}
 		if level, text, ok := heading(line); ok {
 			tag := "h" + strconv.Itoa(level)
-			writeBlock(&b, "<"+tag+">"+inlineMD(text)+"</"+tag+">")
+			out = append(out, block{html: "<" + tag + ">" + inlineMD(text) + "</" + tag + ">"})
 			i++
 			continue
 		}
 		if text, ok := ulItem(line); ok {
 			var items []string
 			items, i = consumeList(lines, i, ulItem)
-			writeList(&b, "ul", append([]string{text}, items...))
+			out = append(out, listBlock("ul", append([]string{text}, items...)))
 			continue
 		}
 		if text, ok := olItem(line); ok {
 			var items []string
 			items, i = consumeList(lines, i, olItem)
-			writeList(&b, "ol", append([]string{text}, items...))
+			out = append(out, listBlock("ol", append([]string{text}, items...)))
 			continue
 		}
 		if strings.TrimSpace(line) == "" {
@@ -56,52 +62,22 @@ func mdSubsetToHTML(src string) string {
 		}
 		var para []string
 		para, i = consumeParagraph(lines, i)
-		writeBlock(&b, "<p>"+inlineMD(strings.Join(para, "<br>"))+"</p>")
+		for j, l := range para {
+			para[j] = inlineMD(l)
+		}
+		out = append(out, block{html: strings.Join(para, "<br>"), para: true})
 	}
-	return b.String()
+	return out
 }
 
-// plainTextToHTML escapes plain text and keeps its layout: blank lines
-// become paragraphs and single newlines become <br>. Outlook reply comments
-// and Teams messages otherwise collapse newlines into one line.
-func plainTextToHTML(src string) string {
-	src = strings.ReplaceAll(src, "\r\n", "\n")
+func listBlock(tag string, items []string) block {
 	var b strings.Builder
-	for _, block := range strings.Split(src, "\n\n") {
-		block = strings.Trim(block, "\n")
-		if strings.TrimSpace(block) == "" {
-			continue
-		}
-		lines := strings.Split(block, "\n")
-		for i, l := range lines {
-			lines[i] = html.EscapeString(l)
-		}
-		writeBlock(&b, "<p>"+strings.Join(lines, "<br>")+"</p>")
-	}
-	return b.String()
-}
-
-func writeBlock(b *strings.Builder, s string) {
-	if b.Len() > 0 {
-		b.WriteByte('\n')
-	}
-	b.WriteString(s)
-}
-
-func writeList(b *strings.Builder, tag string, items []string) {
-	var inner strings.Builder
-	inner.WriteByte('<')
-	inner.WriteString(tag)
-	inner.WriteByte('>')
+	b.WriteString("<" + tag + ">")
 	for _, it := range items {
-		inner.WriteString("<li>")
-		inner.WriteString(inlineMD(it))
-		inner.WriteString("</li>")
+		b.WriteString("<li>" + inlineMD(it) + "</li>")
 	}
-	inner.WriteString("</")
-	inner.WriteString(tag)
-	inner.WriteByte('>')
-	writeBlock(b, inner.String())
+	b.WriteString("</" + tag + ">")
+	return block{html: b.String()}
 }
 
 func isFence(line string) bool {
@@ -192,30 +168,35 @@ func consumeParagraph(lines []string, i int) ([]string, int) {
 	return para, i
 }
 
+// inlineMD renders one line: code spans verbatim (escaped), then links
+// and bold on escaped text.
 func inlineMD(s string) string {
-	s = applyLinks(s)
-	return reBold.ReplaceAllString(s, "<strong>$1</strong>")
+	var b strings.Builder
+	last := 0
+	for _, m := range reCode.FindAllStringSubmatchIndex(s, -1) {
+		b.WriteString(applyLinks(s[last:m[0]]))
+		b.WriteString("<code>" + html.EscapeString(s[m[2]:m[3]]) + "</code>")
+		last = m[1]
+	}
+	b.WriteString(applyLinks(s[last:]))
+	return b.String()
 }
 
 func applyLinks(s string) string {
-	matches := reLink.FindAllStringSubmatchIndex(s, -1)
-	if matches == nil {
-		return s
-	}
 	var b strings.Builder
 	last := 0
-	for _, m := range matches {
+	for _, m := range reLink.FindAllStringSubmatchIndex(s, -1) {
 		if m[0] > 0 && s[m[0]-1] == '!' {
 			continue
 		}
-		b.WriteString(s[last:m[0]])
-		b.WriteString(`<a href="`)
-		b.WriteString(html.EscapeString(s[m[4]:m[5]]))
-		b.WriteString(`">`)
-		b.WriteString(s[m[2]:m[3]])
-		b.WriteString(`</a>`)
+		b.WriteString(boldText(s[last:m[0]]))
+		b.WriteString(`<a href="` + html.EscapeString(s[m[4]:m[5]]) + `">` + boldText(s[m[2]:m[3]]) + `</a>`)
 		last = m[1]
 	}
-	b.WriteString(s[last:])
+	b.WriteString(boldText(s[last:]))
 	return b.String()
+}
+
+func boldText(s string) string {
+	return reBold.ReplaceAllString(html.EscapeString(s), "<strong>$1</strong>")
 }

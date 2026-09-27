@@ -1,0 +1,5 @@
+Line with trailing spaces   
+ 
+	
+Next paragraph after whitespace-only lines.
+Windows line ending.

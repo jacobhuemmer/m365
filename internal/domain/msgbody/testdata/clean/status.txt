@@ -1,0 +1,13 @@
+Hi team,
+
+The change is in UAT.
+Rollback is the previous chart.
+
+
+Costs < 5% & latency is flat; "quoted" and 'single' are fine.
+
+- one dash line is fine
+  indented line
+
+Thanks,
+Mason

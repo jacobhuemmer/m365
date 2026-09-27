@@ -13,6 +13,8 @@ type World struct {
 	Code int
 	Out  string
 	Err  string
+	// Sent counts messages the last command delivered to the fake store.
+	Sent int
 }
 
 type Step struct {

@@ -45,7 +45,8 @@ func TestHumanOutputKeepsHTMLCharacters(t *testing.T) {
 	if code := Run([]string{"m365", "--human", "teams", "send", "chat-1", "--text", "<b>&", "--dry-run"}, d); code != 0 {
 		t.Fatalf("exit %d: %s", code, errw.String())
 	}
-	want := "{\n  \"attachments\": [],\n  \"chat_id\": \"chat-1\",\n  \"dry_run\": true,\n  \"text\": \"<b>&\"\n}\n"
+	want := "{\n  \"attachments\": [],\n  \"chat_id\": \"chat-1\",\n  \"dry_run\": true,\n  \"format_problems\": [],\n" +
+		"  \"rendered\": {\n    \"content_type\": \"html\",\n    \"content\": \"<p>&lt;b&gt;&amp;</p>\"\n  },\n  \"text\": \"<b>&\"\n}\n"
 	if out.String() != want {
 		t.Fatalf("--human\ngot  %q\nwant %q", out.String(), want)
 	}
