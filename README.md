@@ -114,7 +114,9 @@ m365 mail send --to you@example.com --subject 'Status' --body 'In UAT.' --dry-ru
 m365 mail send --note-to-self --body 'Remember this.' --dry-run
 ```
 
-HTML mail (paragraphs, lists, links): `--html` and a real HTML `--body`. Replies with `--html` go out as HTML, not a jammed comment.
+HTML mail (paragraphs, lists, links): `--html` and a real HTML `--body`, or `--format md`. Replies with `--html` go out as HTML, not a jammed comment.
+
+Add `--preview` to see the message as a text box before sending (never sends). A send whose body has format problems (broken HTML, leftover markdown, literal `\n`) fails with exit 3; `--dry-run` lists them.
 
 ### Teams
 
