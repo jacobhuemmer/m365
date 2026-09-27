@@ -204,7 +204,7 @@
 
 ### Scaffold and tests for User Story 3 (MANDATORY)
 
-- [ ] T043 [US3] SCAFFOLD: add `Text(content string, width int) string` returning `""` in internal/domain/msgbody/text.go, and `drawPreview(headers []string, body string, problems msgbody.Problems, width int) string` returning `""` and `termWidth(w io.Writer) int` returning `0` in internal/adapters/cli/preview.go; SCAFFOLD commit
+- [X] T043 [US3] SCAFFOLD: add `Text(content string, width int) string` returning `""` in internal/domain/msgbody/text.go, and `drawPreview(headers []string, body string, problems msgbody.Problems, width int) string` returning `""` and `termWidth(w io.Writer) int` returning `0` in internal/adapters/cli/preview.go; SCAFFOLD commit
 - [ ] T044 [P] [US3] Write RED table tests in internal/domain/msgbody/text_test.go for `Text`, covering every row of the "Body approximation" table in contracts/preview.md:
   - Paragraphs and `<br><br>` → a blank line.
   - `•` bullets and numbered lists.

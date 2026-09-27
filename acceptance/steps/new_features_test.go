@@ -13,6 +13,8 @@ var newFeatures = []string{
 	"../../features/teams/teams-rendered.feature",
 	"../../features/mail/mail-format-check.feature",
 	"../../features/teams/teams-format-check.feature",
+	"../../features/mail/mail-preview.feature",
+	"../../features/teams/teams-preview.feature",
 }
 
 func TestNewFeatureStepsMatchHandlers(t *testing.T) {
