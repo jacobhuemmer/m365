@@ -2,6 +2,7 @@ package msgbody
 
 import (
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -18,18 +19,24 @@ const excerptLen = 40
 // LintSubject checks a mail subject for leftover markdown, literal
 // escape sequences, and newlines.
 func LintSubject(subject string) Problems {
-	out := textProblems(subject, true, "subject: ")
-	if strings.ContainsAny(subject, "\r\n") {
-		out = append(out, Problem{Rule: RuleNewlineInSubject, Detail: "subject"})
+	located := locatedTextProblems(subject, true, "subject: ")
+	if at := strings.IndexAny(subject, "\r\n"); at >= 0 {
+		located = append(located, locatedProblem{Problem{Rule: RuleNewlineInSubject, Detail: "subject"}, at})
 	}
-	return out
+	return byOffset(located)
 }
 
 // textProblems applies rules 4 and 5 to visible text. lineStart says
 // whether s begins a line, for the markdown-heading check.
 func textProblems(s string, lineStart bool, prefix string) Problems {
-	var out Problems
-	for _, lp := range locatedTextProblems(s, lineStart, prefix) {
+	return byOffset(locatedTextProblems(s, lineStart, prefix))
+}
+
+// byOffset returns the problems in the order they occur in the text.
+func byOffset(located []locatedProblem) Problems {
+	sort.SliceStable(located, func(i, j int) bool { return located[i].off < located[j].off })
+	out := make(Problems, 0, len(located))
+	for _, lp := range located {
 		out = append(out, lp.Problem)
 	}
 	return out

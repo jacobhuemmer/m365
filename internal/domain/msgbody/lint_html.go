@@ -2,7 +2,6 @@ package msgbody
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
 	"golang.org/x/net/html"
@@ -55,13 +54,6 @@ type linter struct {
 	seqs  []position
 }
 
-// position orders problems: the token where a problem starts, then the
-// byte offset within buffered text.
-type position struct{ tok, off int }
-
-// textSeg maps a byte offset in the pending text to its source token.
-type textSeg struct{ off, tok int }
-
 // Lint checks a rendered body against the format rules
 // (contracts/format-rules.md) and lists problems in document order.
 func Lint(content string) Problems {
@@ -95,24 +87,6 @@ func (l *linter) add(rule, detail string) {
 func (l *linter) addAt(pos position, rule, detail string) {
 	l.out = append(l.out, Problem{Rule: rule, Detail: detail})
 	l.seqs = append(l.seqs, pos)
-}
-
-// ordered returns the problems sorted by the token where each starts;
-// problems from the same token keep the order they were found in.
-func (l *linter) ordered() Problems {
-	idx := make([]int, len(l.out))
-	for i := range idx {
-		idx[i] = i
-	}
-	sort.SliceStable(idx, func(a, b int) bool {
-		pa, pb := l.seqs[idx[a]], l.seqs[idx[b]]
-		return pa.tok < pb.tok || (pa.tok == pb.tok && pa.off < pb.off)
-	})
-	out := make(Problems, 0, len(l.out))
-	for _, i := range idx {
-		out = append(out, l.out[i])
-	}
-	return out
 }
 
 func (l *linter) start(tok html.Token, selfClosing bool) {
