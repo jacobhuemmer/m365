@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -76,6 +77,14 @@ func RunFeature(t *testing.T, path string) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// A step with no handler used to pass silently (SDO-566). Check the
+	// whole feature first and report every unmatched step at once.
+	if missing := unmatchedSteps(feat); len(missing) > 0 {
+		for _, m := range missing {
+			t.Errorf("%s: no step handler: %s", path, m)
+		}
+		t.FailNow()
+	}
 	for _, scn := range feat.Scenarios {
 		t.Run(scn.Name, func(t *testing.T) {
 			w := &World{T: t}
@@ -89,16 +98,32 @@ func RunFeature(t *testing.T, path string) {
 }
 
 func dispatch(w *World, text string) error {
+	if h, ok := handlerFor(text); ok {
+		return h(w, text)
+	}
+	return fmt.Errorf("no step handler for %q", text)
+}
+
+// handlerFor finds the first handler whose prefix starts the step text.
+func handlerFor(text string) (Handler, bool) {
 	for _, h := range handlers {
-		if strings.HasPrefix(text, h.prefix) || text == h.prefix {
-			return h.fn(w, text)
+		if strings.HasPrefix(text, h.prefix) {
+			return h.fn, true
 		}
 	}
-	return nil
+	return nil, false
 }
 
 // unmatchedSteps lists each step in feat that has no registered handler,
 // as "scenario: Kind text".
 func unmatchedSteps(feat Feature) []string {
-	return nil
+	var out []string
+	for _, scn := range feat.Scenarios {
+		for _, st := range scn.Steps {
+			if _, ok := handlerFor(st.Text); !ok {
+				out = append(out, scn.Name+": "+st.Kind+" "+st.Text)
+			}
+		}
+	}
+	return out
 }
