@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"regexp"
-	"slices"
 	"strings"
 )
 
@@ -25,24 +24,28 @@ var (
 
 // redact removes secrets from text written to stderr or MCP. JSON is
 // redacted inside its string values so it stays valid JSON. When JSON
-// lines are mixed with plain lines, each line is handled on its own;
-// all-plain text is redacted as a whole, so a match may span lines.
+// object or array lines are mixed with plain lines, each JSON line is
+// handled on its own and each run of adjacent plain lines is redacted as
+// one text, so a secret split across plain lines is still found.
 func redact(s string) string {
 	if isJSON(s) {
 		return redactJSONStrings(s)
 	}
-	lines := strings.SplitAfter(s, "\n")
-	if !slices.ContainsFunc(lines, isJSON) {
-		return secretRE.ReplaceAllString(s, "[redacted]")
+	var b, plain strings.Builder
+	flush := func() {
+		b.WriteString(secretRE.ReplaceAllString(plain.String(), "[redacted]"))
+		plain.Reset()
 	}
-	for i, l := range lines {
-		if isJSON(l) {
-			lines[i] = redactJSONStrings(l)
-		} else {
-			lines[i] = secretRE.ReplaceAllString(l, "[redacted]")
+	for _, line := range strings.SplitAfter(s, "\n") {
+		if !isJSONLine(line) {
+			plain.WriteString(line)
+			continue
 		}
+		flush()
+		b.WriteString(redactJSONStrings(line))
 	}
-	return strings.Join(lines, "")
+	flush()
+	return b.String()
 }
 
 func redactAny(v any) any { return v }
@@ -50,6 +53,13 @@ func redactAny(v any) any { return v }
 func isJSON(s string) bool {
 	t := strings.TrimSpace(s)
 	return t != "" && json.Valid([]byte(t))
+}
+
+// isJSONLine reports a JSON object or array on one line. Scalars such as
+// "true" or "42" stay plain text, so they never split a plain run.
+func isJSONLine(s string) bool {
+	t := strings.TrimSpace(s)
+	return (strings.HasPrefix(t, "{") || strings.HasPrefix(t, "[")) && json.Valid([]byte(t))
 }
 
 // redactJSONStrings rewrites only the string literals that hold a secret,
