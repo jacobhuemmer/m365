@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "m365/006/json-dry-run",
+  "title": "Dry-run output for mail send, mail reply, teams send",
+  "description": "Existing dry-run fields are unchanged; rendered and format_problems are added. Through MCP, rendered.content is exact except where secret redaction replaces token-like text with [redacted].",
+  "type": "object",
+  "required": ["dry_run", "attachments", "rendered", "format_problems"],
+  "properties": {
+    "dry_run": { "const": true },
+    "to": { "description": "mail send: recipient list (null for reply). teams send: present only with --to", "type": ["array", "string", "null"] },
+    "subject": { "type": "string" },
+    "body": { "description": "mail send/reply: raw input, unchanged", "type": "string" },
+    "text": { "description": "teams send: raw input, unchanged", "type": "string" },
+    "chat_id": { "description": "teams send only", "type": "string" },
+    "attachments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "size"],
+        "properties": { "name": { "type": "string" }, "size": { "type": "integer" } }
+      }
+    },
+    "rendered": {
+      "type": "object",
+      "required": ["content_type", "content"],
+      "additionalProperties": false,
+      "properties": {
+        "content_type": { "const": "html" },
+        "content": { "description": "Exact delivered body; for mail reply, the exact comment string", "type": "string" }
+      }
+    },
+    "format_problems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rule", "detail"],
+        "additionalProperties": false,
+        "properties": {
+          "rule": {
+            "enum": [
+              "tag-not-allowed", "attribute-not-allowed", "broken-html", "leftover-markdown",
+              "literal-escape", "extra-blank-lines", "link-scheme", "newline-in-subject"
+            ]
+          },
+          "detail": { "type": "string" }
+        }
+      }
+    }
+  }
+}
