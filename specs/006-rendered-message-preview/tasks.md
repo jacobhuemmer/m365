@@ -340,6 +340,7 @@ No scaffold: these tests go through `Run`, and the `MD` field they use was added
   - The stderr `\u003c` escaping (T070, scenario 4) is gone on `main` (#18); quickstart and format-rules.md now show literal `<p>`.
   - The temporary step-match guard (T014 `Matches`, T021 `new_features_test.go`, T023) is removed: `main`'s runner fails on any unmatched step (SDO-566, #19). The namespace prefix on the six feature files is removed too: the generator names tests by path (#17). `bcc07ef`.
   - `TestHumanOutputKeepsHTMLCharacters` (#18) predates this feature's dry-run fields; its expected `--human` output gained `format_problems` and `rendered` (owner-approved change to a locked test, in the merge commit).
+- Codex review of PR #20 (all six findings reproduced, then fixed test-first): preview panic on a link spanning `<br>`; raw terminal control characters in the preview; box width with wide characters; markdown split by inline tags passing lint; `--json --preview=true` not rejected; stray disallowed end tag not reported as disallowed. Adds `golang.org/x/text` v0.41.0 (v0.42.0 needs go 1.26). One owner-approved correction to a just-committed RED expectation (`TestTextWrapsByDisplayWidth`).
 - Dependency versions (T037, T051):
   - `golang.org/x/net` v0.58.0 (T037). v0.59.0 would raise go.mod's `go` line to 1.26.0; v0.58.0 is the newest that keeps `go 1.25.0`. It brings `golang.org/x/sys` v0.41.0 → v0.47.0 (indirect).
   - `golang.org/x/term` v0.45.0 (T051). v0.46.0 would raise the `go` line to 1.26.0.

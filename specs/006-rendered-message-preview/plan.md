@@ -14,7 +14,7 @@ Move body rendering (plain → HTML, markdown subset → HTML) out of the Graph 
 
 **Language/Version**: Go, module `github.com/masonhuemmer/m365` (`go 1.25.0`, toolchain `go1.26.6`; Go 1.27.1 installed at `/opt/homebrew/bin/go`).
 
-**Primary Dependencies**: Existing stdlib + `flag`. New: `golang.org/x/net/html` (v0.59.0 at plan time) for the lint tokenizer and preview text; `golang.org/x/term` (v0.46.0) for terminal width. `golang.org/x/sys` is already an indirect dependency. No markdown library, no terminal UI library.
+**Primary Dependencies**: Existing stdlib + `flag`. New: `golang.org/x/net/html` (v0.59.0 at plan time) for the lint tokenizer and preview text; `golang.org/x/term` (v0.46.0) for terminal width. Added during PR review: `golang.org/x/text/width` (v0.41.0) for terminal column widths of wide characters. `golang.org/x/sys` is already an indirect dependency. No markdown library, no terminal UI library.
 
 **Storage**: N/A. No new files at runtime.
 
