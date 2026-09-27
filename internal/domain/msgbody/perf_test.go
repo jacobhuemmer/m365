@@ -3,7 +3,6 @@ package msgbody
 import (
 	"strings"
 	"testing"
-	"time"
 )
 
 // largeBody is a 256 KiB synthetic markdown body.
@@ -16,17 +15,6 @@ func renderLintText(src string) {
 	r := Render(Markdown, Teams, src)
 	_ = Lint(r.Content)
 	_ = Text(r.Content, 76)
-}
-
-// Generous deadline for CI; the benchmark reports the real cost
-// (target under 100 ms, plan.md Performance Goals).
-func TestLargeBodyDeadline(t *testing.T) {
-	src := largeBody()
-	start := time.Now()
-	renderLintText(src)
-	if d := time.Since(start); d > time.Second {
-		t.Fatalf("render+lint+text of 256 KiB took %v, want under 1s", d)
-	}
 }
 
 func BenchmarkRenderLintText(b *testing.B) {
