@@ -124,7 +124,9 @@ func isStep(line string) bool {
 	return false
 }
 
-var unsupportedKeywords = []string{"Background:", "Scenario Outline:", "Scenario Template:", "Examples:", "Scenarios:", "Rule:"}
+// Keywords and step arguments (doc strings, data tables) the runner cannot
+// run. Tags (@) and comments (#) carry no instructions and stay ignored.
+var unsupportedKeywords = []string{"Background:", "Scenario Outline:", "Scenario Template:", "Examples:", "Scenarios:", "Rule:", `"""`, "```", "|"}
 
 func unsupported(line string) bool {
 	for _, k := range unsupportedKeywords {
