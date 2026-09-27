@@ -1,0 +1,32 @@
+#!/bin/sh
+set -eu
+cd "$(dirname "$0")/.."
+# Constitution II: a source file over 250 lines needs a refactoring note in
+# the plan; over 500 it must be split. Notes are the "- `path`: ..." lines
+# under "### File-size notes" in specs/001-m365-cli/plan.md. A note for a
+# file that is now 250 lines or fewer, or gone, is stale and must go.
+notes_file=specs/001-m365-cli/plan.md
+mkdir -p build/filesize
+go list -f '{{$d := .Dir}}{{range .GoFiles}}{{$d}}/{{.}}{{"\n"}}{{end}}' ./... |
+  sed "s|^$PWD/||" | sort > build/filesize/files.txt
+awk '/^### File-size notes/{on=1; next} on && /^#/{on=0} on && /^- `[^`]*\.go`/{
+  sub(/^- `/, ""); sub(/`.*/, ""); print }' "$notes_file" | sort > build/filesize/notes.txt
+fail=0
+while IFS= read -r f; do
+  n=$(wc -l < "$f" | tr -d ' ')
+  if [ "$n" -gt 500 ]; then
+    echo "filesize: $f has $n lines (> 500); split it" >&2
+    fail=1
+  elif [ "$n" -gt 250 ] && ! grep -qxF "$f" build/filesize/notes.txt; then
+    echo "filesize: $f has $n lines (> 250); split it or add a note under '### File-size notes' in $notes_file" >&2
+    fail=1
+  fi
+done < build/filesize/files.txt
+while IFS= read -r f; do
+  if [ ! -f "$f" ] || [ "$(wc -l < "$f" | tr -d ' ')" -le 250 ]; then
+    echo "filesize: note for $f is stale (file gone or 250 lines or fewer); remove it from $notes_file" >&2
+    fail=1
+  fi
+done < build/filesize/notes.txt
+[ "$fail" -eq 0 ] || exit 1
+echo "filesize: ok ($(wc -l < build/filesize/files.txt | tr -d ' ') files, $(wc -l < build/filesize/notes.txt | tr -d ' ') noted)"

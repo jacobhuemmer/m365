@@ -1,4 +1,4 @@
-.PHONY: gomod fmt vet unit race coverage gosec govulncheck acceptance acceptance-mutation crap verify install
+.PHONY: gomod filesize fmt vet unit race coverage gosec govulncheck acceptance acceptance-mutation crap verify install
 
 TOOLS_BIN := $(shell pwd)/.tools/bin
 # Run every target with the toolchain CI uses (go.mod's toolchain line),
@@ -13,6 +13,9 @@ PKGS := $(shell GOTOOLCHAIN=$(GOTOOLCHAIN) go list ./... | grep -v '/acceptance/
 
 gomod:
 	sh scripts/gomod.sh
+
+filesize:
+	sh scripts/filesize.sh
 
 fmt:
 	@test -z "$$(gofmt -l . | grep -v /acceptance/generated/)"
@@ -44,7 +47,7 @@ acceptance-mutation:
 crap:
 	sh scripts/crap.sh
 
-verify: gomod fmt vet unit race coverage gosec govulncheck acceptance crap
+verify: gomod filesize fmt vet unit race coverage gosec govulncheck acceptance crap
 
 install:
 	go install ./cmd/m365

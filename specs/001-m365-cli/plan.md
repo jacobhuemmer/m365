@@ -191,6 +191,15 @@ Production token store: T099 — `internal/adapters/keychain/keyring.go` via `gi
 - **Retirement**: Phase 14+ and any new slice (including T124–T126) MUST use a RED commit then a GREEN commit. This exception MUST NOT be cited as precedent.
 - **Human approval**: 2026-09-16, analyze remediation (C1).
 
+### File-size notes
+
+Constitution II: a source file over 250 lines needs a refactoring note here; over 500 it must be split. `scripts/filesize.sh` (in `make verify`) fails on a file over 250 lines without a note below, on any file over 500, and on a stale note. Retirement for every note: split the file the next time a change touches it, then delete its note.
+
+- `internal/adapters/graph/memory.go`: the in-memory fake store for mail and Teams together (calendar and files are already in `memory_cal.go` and `memory_files.go`). Split into `memory_mail.go` and `memory_teams.go`, keeping `Seed` and `Memory` here.
+- `internal/app/mail/watch.go`: the mail watch use case plus its classification-input and revision-state helpers. Move classification normalisation (`buildClassificationInput`, the `normalize*` and `truncateUTF` helpers) and revision bookkeeping (`normalizeRevisionState`, `touchRevision`, `pruneRevisions`) into their own files.
+- `acceptance/steps/mail_watch_steps.go`: mail watch acceptance steps for both plain watch and response classification. Split the classification steps into `mail_classify_steps.go`.
+- `internal/adapters/graph/httpmail.go`: the shared Graph HTTP client (`bearer`, `request`, `do`, paging tokens) plus the mail read calls. Move the client and paging helpers into `httpclient.go`.
+
 ### EX-EC-001 — CRAP baseline for functions that predate a working gate
 
 - **Principle**: Engineering Constraints — quality gates MUST block; the complexity/CRAP gate fails on CRAP > 15 unless justified (`crap:` target above).
