@@ -35,7 +35,7 @@ func TestCrapScoreRoundsUp(t *testing.T) {
 }
 
 // Functions with the same name in one file (several init funcs) get
-// their own baseline keys, numbered by score, highest first.
+// their own baseline keys, numbered by position in the file.
 func TestSameNameFunctionsAreNumbered(t *testing.T) {
 	in := "4 p init f.go:3:1\n10 p init f.go:20:1\n2 p other f.go:40:1\n"
 	fns, err := parseCyclo(strings.NewReader(in), nil)
@@ -46,11 +46,11 @@ func TestSameNameFunctionsAreNumbered(t *testing.T) {
 	for _, f := range fns {
 		names = append(names, f.Name)
 	}
-	if want := []string{"init#2", "init", "other"}; !reflect.DeepEqual(names, want) {
+	if want := []string{"init", "init#2", "other"}; !reflect.DeepEqual(names, want) {
 		t.Fatalf("names %v want %v", names, want)
 	}
 	got := check(fns, map[string]float64{"f.go init": 110}, 15)
-	want := []violation{{Kind: "new", File: "f.go", Name: "init#2", Score: 20}}
+	want := []violation{{Kind: "new", File: "f.go", Name: "init#2", Score: 110}}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("a second init must not share the first one's entry: got %+v", got)
 	}
@@ -61,5 +61,22 @@ func TestParseBaselineRejectsNonFiniteScores(t *testing.T) {
 		if _, err := parseBaseline(strings.NewReader(line)); err == nil {
 			t.Errorf("want an error for %q", line)
 		}
+	}
+}
+
+// Codex review of PR #22 (round 2): a same-name function that rises must
+// fail even if another one drops, so numbers must not follow scores.
+func TestSameNameRiseCannotSwapNumbers(t *testing.T) {
+	baseline := map[string]float64{"f.go init": 110, "f.go init#2": 20}
+	// init (first) dropped to 20; init#2 (second) rose to 90.
+	in := "20 p init f.go:3:1\n9 p init f.go:20:1\n"
+	cover := map[string]float64{"f.go:3": 1.0, "f.go:20": 0} // scores 20 and 90
+	fns, err := parseCyclo(strings.NewReader(in), cover)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := check(fns, baseline, 15)
+	if len(got) != 1 || got[0].Kind != "rose" || got[0].Name != "init#2" {
+		t.Fatalf("want init#2 to fail as rose; got %+v (scores %+v)", got, fns)
 	}
 }
