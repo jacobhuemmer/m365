@@ -75,7 +75,9 @@ func StringWidth(s string) int {
 }
 
 func runeWidth(r rune) int {
-	if unicode.Is(unicode.Mn, r) || unicode.Is(unicode.Me, r) {
+	// Combining marks and format characters (zero-width space, joiners,
+	// byte-order mark, bidi controls) take no column.
+	if unicode.In(r, unicode.Mn, unicode.Me, unicode.Cf) {
 		return 0
 	}
 	switch width.LookupRune(r).Kind() {
@@ -85,7 +87,8 @@ func runeWidth(r rune) int {
 	return 1
 }
 
-// SplitWidth cuts s after at most w columns (at least one rune).
+// SplitWidth cuts s after at most w columns. The head always holds at
+// least one rune, so a single rune wider than w is returned whole.
 func SplitWidth(s string, w int) (string, string) {
 	n := 0
 	for i, r := range s {

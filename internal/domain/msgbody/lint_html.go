@@ -2,6 +2,7 @@ package msgbody
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"golang.org/x/net/html"
@@ -46,6 +47,11 @@ type linter struct {
 	// so markdown split by a tag (**bo<strong>ld</strong>**) is still seen.
 	pending      strings.Builder
 	pendingStart bool
+	// tok counts tokens; each problem records the token where it starts
+	// (pendingTok for buffered text) so Lint can return document order.
+	tok        int
+	pendingTok int
+	seqs       []int
 }
 
 // Lint checks a rendered body against the format rules
@@ -54,14 +60,16 @@ func Lint(content string) Problems {
 	l := &linter{lineStart: true}
 	z := html.NewTokenizer(strings.NewReader(content))
 	for {
-		switch tt := z.Next(); tt {
+		tt := z.Next()
+		l.tok++
+		switch tt {
 		case html.ErrorToken:
 			l.flushText()
 			l.endBreaks()
 			for _, o := range l.stack {
 				l.add(RuleBrokenHTML, "unclosed <"+o.name+">")
 			}
-			return l.out
+			return l.ordered()
 		case html.StartTagToken, html.SelfClosingTagToken:
 			l.start(z.Token(), tt == html.SelfClosingTagToken)
 		case html.EndTagToken:
@@ -74,6 +82,22 @@ func Lint(content string) Problems {
 
 func (l *linter) add(rule, detail string) {
 	l.out = append(l.out, Problem{Rule: rule, Detail: detail})
+	l.seqs = append(l.seqs, l.tok)
+}
+
+// ordered returns the problems sorted by the token where each starts;
+// problems from the same token keep the order they were found in.
+func (l *linter) ordered() Problems {
+	idx := make([]int, len(l.out))
+	for i := range idx {
+		idx[i] = i
+	}
+	sort.SliceStable(idx, func(a, b int) bool { return l.seqs[idx[a]] < l.seqs[idx[b]] })
+	out := make(Problems, 0, len(l.out))
+	for _, i := range idx {
+		out = append(out, l.out[i])
+	}
+	return out
 }
 
 func (l *linter) start(tok html.Token, selfClosing bool) {
@@ -148,6 +172,10 @@ func (l *linter) text(s string) {
 		if l.pending.Len() > 0 {
 			l.pending.WriteString(s)
 		}
+		// A newline-only token still starts a new line for the heading rule.
+		if strings.Contains(s, "\n") {
+			l.lineStart = true
+		}
 		return
 	}
 	l.endBreaks()
@@ -155,6 +183,7 @@ func (l *linter) text(s string) {
 	if l.codeDepth == 0 {
 		if l.pending.Len() == 0 {
 			l.pendingStart = l.lineStart
+			l.pendingTok = l.tok
 		}
 		l.pending.WriteString(s)
 	}
@@ -167,7 +196,10 @@ func (l *linter) flushText() {
 	if l.pending.Len() == 0 {
 		return
 	}
-	l.out = append(l.out, textProblems(l.pending.String(), l.pendingStart, "")...)
+	for _, p := range textProblems(l.pending.String(), l.pendingStart, "") {
+		l.out = append(l.out, p)
+		l.seqs = append(l.seqs, l.pendingTok)
+	}
 	l.pending.Reset()
 }
 

@@ -71,8 +71,9 @@ func chunk(s string, n int) []string {
 	return append(out, s)
 }
 
-// visible shows control characters as escapes (ESC as \x1b) so message
-// text cannot recolour or rewrite the terminal; a tab becomes a space.
+// visible shows control characters (ESC as \x1b) and bidi controls
+// (U+202E as \u202e) as escapes, so message text cannot recolour the
+// terminal or reorder how a line reads; a tab becomes a space.
 func visible(s string) string {
 	var b strings.Builder
 	for _, r := range s {
@@ -81,7 +82,7 @@ func visible(s string) string {
 			b.WriteByte(' ')
 		case unicode.IsControl(r) && r < 0x100:
 			fmt.Fprintf(&b, `\x%02x`, r)
-		case unicode.IsControl(r):
+		case unicode.IsControl(r) || unicode.Is(unicode.Bidi_Control, r):
 			fmt.Fprintf(&b, `\u%04x`, r)
 		default:
 			b.WriteRune(r)
