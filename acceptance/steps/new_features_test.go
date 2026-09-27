@@ -11,6 +11,8 @@ import (
 var newFeatures = []string{
 	"../../features/mail/mail-rendered.feature",
 	"../../features/teams/teams-rendered.feature",
+	"../../features/mail/mail-format-check.feature",
+	"../../features/teams/teams-format-check.feature",
 }
 
 func TestNewFeatureStepsMatchHandlers(t *testing.T) {

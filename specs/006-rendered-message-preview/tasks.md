@@ -155,7 +155,7 @@
 
 ### Scaffold and tests for User Story 2 (MANDATORY)
 
-- [ ] T029 [US2] SCAFFOLD: add `Lint(content string) Problems` in internal/domain/msgbody/lint_html.go and `LintSubject(subject string) Problems` in internal/domain/msgbody/lint_text.go, both returning `nil`; SCAFFOLD commit
+- [X] T029 [US2] SCAFFOLD: add `Lint(content string) Problems` in internal/domain/msgbody/lint_html.go and `LintSubject(subject string) Problems` in internal/domain/msgbody/lint_text.go, both returning `nil`; SCAFFOLD commit
 - [ ] T030 [P] [US2] Write RED table tests in internal/domain/msgbody/lint_html_test.go, one pass and one fail case per rule, asserting exact `Problems` (contracts/format-rules.md):
   - Rule 1: `<table>`, `<span>`, `<div>` → `tag-not-allowed`. Every allow-listed tag passes: "`p br h1 h2 h3 ul ol li pre code a strong b em i u s blockquote hr`".
   - Rule 2: `style`/`class` on any tag, and any attribute other than `href` on `a`, → `attribute-not-allowed`.
