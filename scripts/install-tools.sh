@@ -4,10 +4,14 @@ set -eu
 # unclebob/Acceptance-Pipeline-Specification 2026-06-12
 ROOT="$(CDPATH="" cd "$(dirname "$0")/.." && pwd)"
 APS_SHA="accaa33d503340c56513ef387258f8da929ba902"
+# Build tools with the toolchain CI uses (go.mod's toolchain line), so a
+# newer local Go cannot produce tools that behave differently from CI.
+GOTOOLCHAIN="${GOTOOLCHAIN:-$(sed -n 's/^toolchain //p' "$ROOT/go.mod")}"
+export GOTOOLCHAIN
 mkdir -p "$ROOT/.tools/bin"
 GOBIN="$ROOT/.tools/bin"
 export GOBIN
-go install github.com/securego/gosec/v2/cmd/gosec@v2.25.0
+go install github.com/securego/gosec/v2/cmd/gosec@v2.29.0
 go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
 go install github.com/fzipp/gocyclo/cmd/gocyclo@v0.6.0
 if [ -d "$HOME/.local/bin" ]; then

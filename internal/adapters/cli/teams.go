@@ -158,9 +158,10 @@ func teamsWatch(args []string, d Deps, sess domain.Session, format string) int {
 		_ = d.Watch.Save(cp)
 	}
 	if format != "human" {
+		enc := json.NewEncoder(d.Stdout)
+		enc.SetEscapeHTML(false)
 		for _, e := range ev {
-			b, _ := json.Marshal(e)
-			_, _ = d.Stdout.Write(append(b, '\n'))
+			_ = enc.Encode(e)
 		}
 		return domain.ExitOK
 	}

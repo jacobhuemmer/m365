@@ -38,6 +38,7 @@ func init() {
 	runtime.Register("the mail watch command succeeds", mailWatchSucceeds)
 	runtime.Register("the mail watch command is rejected as usage", mailWatchRejectedAsUsage)
 	runtime.Register("no mail change events are emitted", noMailWatchEvents)
+	runtime.Register("no mail watch events are emitted", noMailWatchEvents)
 	runtime.Register("one body-free mail change event is emitted per changed conversation", bodyFreeMailWatchEvents)
 	runtime.Register("one privacy-safe response classification event is emitted per changed conversation", privacySafeClassificationEvents)
 	runtime.Register("response actionability follows the configured threshold", classificationIsActionable)

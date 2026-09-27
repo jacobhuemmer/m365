@@ -172,6 +172,8 @@ sh scripts/install-tools.sh
 make verify
 ```
 
+Both use the Go version on `go.mod`'s `toolchain` line (Go downloads it if needed), so local results match CI. To try a newer installed Go, run with `GOTOOLCHAIN=local`.
+
 ## License
 
 MIT
