@@ -74,7 +74,7 @@ func redactJSONStrings(s string) string {
 		if err := json.Unmarshal([]byte(s[m[0]:m[1]]), &v); err != nil {
 			continue
 		}
-		out := secretRE.ReplaceAllString(v, "[redacted]")
+		out := redactValue(v)
 		if prevEnd >= 0 && secretKeyRE.MatchString(prev) && jsonColonRE.MatchString(s[prevEnd:m[0]]) {
 			out = "[redacted]"
 		}
@@ -88,6 +88,15 @@ func redactJSONStrings(s string) string {
 	}
 	b.WriteString(s[last:])
 	return b.String()
+}
+
+// redactValue redacts one decoded string value. A value that is itself
+// a JSON object or array is redacted as JSON, so it still parses.
+func redactValue(v string) string {
+	if isJSONLine(v) {
+		return redactJSONStrings(v)
+	}
+	return secretRE.ReplaceAllString(v, "[redacted]")
 }
 
 func jsonQuote(s string) string {
