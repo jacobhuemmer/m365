@@ -21,7 +21,7 @@ func TestRedactJSONStaysValid(t *testing.T) {
 		{"secret under a key", `{"access_token":"xyz","n":1}`, `{"access_token":"[redacted]","n":1}`},
 		{"secret under a key with spaces", `{"Refresh_Token" : "xyz"}`, `{"Refresh_Token" : "[redacted]"}`},
 		{"bearer in a value", `{"h":"Bearer abc.def"}`, `{"h":"[redacted]"}`},
-		{"escaped quotes around", `{"b":"say \"access_token=abc\" now"}`, `{"b":"say \"[redacted] now"}`},
+		{"escaped quotes around", `{"b":"say \"access_token=abc\" now"}`, `{"b":"say \"[redacted]\" now"}`},
 		{"json lines", "{\"a\":\"access_token=x1\"}\n{\"a\":\"ok\"}\n", "{\"a\":\"[redacted]\"}\n{\"a\":\"ok\"}\n"},
 		{"indented", "{\n  \"a\": \"access_token=x\"\n}", "{\n  \"a\": \"[redacted]\"\n}"},
 		{"no secret is byte-identical", `{"c":"<p>x</p>","e":"<p>","q":"a\"b"}`, `{"c":"<p>x</p>","e":"<p>","q":"a\"b"}`},
