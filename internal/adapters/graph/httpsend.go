@@ -66,13 +66,21 @@ func (c *HTTPClient) Send(ctx context.Context, in mail.SendInput) (string, error
 }
 
 func (c *HTTPClient) Reply(ctx context.Context, in mail.ReplyInput) (string, error) {
+	atts, err := fileAttachments(in.Files)
+	if err != nil {
+		return "", err
+	}
 	path := "/me/messages/" + url.PathEscape(in.ID) + "/reply"
 	if in.All {
 		path = "/me/messages/" + url.PathEscape(in.ID) + "/replyAll"
 	}
 	// Graph renders comment as HTML above the quoted thread. message.body
 	// would replace the whole reply and drop the thread.
-	if err := c.doJSON(ctx, http.MethodPost, path, map[string]any{"comment": in.Rendered.Content}); err != nil {
+	payload := map[string]any{"comment": in.Rendered.Content}
+	if len(atts) > 0 {
+		payload["message"] = map[string]any{"attachments": atts}
+	}
+	if err := c.doJSON(ctx, http.MethodPost, path, payload); err != nil {
 		return "", err
 	}
 	return "sent", nil
