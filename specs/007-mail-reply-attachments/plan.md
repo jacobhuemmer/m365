@@ -19,13 +19,13 @@ Modify internal/adapters/graph/httpsend.go. Add focused attachment_reply_test.go
 2. Minimal GREEN: call fileAttachments, propagate error, construct comment payload plus optional message.attachments; no message.body/recipient overrides. Read failures send nothing; Graph failures propagate. Update capability docs; keep Teams deferred.
 3. Focused tests and make verify plus make acceptance-mutation. Save reviews and metrics, commit GREEN separately. All automated checks must pass; do not claim recipient delivery from synthetic 202 alone.
 
-## Manual checks pending
-- [ ] Authorized controlled reply and reply-all: recipient receives exact file names/bytes, authored reply, quoted thread and correct recipients. No live send authorization exists yet.
+## Live recipient validation
+- [x] User-authorized self-addressed reply and reply-all: both received files have exact names/bytes, authored text and quoted seed remain, and recipient lists match the test thread. See live-validation.md. Multi-person reply-all and Outlook UI rendering were not exercised.
 
 ## Readiness
-Git identity confirmed repository-locally: Mason Huemmer <49791141+jacobhuemmer@users.noreply.github.com>. Test-only RED locked in 3e9f580; minimal GREEN implemented and automated gates passed. No open local implementation design questions; live service behavior is explicitly pending verification.
+Git identity confirmed repository-locally: Mason Huemmer <49791141+jacobhuemmer@users.noreply.github.com>. Test-only RED locked in 3e9f580; minimal GREEN implemented and automated gates passed. No open local implementation design questions; small-file delivery is now verified live on a self-addressed thread.
 
 ## Results
 Public HTTP, CLI and MCP attachment regressions and dedicated generated acceptance pass. Baseline and GREEN `make verify` plus `make acceptance-mutation` pass; no gate-fix attempts. Zero requests on file-read failure or previews; exactly one POST on success or service rejection. Locked tests/fixtures are unchanged. See tasks.md for commands, RED evidence and review status.
 
-Review result: no required code fixes. One fixture-wording heuristic recorded in QRSPI review report; locked regression tests preserved. Full go test ./... passed after GREEN. Manual recipient checks remain pending.
+Review result: no required code fixes. One fixture-wording heuristic recorded in QRSPI review report; locked regression tests preserved. Full go test ./... passed after GREEN. Self-addressed live recipient checks passed; details and limits in live-validation.md.

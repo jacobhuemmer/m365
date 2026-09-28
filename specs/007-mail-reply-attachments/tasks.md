@@ -17,8 +17,8 @@
 ## Dependencies
 T001–T002 → T003–T005 → T006 RED → T007–T009 GREEN → T010. One vertical mail slice; shared source edits sequential.
 
-## Manual checks pending
-Controlled recipient checks in plan.md await explicit live-send authorization. The mail-only scope does not close the Teams portion of SDO-564.
+## Live recipient validation
+User authorized and completed a controlled self-addressed live test for both reply variants. Downloaded Inbox attachment bytes matched originals; quoted thread and expected recipient lists retained. See live-validation.md for evidence and limits. The mail-only scope does not close the Teams portion of SDO-564.
 
 ## Automated evidence — 2026-09-28
 - T002: Constitution, approved design/structure and TDD references read; baseline `make verify` and `make acceptance-mutation` passed at 9252a31.
@@ -28,3 +28,5 @@ Controlled recipient checks in plan.md await explicit live-send authorization. T
 - T009: Focused regressions, `make verify` and `make acceptance-mutation` passed. No gate-fix attempts required. No diff in locked tests/fixtures from RED commit. Measured zero requests on later file-read failure and previews; exactly one POST on accepted sends and Graph rejection, with no fallback/success on rejection. No-file request remains comment-only.
 - Logs: ignored worktree build/baseline.log, build/baseline-mutation.log, build/reply-red.log, build/reply-acceptance-red.log, build/reply-green.log, build/reply-verify.log and build/reply-mutation.log.
 - T010: Standards and Spec reviews saved to ~/.work/m365/SDO-564-attachment-delivery/reviews/code-review.md; independent critique saved to reviews/code-codex.md. No hard findings. One nonblocking heuristic about keyword-driven acceptance fixture setup retained without modifying locked tests. Parent full `go test ./...` passed. RED 3e9f580; GREEN 5022b63. No live recipient checks performed; synthetic 202 proves request serialization only. Teams portion of SDO-564 remains deferred.
+
+- Live follow-up: both reply and reply-all accepted and received with two attachments. Four downloaded attachment SHA-256 values matched the originals; original thread marker and expected self-addressed recipients verified. No multi-person or large-file test; Teams deferred.
