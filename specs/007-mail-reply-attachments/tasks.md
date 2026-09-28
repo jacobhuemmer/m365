@@ -12,7 +12,7 @@
 - [x] T008 [US1] Update docs/m365.md and internal/adapters/cli/help.go for reply delivery and limits; no Teams changes or live delivery claims.
 - [x] T009 [US1] Run focused tests, make verify and make acceptance-mutation, measure send counts, review diff and confirm locked tests unchanged; separate GREEN commit.
 ## Completion
-- [ ] T010 Save code-review and independent critique, address hard findings, record checks/commit IDs in tasks.md and QRSPI notes.
+- [x] T010 Save code-review and independent critique, address hard findings, record checks/commit IDs in tasks.md and QRSPI notes.
 
 ## Dependencies
 T001–T002 → T003–T005 → T006 RED → T007–T009 GREEN → T010. One vertical mail slice; shared source edits sequential.
@@ -27,4 +27,4 @@ Controlled recipient checks in plan.md await explicit live-send authorization. T
 - T007–T008: Existing fileAttachments encoder reused; all reads precede the sole POST. Only optional message.attachments added alongside comment. No body/recipient overrides, new scopes or Teams edits. Help and contract disclose local limits and service rejection behavior.
 - T009: Focused regressions, `make verify` and `make acceptance-mutation` passed. No gate-fix attempts required. No diff in locked tests/fixtures from RED commit. Measured zero requests on later file-read failure and previews; exactly one POST on accepted sends and Graph rejection, with no fallback/success on rejection. No-file request remains comment-only.
 - Logs: ignored worktree build/baseline.log, build/baseline-mutation.log, build/reply-red.log, build/reply-acceptance-red.log, build/reply-green.log, build/reply-verify.log and build/reply-mutation.log.
-- T010 remains pending independent review and critique. No live recipient checks performed; synthetic 202 proves request serialization only. Teams portion of SDO-564 remains deferred.
+- T010: Standards and Spec reviews saved to ~/.work/m365/SDO-564-attachment-delivery/reviews/code-review.md; independent critique saved to reviews/code-codex.md. No hard findings. One nonblocking heuristic about keyword-driven acceptance fixture setup retained without modifying locked tests. Parent full `go test ./...` passed. RED 3e9f580; GREEN 5022b63. No live recipient checks performed; synthetic 202 proves request serialization only. Teams portion of SDO-564 remains deferred.
