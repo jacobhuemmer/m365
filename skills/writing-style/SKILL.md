@@ -51,7 +51,9 @@ preamble. Times carry a timezone (`3:30 PM CT`, `15:00 UTC`).
 
 1. Greeting on a new mail or a cold thread: `Hi Sam,` / `Hi team,` /
    `Hi all,` / `Hi there,` (unknown vendor). Skip it on a fast
-   back-and-forth that already dropped greetings.
+   back-and-forth that already dropped greetings. The greeting is always
+   on its own line, followed by a blank line, then the body. Never
+   `Hi Sam, the build is green.` on one line.
 2. The answer or the ask in the first sentence.
 3. One or two sentences of reason, a link, or a ticket. Bullets only
    when there are real items (bucket names, owner+action). An owner
@@ -63,7 +65,8 @@ preamble. Times carry a timezone (`3:30 PM CT`, `15:00 UTC`).
    <first name>
    ```
    That is the close. Not `Best,` `Kind regards,` `Thanks so much,` or a
-   signature block.
+   signature block. Every new mail ends with it, including a long
+   write-up; never end on the bare first name.
 
 Keep it under ~80 words unless they asked for a write-up. A whole mail
 can be `See attachment.` plus the close. A correction can be `Ignore my
