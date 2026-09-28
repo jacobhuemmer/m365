@@ -79,7 +79,9 @@ Optional: --all --attach (repeatable) --html --format md --dry-run --preview
 --preview shows the message as text in a box and never sends; not with --json.
 Plain text keeps paragraphs and line breaks. --html sends the body as HTML unchanged.
 Both go in the Graph reply comment, so the quoted thread stays below.
-Attachment caps: 10 MiB per file, 10 files.
+--attach includes local files on reply and --all; all files are read before sending.
+Unreadable files or Graph rejection fail without a text-only fallback.
+Attachment caps: 10 MiB per file, 10 files (local limits; Graph may reject the payload).
 Output modes: --json (default) --human
 `
 

@@ -1,0 +1,2 @@
+# Reply attachment contract
+POST existing /me/messages/{escaped-id}/reply or /replyAll. JSON: comment contains existing Rendered.Content; optional message contains attachments only. Each attachment uses #microsoft.graph.fileAttachment, name and base64 contentBytes. No-files request remains comment-only. All file reads precede HTTP. Failed read: usage/no POST; Graph failure: existing mapped error/no success. Success remains sent result after accepted POST; acceptance is not recipient delivery proof. No extra scopes, draft/recipient overrides or text-only fallback.
