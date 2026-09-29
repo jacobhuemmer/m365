@@ -141,7 +141,9 @@ func filesDelete(args []string, d Deps, sess domain.Session, format string) int 
 	fsset := flag.NewFlagSet("files delete", flag.ContinueOnError)
 	fsset.SetOutput(d.Stderr)
 	dry := fsset.Bool("dry-run", false, "")
-	_ = parseMixed(fsset, args[1:])
+	if err := parseMixed(fsset, args[1:]); err != nil {
+		return fail(d, domain.Usage(err.Error()))
+	}
 	if err := files.Delete(ctx(), d.Files, sess, id, *dry); err != nil {
 		return fail(d, err)
 	}
