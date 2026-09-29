@@ -86,3 +86,15 @@ func TestExactRecipientIDRequiresIdentifiableSelfMember(t *testing.T) {
 		t.Fatalf("self member ID matched despite unknown account mapping: %v", err)
 	}
 }
+
+func TestExactRecipientIDMatchesAddresslessMemberWhenSelfIdentified(t *testing.T) {
+	otherID := "01234567-89ab-cdef-0123-456789abcdef"
+	st := &chatMem{chats: []domain.Chat{{ID: "chat-1", Type: "oneOnOne", Members: []domain.Person{
+		{ID: "fedcba98-7654-3210-fedc-ba9876543210", Address: "self@example.com"},
+		{ID: otherID},
+	}}}}
+	sess := domain.Session{SignedIn: true, SessionUsable: true, TeamsConsented: true, Account: "self@example.com"}
+	if _, err := Send(context.Background(), st, sess, SendInput{To: otherID, Text: "ping", ExactRecipient: true, DryRun: true}); err != nil {
+		t.Fatalf("addressless member ID not matched: %v", err)
+	}
+}

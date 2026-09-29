@@ -11,6 +11,7 @@ import (
 
 	"github.com/masonhuemmer/m365/internal/app/mail"
 	"github.com/masonhuemmer/m365/internal/app/teams"
+	"github.com/masonhuemmer/m365/internal/domain/msgbody"
 )
 
 func TestHTTPSendUsesFakeServer(t *testing.T) {
@@ -68,37 +69,27 @@ func captureJSONServer(t *testing.T) (*httptest.Server, *capturedPOST) {
 }
 
 func TestHTTPTeamsSendTextHTMLMDPayloads(t *testing.T) {
+	// The app layer renders; the adapter sends Rendered as-is and ignores
+	// the raw Text and its mode flags (approved locked-test change, T003b).
 	md := "Hello.\n\n- one\n- two\n\nSee [docs](https://example.com).\n\n```\ncode\n```\n"
 	cases := []struct {
-		name        string
-		in          teams.SendInput
-		wantType    string
-		wantContent string
-		wantHTML    bool
+		name string
+		in   teams.SendInput
 	}{
 		{
-			name:        "text keeps line breaks as html",
-			in:          teams.SendInput{ChatID: "chat-1", Text: "SDO-559: approve?\n\nRollback is removing it.\nThanks"},
-			wantType:    "html",
-			wantContent: "<p>SDO-559: approve?</p>\n<p>Rollback is removing it.<br>Thanks</p>",
+			name: "text keeps line breaks as html",
+			in: teams.SendInput{ChatID: "chat-1", Text: "SDO-559: approve?\n\nRollback is removing it.\nThanks",
+				Rendered: msgbody.Rendered{ContentType: "html", Content: "<p>SDO-559: approve?<br><br>Rollback is removing it.<br>Thanks</p>"}},
 		},
 		{
-			name:        "html",
-			in:          teams.SendInput{ChatID: "chat-1", Text: "<p>hi</p>", HTML: true},
-			wantType:    "html",
-			wantContent: "<p>hi</p>",
+			name: "html",
+			in: teams.SendInput{ChatID: "chat-1", Text: "<p>hi</p>", HTML: true,
+				Rendered: msgbody.Rendered{ContentType: "html", Content: "<p>hi</p>"}},
 		},
 		{
-			name:     "md",
-			in:       teams.SendInput{ChatID: "chat-1", Text: md, MD: true},
-			wantType: "html",
-			wantHTML: true,
-		},
-		{
-			name:        "html wins over md",
-			in:          teams.SendInput{ChatID: "chat-1", Text: "<p>already</p>", HTML: true, MD: true},
-			wantType:    "html",
-			wantContent: "<p>already</p>",
+			name: "md",
+			in: teams.SendInput{ChatID: "chat-1", Text: md, MD: true,
+				Rendered: msgbody.Render(msgbody.Markdown, msgbody.Teams, md)},
 		},
 	}
 	for _, tc := range cases {
@@ -115,20 +106,11 @@ func TestHTTPTeamsSendTextHTMLMDPayloads(t *testing.T) {
 				t.Fatalf("path %s", cap.Path)
 			}
 			body, _ := cap.Body["body"].(map[string]any)
-			if body["contentType"] != tc.wantType {
-				t.Fatalf("contentType %v want %s", body["contentType"], tc.wantType)
+			if body["contentType"] != "html" {
+				t.Fatalf("contentType %v want html", body["contentType"])
 			}
-			content, _ := body["content"].(string)
-			if tc.wantHTML {
-				for _, want := range []string{"<p>Hello.</p>", "<ul>", "<a href=\"https://example.com\">docs</a>", "<pre><code>code</code></pre>"} {
-					if !strings.Contains(content, want) {
-						t.Fatalf("md content missing %q: %q", want, content)
-					}
-				}
-				return
-			}
-			if content != tc.wantContent {
-				t.Fatalf("content %q want %q", content, tc.wantContent)
+			if body["content"] != tc.in.Rendered.Content {
+				t.Fatalf("content %q want %q", body["content"], tc.in.Rendered.Content)
 			}
 		})
 	}
@@ -142,12 +124,14 @@ func TestHTTPMailReplyKeepsQuotedThread(t *testing.T) {
 	}{
 		{
 			name: "plain text becomes html comment",
-			in:   mail.ReplyInput{ID: "msg-1", Body: "Hi all,\n\nNot DNS.\n- Iulia: retry.\n\nThanks,\nMason"},
+			in: mail.ReplyInput{ID: "msg-1", Body: "Hi all,\n\nNot DNS.\n- Iulia: retry.\n\nThanks,\nMason",
+				Rendered: msgbody.Rendered{ContentType: "html", Content: "<p>Hi all,</p>\n<p>Not DNS.<br>- Iulia: retry.</p>\n<p>Thanks,<br>Mason</p>"}},
 			want: "<p>Hi all,</p>\n<p>Not DNS.<br>- Iulia: retry.</p>\n<p>Thanks,<br>Mason</p>",
 		},
 		{
 			name: "html goes in comment unchanged",
-			in:   mail.ReplyInput{ID: "msg-1", Body: "<p>hello</p>", HTML: true},
+			in: mail.ReplyInput{ID: "msg-1", Body: "<p>hello</p>", HTML: true,
+				Rendered: msgbody.Rendered{ContentType: "html", Content: "<p>hello</p>"}},
 			want: "<p>hello</p>",
 		},
 	}

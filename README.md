@@ -4,7 +4,7 @@ A command-line tool for **your** Microsoft 365 account: Outlook, Teams, calendar
 
 JSON on stdout by default. Add `--human` if you want plain text. Writes stay dry-run until you drop `--dry-run` (or, for agents, set `write_opt_in`).
 
-Current release: **0.1.1**.
+Current release: **0.2.1**.
 
 ## Install
 
@@ -13,7 +13,7 @@ Current release: **0.1.1**.
 ```sh
 brew tap jacobhuemmer/tap
 brew install m365
-m365 --version    # 0.1.1
+m365 --version    # 0.2.1
 ```
 
 Upgrade later with `brew update && brew upgrade m365`.
@@ -114,7 +114,9 @@ m365 mail send --to you@example.com --subject 'Status' --body 'In UAT.' --dry-ru
 m365 mail send --note-to-self --body 'Remember this.' --dry-run
 ```
 
-HTML mail (paragraphs, lists, links): `--html` and a real HTML `--body`. Replies with `--html` go out as HTML, not a jammed comment.
+HTML mail (paragraphs, lists, links): `--html` and a real HTML `--body`, or `--format md`. Replies with `--html` go out as HTML, not a jammed comment.
+
+Add `--preview` to see the message as a text box before sending (never sends). A send whose body has format problems (broken HTML, leftover markdown, literal `\n`) fails with exit 3; `--dry-run` lists them.
 
 ### Teams
 
@@ -182,6 +184,8 @@ Full CLI contract for agents: [docs/m365.md](docs/m365.md).
 sh scripts/install-tools.sh
 make verify
 ```
+
+Both use the Go version on `go.mod`'s `toolchain` line (Go downloads it if needed), so local results match CI. To try a newer installed Go, run with `GOTOOLCHAIN=local`.
 
 ## License
 

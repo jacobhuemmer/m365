@@ -65,6 +65,9 @@ func Run(args []string, d Deps) int {
 	if human && jsonOn {
 		return fail(d, domain.Usage("use only one of --json or --human"))
 	}
+	if jsonOn && previewRequested(rest) {
+		return fail(d, domain.Usage("use only one of --preview or --json"))
+	}
 	format := "json"
 	if human {
 		format = "human"
@@ -139,7 +142,9 @@ func fail(d Deps, err error) int {
 	if de, ok := err.(*domain.Error); ok {
 		hint = de.Hint
 	}
-	_ = json.NewEncoder(d.Stderr).Encode(errObj{Class: cls, Message: redact(msg), Hint: redact(hint)})
+	enc := json.NewEncoder(d.Stderr)
+	enc.SetEscapeHTML(false)
+	_ = enc.Encode(errObj{Class: cls, Message: redact(msg), Hint: redact(hint)})
 	return code
 }
 
@@ -188,6 +193,7 @@ func readBody(flagVal, fileVal string, stdin io.Reader) (string, error) {
 func humanize(v any) string {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
 	enc.SetIndent("", "  ")
 	_ = enc.Encode(v)
 	return strings.TrimSpace(buf.String())
@@ -204,7 +210,7 @@ var boolFlags = map[string]bool{
 	"--all": true, "--include-system": true, "--help": true, "-h": true,
 	"--json": true, "--human": true, "--verbose": true, "--debug": true,
 	"--bodies": true, "--group": true, "--include-existing": true, "--classify": true,
-	"--version": true, "--note-to-self": true, "--exact-recipient": true,
+	"--version": true, "--note-to-self": true, "--preview": true, "--exact-recipient": true,
 }
 
 func parseMixed(fsset *flag.FlagSet, args []string) error {

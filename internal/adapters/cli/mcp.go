@@ -178,6 +178,8 @@ func toolErr(err error) *mcp.CallToolResult {
 		hint = de.Hint
 	}
 	var buf bytes.Buffer
-	_ = json.NewEncoder(&buf).Encode(errObj{Class: cls, Message: redact(msg), Hint: redact(hint)})
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	_ = enc.Encode(errObj{Class: cls, Message: redact(msg), Hint: redact(hint)})
 	return &mcp.CallToolResult{IsError: true, Content: []mcp.Content{&mcp.TextContent{Text: strings.TrimSpace(buf.String())}}}
 }

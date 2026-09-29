@@ -103,11 +103,16 @@ func teamsSend(args []string, d Deps, sess domain.Session, format string) int {
 	html := fsset.Bool("html", false, "")
 	formatmd := fsset.String("format", "", "")
 	dry := fsset.Bool("dry-run", false, "")
+	preview := fsset.Bool("preview", false, "")
 	note := fsset.Bool("note-to-self", false, "")
 	var attach []string
 	fsset.Func("attach", "", func(s string) error { attach = append(attach, s); return nil })
 	if err := parseMixed(fsset, args); err != nil {
 		return fail(d, domain.Usage(err.Error()))
+	}
+	md, err := markdownFlag(*html, *formatmd)
+	if err != nil {
+		return fail(d, err)
 	}
 	body, err := readBody(*text, *textFile, d.Stdin)
 	if err != nil {
@@ -118,10 +123,13 @@ func teamsSend(args []string, d Deps, sess domain.Session, format string) int {
 		return fail(d, err)
 	}
 	out, err := teams.SendMapped(ctx(), d.Teams, d.ChatMap, sess, teams.SendInput{
-		ChatID: fsset.Arg(0), To: *to, Text: body, HTML: *html, MD: *formatmd == "md", DryRun: *dry, NoteToSelf: *note, ExactRecipient: *exactRecipient, Files: files,
+		ChatID: fsset.Arg(0), To: *to, Text: body, HTML: *html, MD: md, DryRun: *dry || *preview, NoteToSelf: *note, ExactRecipient: *exactRecipient, Files: files,
 	})
 	if err != nil {
 		return fail(d, err)
+	}
+	if *preview {
+		return writePreview(d, teamsPreviewHeaders(out, files), out)
 	}
 	return success(d, format, out)
 }
@@ -151,9 +159,10 @@ func teamsWatch(args []string, d Deps, sess domain.Session, format string) int {
 		_ = d.Watch.Save(cp)
 	}
 	if format != "human" {
+		enc := json.NewEncoder(d.Stdout)
+		enc.SetEscapeHTML(false)
 		for _, e := range ev {
-			b, _ := json.Marshal(e)
-			_, _ = d.Stdout.Write(append(b, '\n'))
+			_ = enc.Encode(e)
 		}
 		return domain.ExitOK
 	}
