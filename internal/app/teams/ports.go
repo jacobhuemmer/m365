@@ -200,11 +200,14 @@ func findExactRecipient(ctx context.Context, st Store, sess domain.Session, reci
 					break
 				}
 			}
+			if !selfIdentified {
+				continue
+			}
 			for _, member := range chat.Members {
-				if sess.Account != "" && strings.EqualFold(member.Address, sess.Account) {
+				if strings.EqualFold(member.Address, sess.Account) {
 					continue
 				}
-				if strings.EqualFold(member.Address, recipient) || selfIdentified && strings.EqualFold(member.ID, recipient) {
+				if strings.EqualFold(member.Address, recipient) || strings.EqualFold(member.ID, recipient) {
 					if found.ID != "" && found.ID != chat.ID {
 						return domain.Chat{}, domain.Usage("several exact recipient chats; pass a chat id")
 					}

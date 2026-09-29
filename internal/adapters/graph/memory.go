@@ -260,7 +260,7 @@ func seedChats(c1 domain.Chat) []domain.Chat {
 		})
 	}
 	return append(chats,
-		domain.Chat{ID: "chat-ajay", Type: "oneOnOne", Members: []domain.Person{{Name: "Ajay Kumar", Address: "ajay@example.com"}}},
+		domain.Chat{ID: "chat-ajay", Type: "oneOnOne", Members: []domain.Person{{Name: "Ajay Kumar", Address: "ajay@example.com"}, {Name: "Test User", Address: "user@example.com"}}},
 		domain.Chat{ID: "chat-group-ajay", Type: "group", Topic: "Project", Members: []domain.Person{{Name: "Ajay Kumar", Address: "ajay@example.com"}, {Name: "Other"}}},
 		domain.Chat{ID: "chat-noc-dev", Type: "group", Topic: "NOC-Dev", Members: []domain.Person{{Name: "Ops"}}},
 	)
