@@ -44,36 +44,51 @@ func (p MCPPolicy) check(in *runIn) error {
 	if !p.ExactRecipients || !isWrite(ns, in.Verb) {
 		return nil
 	}
-	if ns == "mail" && in.Verb == "reply" {
-		if all, exists := in.Flags["all"]; exists && all != nil && all != false && all != "false" {
-			return domain.Usage("--all is not permitted with --exact-recipients")
-		}
+	switch {
+	case ns == "mail" && in.Verb == "reply":
+		return checkReplyAll(in.Flags)
+	case in.Verb != "send":
 		return nil
+	case ns == "mail":
+		return checkMailSend(in.Flags)
 	}
-	if in.Verb != "send" {
-		return nil
+	return checkTeamsSend(ns, in)
+}
+
+func checkReplyAll(flags map[string]any) error {
+	if all, exists := flags["all"]; exists && all != nil && all != false && all != "false" {
+		return domain.Usage("--all is not permitted with --exact-recipients")
 	}
-	if ns == "mail" {
-		for flag, value := range in.Flags {
-			switch flag {
-			case "to", "cc":
-				values, ok := recipientValues(value)
-				if !ok {
-					return domain.Usagef("--%s requires an exact email", flag)
-				}
-				for _, recipient := range values {
-					if !isEmail(recipient) {
-						return domain.Usagef("--%s requires an exact email", flag)
-					}
-				}
-			default:
-				if recipientShapedFlag(flag) {
-					return domain.Usagef("unknown recipient flag --%s", flag)
-				}
+	return nil
+}
+
+func checkMailSend(flags map[string]any) error {
+	for flag, value := range flags {
+		if flag == "to" || flag == "cc" {
+			if !allEmails(value) {
+				return domain.Usagef("--%s requires an exact email", flag)
 			}
+		} else if recipientShapedFlag(flag) {
+			return domain.Usagef("unknown recipient flag --%s", flag)
 		}
-		return nil
 	}
+	return nil
+}
+
+func allEmails(value any) bool {
+	values, ok := recipientValues(value)
+	if !ok {
+		return false
+	}
+	for _, recipient := range values {
+		if !isEmail(recipient) {
+			return false
+		}
+	}
+	return true
+}
+
+func checkTeamsSend(ns string, in *runIn) error {
 	to, exists := in.Flags["to"]
 	if !exists {
 		return nil
