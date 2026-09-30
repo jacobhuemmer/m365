@@ -43,6 +43,14 @@ jobs:
           choco pack $nuspec --outputdirectory out
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Smoke test
+        shell: pwsh
+        run: |
+          choco install m365 --source "$PWD/out" --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
+          $out = & m365 --version
+          if ($LASTEXITCODE -ne 0 -or "$out" -notmatch [regex]::Escape($env:VERSION)) { throw "unexpected version output: $out" }
       - name: Push
         if: ${{ inputs.push }}
         shell: pwsh
