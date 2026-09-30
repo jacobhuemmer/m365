@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/masonhuemmer/m365/internal/domain"
 )
@@ -15,6 +16,11 @@ type FileStore struct {
 func LiveSessionPath() string {
 	if d := os.Getenv("XDG_STATE_HOME"); d != "" {
 		return filepath.Join(d, "m365", "session.json")
+	}
+	if runtime.GOOS == "windows" {
+		if d := os.Getenv("LOCALAPPDATA"); d != "" {
+			return filepath.Join(d, "m365", "session.json")
+		}
 	}
 	home, _ := os.UserHomeDir()
 	return filepath.Join(home, ".local", "state", "m365", "session.json")
@@ -36,12 +42,19 @@ func (f *FileStore) Put(blob Blob) error {
 	if err := os.MkdirAll(filepath.Dir(f.Path), 0o700); err != nil {
 		return domain.Auth("could not save session")
 	}
+	if err := restrictToOwner(filepath.Dir(f.Path)); err != nil {
+		return domain.Auth("could not restrict session directory")
+	}
 	b, err := json.Marshal(blob)
 	if err != nil {
 		return domain.Auth("could not save session")
 	}
 	if err := os.WriteFile(f.Path, b, 0o600); err != nil {
 		return domain.Auth("could not save session")
+	}
+	if err := restrictToOwner(f.Path); err != nil {
+		_ = os.Remove(f.Path)
+		return domain.Auth("could not restrict session file")
 	}
 	return nil
 }
