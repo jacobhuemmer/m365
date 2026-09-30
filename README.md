@@ -73,6 +73,23 @@ If `XDG_CONFIG_HOME` is set, use `$XDG_CONFIG_HOME/m365/config.json` instead.
 
 Alternatively, export `M365_CLIENT_ID` and `M365_TENANT_ID` in your shell; these override the values in `config.json`. The CLI does not automatically load `.env` files.
 
+### Windows paths
+
+`~` means `%USERPROFILE%` (usually `C:\Users\<name>`). Create the config folder in PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.config\m365"
+```
+
+Then put `config.json` in `%USERPROFILE%\.config\m365\` (or `%XDG_CONFIG_HOME%\m365\` if you set it). Setting `M365_CLIENT_ID` and `M365_TENANT_ID` as environment variables works too and needs no file.
+
+| What | Where on Windows |
+|---|---|
+| Config | `%USERPROFILE%\.config\m365\config.json` |
+| Tokens | Windows Credential Manager |
+| Session file (used when the token is too big for Credential Manager, which limits a secret to 2,560 bytes) | `%LOCALAPPDATA%\m365\session.json`, readable only by you |
+| Watch, mail-watch and chat-map state | `%USERPROFILE%\.local\state\m365\` (or `%XDG_STATE_HOME%\m365\`) |
+
 Then, in a real terminal (browser login):
 
 ```sh
