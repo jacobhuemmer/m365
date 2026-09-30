@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -39,7 +40,7 @@ func TestFallbackPutUsesFileWhenKeychainTooBig(t *testing.T) {
 		t.Fatalf("got ok=%v err=%v len=%d", ok, err, len(got.AccessToken))
 	}
 	st, err := os.Stat(path)
-	if err != nil || st.Mode().Perm() != 0o600 {
+	if err != nil || runtime.GOOS != "windows" && st.Mode().Perm() != 0o600 {
 		t.Fatalf("session file: %v", err)
 	}
 }
@@ -60,7 +61,7 @@ func TestFallbackPutUsesFileWhenSecretsServiceFails(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if st.Mode().Perm() != 0o600 {
+	if runtime.GOOS != "windows" && st.Mode().Perm() != 0o600 {
 		t.Fatalf("mode %o", st.Mode().Perm())
 	}
 }
