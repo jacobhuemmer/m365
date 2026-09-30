@@ -22,6 +22,9 @@ func prepareFiles(ctx context.Context, st Store, sess domain.Session, in *SendIn
 	if err != nil {
 		return err
 	}
+	if len(chat.Members) == 0 {
+		return domain.Usage("could not read the chat members, so nobody could open the files; nothing was uploaded or sent")
+	}
 	for _, member := range chat.Members {
 		if sess.Account != "" && strings.EqualFold(member.Address, sess.Account) {
 			continue

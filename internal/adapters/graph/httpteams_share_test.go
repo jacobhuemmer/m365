@@ -139,3 +139,19 @@ func TestHTTPTeamsSendWithoutRecipientsSkipsInvite(t *testing.T) {
 		}
 	}
 }
+
+// Graph returns no members from /me/chats/{id} unless they are expanded, and the
+// share list is built from them.
+func TestHTTPTeamsGetChatExpandsMembers(t *testing.T) {
+	var query string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		query = r.URL.RawQuery
+		_, _ = w.Write([]byte(`{"id":"c","chatType":"group","members":[{"userId":"u1","displayName":"Ajay","email":"ajay@example.com"}]}`))
+	}))
+	defer srv.Close()
+	c := &HTTPTeams{HTTPClient: &HTTPClient{Base: srv.URL, Token: "fake-both", Client: srv.Client()}}
+	chat, err := c.GetChat(context.Background(), "c")
+	if err != nil || !strings.Contains(query, "$expand=members") || len(chat.Members) != 1 {
+		t.Fatalf("query=%q members=%v err=%v", query, chat.Members, err)
+	}
+}

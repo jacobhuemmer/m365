@@ -54,6 +54,14 @@ func TestSendWithFilesFailsBeforeSendWhenMemberHasNoEmail(t *testing.T) {
 	}
 }
 
+func TestSendWithFilesFailsWhenChatMembersUnknown(t *testing.T) {
+	st := chatOf()
+	_, err := Send(context.Background(), st, selfSess(), SendInput{ChatID: "c", Text: "t", Files: pdf})
+	if domain.ExitOf(err) != domain.ExitUsage || st.sent != 0 {
+		t.Fatalf("err=%v sent=%d", err, st.sent)
+	}
+}
+
 func TestSendWithFilesToNotesSharesWithNobody(t *testing.T) {
 	st := &stub{}
 	if _, err := Send(context.Background(), &notesStub{st}, selfSess(), SendInput{ChatID: SelfChatID, Text: "t", Files: pdf}); err != nil {
