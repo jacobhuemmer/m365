@@ -158,7 +158,9 @@ func calendarDelete(args []string, d Deps, sess domain.Session, format string) i
 	fsset.SetOutput(d.Stderr)
 	dry := fsset.Bool("dry-run", false, "")
 	id := args[0]
-	_ = parseMixed(fsset, args[1:])
+	if err := parseMixed(fsset, args[1:]); err != nil {
+		return fail(d, domain.Usage(err.Error()))
+	}
 	if err := calendar.Delete(ctx(), d.Calendar, sess, id, *dry); err != nil {
 		return fail(d, err)
 	}

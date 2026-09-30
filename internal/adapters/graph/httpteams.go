@@ -65,7 +65,7 @@ func (c *HTTPTeams) GetChat(ctx context.Context, id string) (domain.Chat, error)
 func mapGraphChat(g graphChat) domain.Chat {
 	c := domain.Chat{ID: g.ID, Topic: g.Topic, Type: g.ChatType}
 	for _, m := range g.Members {
-		c.Members = append(c.Members, domain.Person{Name: m.DisplayName, Address: m.Email})
+		c.Members = append(c.Members, domain.Person{ID: m.UserID, Name: m.DisplayName, Address: m.Email})
 	}
 	return c
 }
@@ -121,6 +121,7 @@ type graphChat struct {
 	Members  []graphMember `json:"members"`
 }
 type graphMember struct {
+	UserID      string `json:"userId"`
 	DisplayName string `json:"displayName"`
 	Email       string `json:"email"`
 }

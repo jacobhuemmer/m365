@@ -23,14 +23,15 @@ type MessageQuery struct {
 }
 
 type SendInput struct {
-	ChatID     string
-	To         string
-	Text       string
-	HTML       bool
-	MD         bool
-	DryRun     bool
-	NoteToSelf bool
-	Files      []domain.OutboundFile
+	ChatID         string
+	To             string
+	Text           string
+	HTML           bool
+	MD             bool
+	DryRun         bool
+	NoteToSelf     bool
+	ExactRecipient bool
+	Files          []domain.OutboundFile
 	// Rendered is the delivered body, set by SendMapped. Stores send it as-is.
 	Rendered msgbody.Rendered
 }
@@ -114,28 +115,11 @@ func SendMapped(ctx context.Context, st Store, m ChatMap, sess domain.Session, i
 		return nil, domain.Usage("use --to or a chat id, not both")
 	}
 	if in.To != "" {
-		q, err := ParseQuery(in.To, false)
+		id, err := resolveRecipient(ctx, st, m, sess, in)
 		if err != nil {
 			return nil, err
 		}
-		r, err := FindMapped(ctx, st, m, sess, q, 0)
-		if err != nil {
-			return nil, err
-		}
-		if r.Incomplete {
-			return nil, domain.Usage("chat search incomplete")
-		}
-		if r.Count == 0 {
-			return nil, domain.NotFound("no matching chat")
-		}
-		if r.Count > 1 {
-			ids := make([]string, 0, r.Count)
-			for _, c := range r.Items {
-				ids = append(ids, c.ID)
-			}
-			return nil, domain.Usagef("several matches (%s); pass a chat id", strings.Join(ids, ", "))
-		}
-		in.ChatID = r.Items[0].ID
+		in.ChatID = id
 	}
 	if in.ChatID == "" || in.Text == "" {
 		return nil, domain.Usage("chat id and text are required")
