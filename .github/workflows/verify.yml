@@ -37,11 +37,9 @@ jobs:
         run: make verify
 
   # Windows is a release target (see .goreleaser.yaml) but the gates above are
-  # sh scripts, so this job only builds and runs the tests. Non-blocking until
-  # it has been green; then drop continue-on-error to make it a gate.
+  # sh scripts, so this job only builds and runs the tests.
   windows:
     runs-on: windows-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
