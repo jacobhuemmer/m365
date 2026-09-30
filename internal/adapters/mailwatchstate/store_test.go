@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/masonhuemmer/m365/internal/domain"
@@ -44,11 +45,11 @@ func TestFileStateIsolatesAccountAndFolderWithProtectedModes(t *testing.T) {
 	}
 
 	fileInfo, err := os.Stat(path)
-	if err != nil || fileInfo.Mode().Perm() != 0o600 {
+	if err != nil || runtime.GOOS != "windows" && fileInfo.Mode().Perm() != 0o600 {
 		t.Fatalf("file mode = %v, %v", fileInfo.Mode().Perm(), err)
 	}
 	dirInfo, err := os.Stat(filepath.Dir(path))
-	if err != nil || dirInfo.Mode().Perm() != 0o700 {
+	if err != nil || runtime.GOOS != "windows" && dirInfo.Mode().Perm() != 0o700 {
 		t.Fatalf("directory mode = %v, %v", dirInfo.Mode().Perm(), err)
 	}
 }

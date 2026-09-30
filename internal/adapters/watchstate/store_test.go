@@ -3,6 +3,7 @@ package watchstate
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/masonhuemmer/m365/internal/domain"
@@ -21,7 +22,7 @@ func TestCheckpoint0600NoBodies(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if st.Mode().Perm() != 0o600 {
+	if runtime.GOOS != "windows" && st.Mode().Perm() != 0o600 {
 		t.Fatalf("mode %v", st.Mode().Perm())
 	}
 	b, _ := os.ReadFile(p)
