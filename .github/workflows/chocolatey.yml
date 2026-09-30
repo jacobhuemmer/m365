@@ -1,0 +1,53 @@
+name: chocolatey
+
+# Publishes the Windows build of an existing GitHub release to Chocolatey.
+# release.yml calls this after GoReleaser; run it by hand to (re)publish a tag.
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+      push:
+        type: boolean
+        default: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, for example v0.3.0
+        type: string
+        required: true
+      push:
+        description: Push to Chocolatey (off = pack only)
+        type: boolean
+        default: false
+
+jobs:
+  chocolatey:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pack
+        shell: pwsh
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          $version = $env:TAG.TrimStart('v')
+          $url = "https://github.com/jacobhuemmer/m365/releases/download/v$version/m365_${version}_windows_amd64.zip"
+          Invoke-WebRequest $url -OutFile m365.zip
+          $sha = (Get-FileHash m365.zip -Algorithm SHA256).Hash
+          $install = 'packaging/chocolatey/tools/chocolateyinstall.ps1'
+          (Get-Content $install -Raw).Replace('__URL__', $url).Replace('__CHECKSUM__', $sha) | Set-Content $install -NoNewline
+          $nuspec = 'packaging/chocolatey/m365.nuspec'
+          (Get-Content $nuspec -Raw).Replace('__VERSION__', $version) | Set-Content $nuspec -NoNewline
+          choco pack $nuspec --outputdirectory out
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Push
+        if: ${{ inputs.push }}
+        shell: pwsh
+        env:
+          CHOCOLATEY_API_KEY: ${{ secrets.CHOCOLATEY_API_KEY }}
+        run: |
+          choco push "out/m365.$env:VERSION.nupkg" --source https://push.chocolatey.org/ --api-key $env:CHOCOLATEY_API_KEY
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
