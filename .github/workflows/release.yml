@@ -40,3 +40,10 @@ jobs:
           max-versions-to-keep: 5
           fork-user: jacobhuemmer
           token: ${{ secrets.WINGET_TOKEN }}
+
+  chocolatey:
+    needs: goreleaser
+    uses: ./.github/workflows/chocolatey.yml
+    with:
+      tag: ${{ github.ref_name }}
+    secrets: inherit

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- __VERSION__ is filled in by .github/workflows/chocolatey.yml. -->
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>m365</id>
+    <version>__VERSION__</version>
+    <title>m365</title>
+    <authors>Mason Huemmer</authors>
+    <owners>jacobhuemmer</owners>
+    <projectUrl>https://github.com/jacobhuemmer/m365</projectUrl>
+    <packageSourceUrl>https://github.com/jacobhuemmer/m365/tree/main/packaging/chocolatey</packageSourceUrl>
+    <projectSourceUrl>https://github.com/jacobhuemmer/m365</projectSourceUrl>
+    <bugTrackerUrl>https://github.com/jacobhuemmer/m365/issues</bugTrackerUrl>
+    <licenseUrl>https://github.com/jacobhuemmer/m365/blob/main/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <releaseNotes>https://github.com/jacobhuemmer/m365/releases/tag/v__VERSION__</releaseNotes>
+    <tags>m365 microsoft-365 outlook teams calendar onedrive graph cli mcp</tags>
+    <summary>Microsoft 365 CLI for one signed-in user</summary>
+    <description>
+m365 is a command-line client for Microsoft 365 (mail, Teams chats, calendar and OneDrive files) for one signed-in user. It also serves an MCP server (`m365 mcp serve`) so agents can use it, with write guards such as `--read-only`, `--allow` and `--exact-recipients`.
+
+Sign in once with `m365 auth login`. Writes are dry-run unless you opt in.
+    </description>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
