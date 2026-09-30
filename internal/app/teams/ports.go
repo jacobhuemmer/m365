@@ -97,6 +97,19 @@ func Messages(ctx context.Context, st Store, sess domain.Session, q MessageQuery
 	return st.Messages(ctx, q)
 }
 
+// checkFiles validates --attach files. Teams file sharing (upload plus a chat
+// reference) is not implemented, so a live send with files fails instead of
+// posting text only and reporting success; dry-run still previews them.
+func checkFiles(in SendInput) error {
+	if err := domain.ValidateOutbound(in.Files); err != nil {
+		return err
+	}
+	if len(in.Files) > 0 && !in.DryRun {
+		return &domain.Error{Class: domain.ClassUsage, Message: "teams send does not support --attach yet", Hint: "nothing was sent; share a OneDrive link in the message text, or drop --attach"}
+	}
+	return nil
+}
+
 func Send(ctx context.Context, st Store, sess domain.Session, in SendInput) (any, error) {
 	return SendMapped(ctx, st, nil, sess, in)
 }
@@ -124,7 +137,7 @@ func SendMapped(ctx context.Context, st Store, m ChatMap, sess domain.Session, i
 	if in.ChatID == "" || in.Text == "" {
 		return nil, domain.Usage("chat id and text are required")
 	}
-	if err := domain.ValidateOutbound(in.Files); err != nil {
+	if err := checkFiles(in); err != nil {
 		return nil, err
 	}
 	in.Rendered = msgbody.Render(msgbody.ModeFor(in.HTML, in.MD), msgbody.Teams, in.Text)
