@@ -123,5 +123,6 @@ Optional: --attach (repeatable) --html --format md --dry-run --preview --note-to
 Plain text keeps paragraphs and line breaks (sent as HTML).
 --format md converts a markdown subset to HTML (headings, **bold**, lists, links, inline code in backticks, fenced code). --html posts the body as HTML already. Not both.
 --to and chat id together exit 3. Attachment caps: 10 MiB per file, 10 files.
+--attach previews with --dry-run only; a live send with --attach exits 3 and sends nothing (Teams file sharing is not supported yet).
 Output modes: --json (default) --human
 `
