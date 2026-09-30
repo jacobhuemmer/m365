@@ -50,7 +50,7 @@ func (c *HTTPTeams) ListChats(ctx context.Context, top int, page string) (domain
 }
 
 func (c *HTTPTeams) GetChat(ctx context.Context, id string) (domain.Chat, error) {
-	res, err := c.do(ctx, http.MethodGet, "/me/chats/"+url.PathEscape(id))
+	res, err := c.do(ctx, http.MethodGet, "/me/chats/"+url.PathEscape(id)+"?$expand=members")
 	if err != nil {
 		return domain.Chat{}, err
 	}
