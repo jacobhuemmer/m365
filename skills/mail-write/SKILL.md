@@ -19,4 +19,10 @@ MCP (flags.body string, not body-file=-):
   m365_run namespace=mail verb=send flags to=you@example.com subject=Status html=true body='<p>The change is in UAT.</p><ul><li>Rollback is the previous chart.</li></ul>'
   m365_run namespace=mail verb=reply args=[MESSAGE_ID] flags html=true body='<p>Agreed.</p><p>I will update the ticket.</p>'
 
+Attach local files with --attach PATH, repeatable, on mail send and mail reply (10 MiB per file, 10 files; missing, empty or oversize files exit 3 and send nothing). Dry-run lists each file's name and size, so check it before the real send.
+
+  mail send --to you@example.com --subject 'Report' --body 'Report attached.' --attach ~/report.pdf --dry-run
+
+MCP: flags attach=[/path/report.pdf]. Paths are local to the machine running m365.
+
 Happy-path examples stay dry-run (write_opt_in false). MCP writes dry-run unless write_opt_in is true.
