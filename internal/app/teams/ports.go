@@ -31,7 +31,9 @@ type SendInput struct {
 	DryRun         bool
 	NoteToSelf     bool
 	ExactRecipient bool
-	Files          []domain.OutboundFile
+	// ShareWith lists who must be able to open Files: the chat members but the sender.
+	ShareWith []string
+	Files     []domain.OutboundFile
 	// Rendered is the delivered body, set by SendMapped. Stores send it as-is.
 	Rendered msgbody.Rendered
 }
@@ -97,19 +99,6 @@ func Messages(ctx context.Context, st Store, sess domain.Session, q MessageQuery
 	return st.Messages(ctx, q)
 }
 
-// checkFiles validates --attach files. Teams file sharing (upload plus a chat
-// reference) is not implemented, so a live send with files fails instead of
-// posting text only and reporting success; dry-run still previews them.
-func checkFiles(in SendInput) error {
-	if err := domain.ValidateOutbound(in.Files); err != nil {
-		return err
-	}
-	if len(in.Files) > 0 && !in.DryRun {
-		return &domain.Error{Class: domain.ClassUsage, Message: "teams send does not support --attach yet", Hint: "nothing was sent; share a OneDrive link in the message text, or drop --attach"}
-	}
-	return nil
-}
-
 func Send(ctx context.Context, st Store, sess domain.Session, in SendInput) (any, error) {
 	return SendMapped(ctx, st, nil, sess, in)
 }
@@ -137,7 +126,7 @@ func SendMapped(ctx context.Context, st Store, m ChatMap, sess domain.Session, i
 	if in.ChatID == "" || in.Text == "" {
 		return nil, domain.Usage("chat id and text are required")
 	}
-	if err := checkFiles(in); err != nil {
+	if err := prepareFiles(ctx, st, sess, &in); err != nil {
 		return nil, err
 	}
 	in.Rendered = msgbody.Render(msgbody.ModeFor(in.HTML, in.MD), msgbody.Teams, in.Text)
@@ -146,18 +135,7 @@ func SendMapped(ctx context.Context, st Store, m ChatMap, sess domain.Session, i
 	}
 	problems := msgbody.Lint(in.Rendered.Content)
 	if in.DryRun {
-		atts := []map[string]any{}
-		for _, f := range in.Files {
-			atts = append(atts, map[string]any{"name": f.Name, "size": f.Size})
-		}
-		out := map[string]any{
-			"dry_run": true, "chat_id": in.ChatID, "text": in.Text, "attachments": atts,
-			"rendered": in.Rendered, "format_problems": problems,
-		}
-		if in.To != "" {
-			out["to"] = in.To
-		}
-		return out, nil
+		return dryRunResult(in, problems), nil
 	}
 	if err := problems.Err(); err != nil {
 		return nil, err

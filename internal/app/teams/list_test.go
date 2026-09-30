@@ -13,6 +13,7 @@ type stub struct {
 	msgs  domain.ChatMessagePage
 	err   error
 	sent  int
+	last  SendInput
 }
 
 func (s *stub) ListChats(context.Context, int, string) (domain.ChatPage, error) {
@@ -22,7 +23,11 @@ func (s *stub) GetChat(context.Context, string) (domain.Chat, error) { return s.
 func (s *stub) Messages(context.Context, MessageQuery) (domain.ChatMessagePage, error) {
 	return s.msgs, s.err
 }
-func (s *stub) Send(context.Context, SendInput) (string, error) { s.sent++; return "m1", s.err }
+func (s *stub) Send(_ context.Context, in SendInput) (string, error) {
+	s.sent++
+	s.last = in
+	return "m1", s.err
+}
 func (s *stub) Watch(context.Context, WatchQuery) ([]domain.WatchEvent, error) {
 	return nil, s.err
 }

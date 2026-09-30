@@ -101,9 +101,21 @@ func (c *HTTPClient) Download(ctx context.Context, messageID, attach string) ([]
 
 func (c *HTTPTeams) Send(ctx context.Context, in teams.SendInput) (string, error) {
 	// The app layer renders the body; send it exactly as dry-run showed it.
-	body := map[string]any{"body": map[string]string{"contentType": "html", "content": in.Rendered.Content}}
+	content := in.Rendered.Content
+	body := map[string]any{}
+	var shared []sharedFile
+	if len(in.Files) > 0 {
+		var err error
+		if shared, err = c.shareFiles(ctx, in); err != nil {
+			return "", err
+		}
+		var atts []map[string]any
+		content, atts = attachRefs(content, shared)
+		body["attachments"] = atts
+	}
+	body["body"] = map[string]string{"contentType": "html", "content": content}
 	if err := c.doJSON(ctx, http.MethodPost, "/me/chats/"+url.PathEscape(in.ChatID)+"/messages", body); err != nil {
-		return "", err
+		return "", partialUpload(err, shared)
 	}
 	return "sent", nil
 }
