@@ -33,7 +33,7 @@ jobs:
           TAG: ${{ inputs.tag }}
         run: |
           $version = $env:TAG.TrimStart('v')
-          $url = "https://github.com/jacobhuemmer/m365/releases/download/v$version/m365_${version}_windows_amd64.zip"
+          $url = "https://github.com/masonhuemmer/m365/releases/download/v$version/m365_${version}_windows_amd64.zip"
           Invoke-WebRequest $url -OutFile m365.zip
           $sha = (Get-FileHash m365.zip -Algorithm SHA256).Hash
           $install = 'packaging/chocolatey/tools/chocolateyinstall.ps1'

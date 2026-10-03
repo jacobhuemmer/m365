@@ -38,7 +38,7 @@ jobs:
           identifier: JacobHuemmer.m365
           installers-regex: '_windows_.*\.zip$'
           max-versions-to-keep: 5
-          fork-user: jacobhuemmer
+          fork-user: masonhuemmer
           token: ${{ secrets.WINGET_TOKEN }}
 
   chocolatey:

@@ -6,14 +6,14 @@
     <version>__VERSION__</version>
     <title>m365</title>
     <authors>Mason Huemmer</authors>
-    <owners>jacobhuemmer</owners>
-    <projectUrl>https://github.com/jacobhuemmer/m365</projectUrl>
-    <packageSourceUrl>https://github.com/jacobhuemmer/m365/tree/main/packaging/chocolatey</packageSourceUrl>
-    <projectSourceUrl>https://github.com/jacobhuemmer/m365</projectSourceUrl>
-    <bugTrackerUrl>https://github.com/jacobhuemmer/m365/issues</bugTrackerUrl>
-    <licenseUrl>https://github.com/jacobhuemmer/m365/blob/main/LICENSE</licenseUrl>
+    <owners>masonhuemmer</owners>
+    <projectUrl>https://github.com/masonhuemmer/m365</projectUrl>
+    <packageSourceUrl>https://github.com/masonhuemmer/m365/tree/main/packaging/chocolatey</packageSourceUrl>
+    <projectSourceUrl>https://github.com/masonhuemmer/m365</projectSourceUrl>
+    <bugTrackerUrl>https://github.com/masonhuemmer/m365/issues</bugTrackerUrl>
+    <licenseUrl>https://github.com/masonhuemmer/m365/blob/main/LICENSE</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <releaseNotes>https://github.com/jacobhuemmer/m365/releases/tag/v__VERSION__</releaseNotes>
+    <releaseNotes>https://github.com/masonhuemmer/m365/releases/tag/v__VERSION__</releaseNotes>
     <tags>m365 microsoft-365 outlook teams calendar onedrive graph cli mcp</tags>
     <summary>Microsoft 365 CLI for one signed-in user</summary>
     <description>

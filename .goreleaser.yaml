@@ -33,21 +33,21 @@ changelog:
 
 release:
   github:
-    owner: jacobhuemmer
+    owner: masonhuemmer
     name: m365
 
 brews:
   - name: m365
     directory: Formula
-    homepage: "https://github.com/jacobhuemmer/m365"
+    homepage: "https://github.com/masonhuemmer/m365"
     description: "Microsoft 365 CLI for one signed-in user"
     license: MIT
     repository:
-      owner: jacobhuemmer
+      owner: masonhuemmer
       name: homebrew-tap
       token: "{{ .Env.GITHUB_TOKEN }}"
     custom_block: |
-      head "https://github.com/jacobhuemmer/m365.git", branch: "main"
+      head "https://github.com/masonhuemmer/m365.git", branch: "main"
     test: |
       assert_match "m365", shell_output("#{bin}/m365 --help")
       assert_match version.to_s, shell_output("#{bin}/m365 --version")
@@ -55,11 +55,11 @@ brews:
 
 scoops:
   - name: m365
-    homepage: "https://github.com/jacobhuemmer/m365"
+    homepage: "https://github.com/masonhuemmer/m365"
     description: "Microsoft 365 CLI for one signed-in user"
     license: MIT
     repository:
-      owner: jacobhuemmer
+      owner: masonhuemmer
       name: scoop-bucket
       token: "{{ .Env.GITHUB_TOKEN }}"
     commit_msg_template: "Scoop update for {{ .ProjectName }} version {{ .Tag }}"
