@@ -11,7 +11,7 @@ Current release: **0.4.0**.
 ### macOS (Homebrew)
 
 ```sh
-brew tap jacobhuemmer/tap
+brew tap masonhuemmer/tap
 brew install m365
 m365 --version    # 0.4.0
 ```
@@ -21,13 +21,13 @@ Upgrade later with `brew update && brew upgrade m365`.
 To build the latest `main` instead of a numbered release:
 
 ```sh
-brew install --HEAD jacobhuemmer/tap/m365
+brew install --HEAD masonhuemmer/tap/m365
 ```
 
 ### Windows (Scoop)
 
 ```powershell
-scoop bucket add jacobhuemmer https://github.com/jacobhuemmer/scoop-bucket
+scoop bucket add masonhuemmer https://github.com/masonhuemmer/scoop-bucket
 scoop install m365
 m365 --version
 ```
@@ -40,14 +40,14 @@ The first community package is in review: [microsoft/winget-pkgs#439501](https:/
 winget install JacobHuemmer.m365
 ```
 
-Until then, use Scoop or a zip from [Releases](https://github.com/jacobhuemmer/m365/releases).
+Until then, use Scoop or a zip from [Releases](https://github.com/masonhuemmer/m365/releases).
 
 ### From source
 
 Go 1.25+:
 
 ```sh
-git clone https://github.com/jacobhuemmer/m365.git
+git clone https://github.com/masonhuemmer/m365.git
 cd m365
 make install
 ```
